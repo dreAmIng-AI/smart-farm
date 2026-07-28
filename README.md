@@ -70,7 +70,7 @@
 
 ### 협업 운영
 
-- [LLM 개발 규칙](AGENTS.md)
+- [바이브코딩 활용 개발 규칙](AGENTS.md)
 - [Task 템플릿](project/tasks/TASK_TEMPLATE.md)
 - [초기 2주 Task](project/INITIAL_TASKS.md)
 - [PR 템플릿](.github/pull_request_template.md)
