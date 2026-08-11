@@ -1,5 +1,9 @@
 # DATA_SOURCE_REVIEW.md
 
+> **Status: REFERENCE**
+>
+> 이 문서는 향후 Lab 또는 Integration의 외부 데이터원 검토 템플릿입니다. 이 문서만으로 Core Platform v0.1에 외부 API를 구현하거나 도입할 수 없습니다.
+
 외부 API 또는 공식정보를 도입하기 전에 작성하는 검토 템플릿입니다.
 
 ## 기본정보

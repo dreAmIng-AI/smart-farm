@@ -1,27 +1,27 @@
-# API_CONTRACT.md
+# API Contract
 
-## 1. 원칙
+**Status: CURRENT IMPLEMENTATION CONTRACT**
 
-- 실제 계약의 단일 원본은 코드 스키마와 테스트입니다.
-- 이 문서는 의도, Endpoint, 오류 코드, 예시를 설명합니다.
-- API JSON은 camelCase를 사용합니다.
-- DateTime은 ISO 8601 UTC를 반환합니다.
-- 인증은 Supabase 세션을 기준으로 합니다.
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 이 문서는 Core v0.1의 의도와 경계를 정의합니다.**
 
-## 2. 공통 성공 구조
+## 1. 공통 원칙
 
-단일 객체는 과도한 envelope 없이 반환할 수 있습니다. 목록에는 metadata를 포함합니다.
+- API JSON은 `camelCase`, 시간은 ISO 8601 UTC를 사용합니다.
+- 인증은 Supabase 세션을 기준으로 하고 Farm 접근은 RLS와 서버 검증을 따릅니다.
+- Core v0.1 API는 작물 이름으로 비즈니스 로직을 분기하지 않습니다.
+- 외부 API, AI, Sensor 호출은 Core v0.1 API에 포함하지 않습니다.
+- 실제 endpoint와 오류 코드는 구현 시 코드 스키마·테스트·이 문서를 함께 갱신합니다.
+
+### 목록 응답
 
 ```json
 {
   "items": [],
-  "meta": {
-    "count": 0
-  }
+  "meta": { "count": 0 }
 }
 ```
 
-## 3. 공통 오류 구조
+### 오류 응답
 
 ```json
 {
@@ -33,58 +33,39 @@
 }
 ```
 
-## 4. 초기 Endpoint
+## 2. P0 Core Resource Contract
 
-### POST /api/farms
+| Resource / action | Intent |
+|---|---|
+| `POST /api/farms` | Farm 생성 |
+| `GET/PATCH /api/farms/{farmId}` | 접근 가능한 Farm 조회·수정 |
+| `POST /api/farms/{farmId}/crop-cycles` | CropCycle 생성 |
+| `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
+| `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
+| `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
+| `GET /api/tasks/{taskId}` | 작업 상세와 근거·검증 상태 조회 |
+| `POST /api/tasks/{taskId}/action-logs` | 결과 기록, 필요 시 IssueRecord 생성 |
+| `POST /api/issues/{issueId}/follow-up-tasks` | IssueRecord 기반 후속 작업 생성 |
+| `GET /api/farms/{farmId}/history` | 작업·문제·후속 관계 이력 조회 |
 
-농장을 생성합니다.
+## 3. 주요 입력 예시
 
-Request:
-
-```json
-{
-  "name": "김제 설향 농장",
-  "regionCode": "KR-45-210",
-  "cultivationEnvironment": "facility",
-  "cultivationMethod": "soil",
-  "sensorUsage": false
-}
-```
-
-Response: `201`
-
-```json
-{
-  "id": "uuid",
-  "name": "김제 설향 농장",
-  "regionCode": "KR-45-210"
-}
-```
-
-Errors: `VALIDATION_ERROR`, `UNAUTHORIZED`
-
-### POST /api/farms/{farmId}/crop-cycles
-
-설향 작기를 등록합니다.
-
-Request:
+### CropCycle 생성
 
 ```json
 {
-  "cropCode": "strawberry",
-  "cultivar": "seolhyang",
+  "cropCode": "reference_crop",
+  "cultivar": "reference_variety",
   "transplantDate": "2026-09-10",
   "growthStage": "flowering"
 }
 ```
 
-Errors: `FARM_NOT_FOUND`, `FARM_ACCESS_DENIED`, `ACTIVE_CROP_CYCLE_EXISTS`
+Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는 특정 값에 의존하지 않습니다.
 
-### POST /api/crop-cycles/{cropCycleId}/tasks/generate
+### 작기 계획 생성
 
-검토된 TaskTemplate으로 오늘의 작업을 생성합니다.
-
-Response:
+계획 생성은 CropCycle과 적용 가능한 TaskTemplate을 사용해 예정 FarmTask를 만듭니다. 동일 CropCycle·템플릿·일정 조합의 중복 생성을 방지해야 합니다.
 
 ```json
 {
@@ -93,117 +74,57 @@ Response:
 }
 ```
 
-동일 날짜·템플릿 중복 생성을 방지해야 합니다.
-
-### GET /api/farms/{farmId}/tasks/today
-
-오늘의 작업을 조회합니다.
+### Today 응답의 핵심 필드
 
 ```json
 {
   "items": [
     {
       "id": "uuid",
-      "title": "꽃과 잎의 결로 여부 확인",
-      "taskType": "environment_check",
-      "reason": "개화기 기본 확인 작업",
-      "priority": "high",
-      "recommendedAt": "2026-07-28T22:00:00Z",
-      "evidence": [
-        {
-          "type": "expert_template",
-          "label": "설향 개화기 작업 기준 v1"
-        }
-      ],
+      "title": "작업 확인",
+      "taskType": "observation",
+      "reason": "적용된 Crop Pack 작업 기준",
+      "scheduledFor": "2026-09-10T00:00:00Z",
+      "priority": "medium",
+      "verificationStatus": "draft",
+      "sourceType": "template",
       "status": "pending",
-      "resultRequired": true,
-      "safetyLevel": "field_check"
+      "resultRequired": true
     }
   ],
-  "meta": {
-    "count": 1
-  }
+  "meta": { "count": 1 }
 }
 ```
 
-### PATCH /api/tasks/{taskId}/status
-
-작업 상태를 변경합니다.
-
-```json
-{
-  "status": "in_progress"
-}
-```
-
-완료 또는 문제 상태는 ActionLog 생성 Endpoint와 트랜잭션 처리하는 방식을 우선 검토합니다.
-
-### POST /api/tasks/{taskId}/action-logs
-
-작업 결과를 기록합니다.
-
-```json
-{
-  "actionType": "completed",
-  "resultCode": "normal",
-  "note": "결로 없음",
-  "performedAt": "2026-07-29T00:10:00Z"
-}
-```
-
-문제 결과 예시:
+### 결과·문제 기록
 
 ```json
 {
   "actionType": "issue_reported",
-  "resultCode": "condensation_found",
-  "note": "꽃 일부에 물방울 확인",
-  "performedAt": "2026-07-29T00:10:00Z",
+  "resultCode": "observed_issue",
+  "note": "관찰한 사실을 짧게 기록",
+  "performedAt": "2026-09-10T00:10:00Z",
   "issue": {
-    "observedSymptom": "꽃 일부에 물방울 확인",
+    "observedSymptom": "사용자 관찰 내용",
     "severity": "unknown"
   }
 }
 ```
 
-### POST /api/action-logs/{actionLogId}/attachments
+문제 기록은 확정 진단을 의미하지 않습니다. `IssueRecord`에서 생성한 Follow-up FarmTask는 원본 IssueRecord를 추적해야 합니다.
 
-사진 업로드를 위한 서명 URL 또는 서버 업로드 절차를 제공합니다.
+## 4. P1 Attachment
 
-사진 업로드 실패가 ActionLog 저장을 취소하지 않도록 분리합니다.
-
-### GET /api/farms/{farmId}/history
-
-작업과 기록 이력을 조회합니다.
-
-Query:
-
-- from
-- to
-- status
-- cursor
+사진은 `POST /api/action-logs/{actionLogId}/attachments` 또는 IssueRecord에 연결하는 동일한 계약으로 추가할 수 있습니다. 업로드 실패가 ActionLog 저장을 취소하지 않도록 결과 기록과 파일 업로드를 분리합니다.
 
 ## 5. 오류 코드
 
-- `UNAUTHORIZED`
-- `FARM_ACCESS_DENIED`
-- `FARM_NOT_FOUND`
-- `CROP_CYCLE_NOT_FOUND`
-- `TASK_NOT_FOUND`
-- `ACTIVE_CROP_CYCLE_EXISTS`
-- `INVALID_STATUS_TRANSITION`
-- `DUPLICATE_TASK_GENERATION`
-- `VALIDATION_ERROR`
-- `STORAGE_UPLOAD_FAILED`
-- `INTERNAL_ERROR`
+- `UNAUTHORIZED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
+- `CROP_CYCLE_NOT_FOUND`, `TASK_NOT_FOUND`, `ISSUE_NOT_FOUND`
+- `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
+- `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
+- `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`
 
-## 6. 외부정보 Endpoint
+## 6. Out of Scope
 
-첫 수직 기능 완료 전에는 구현하지 않습니다.
-
-이후 후보:
-
-- `GET /api/farms/{farmId}/weather`
-- `GET /api/farms/{farmId}/official-guides`
-
-외부 API 원본 응답을 그대로 Client에 노출하지 않습니다.
+Weather, Disease, Market, Sensor, AI/LLM endpoint와 자동 진단·추천·제어 endpoint는 Core v0.1에서 구현하지 않습니다. 향후 Lab이 승인된 Integration으로 승격되면 독립된 API 계약과 데이터 출처·검증 상태를 추가합니다.
