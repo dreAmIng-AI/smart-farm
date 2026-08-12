@@ -385,10 +385,13 @@ export default function HomePage() {
               정식일
               <input name="transplantDate" required type="date" defaultValue={transplantDate} />
             </label>
-            <label>
-              생육 단계 (선택)
-              <input name="growthStage" defaultValue="establishment" />
-            </label>
+          <label>
+            생육 단계 (선택 사항)
+            <input name="growthStage" defaultValue="establishment" placeholder="예: establishment" />
+          </label>
+          <p className="field-hint">
+            현재는 직접 입력하거나 비워 둘 수 있습니다. 생육 단계별 선택 목록은 Crop Pack 데이터가 준비된 뒤 제공합니다.
+          </p>
             <button disabled={isSubmitting} type="submit">
               CropCycle 만들기
             </button>

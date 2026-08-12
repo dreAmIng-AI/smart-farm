@@ -87,6 +87,11 @@ p {
   color: #547064;
 }
 
+.field-hint {
+  color: #547064;
+  font-size: 0.875rem;
+}
+
 .draft-notice,
 .status {
   border-radius: 0.5rem;
