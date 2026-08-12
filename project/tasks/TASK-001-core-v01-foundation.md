@@ -29,7 +29,7 @@ Farm 생성부터 Draft TaskTemplate 적용, 작기 전체 일정과 Today 조�
 ## Out of Scope
 
 - ActionLog, IssueRecord, Attachment, Follow-up FarmTask, History
-- 로그인 UI, 실제 Supabase 프로젝트 연결, Preview 배포
+- Preview 배포
 - Weather, AI, Disease, Sensor, Market
 
 ## Allowed Files
@@ -60,6 +60,7 @@ Farm 생성부터 Draft TaskTemplate 적용, 작기 전체 일정과 Today 조�
 - [x] 동일 템플릿·일정의 중복 계획 생성을 막는다.
 - [x] 작기 전체 일정과 Today의 오늘·지연 작업을 조회한다.
 - [x] 다른 Crop Fixture도 Core 로직 변경 없이 적용된다.
+- [x] Email 로그인 세션으로 RLS가 적용된 Farm 흐름을 시작할 수 있다.
 
 ## Required Tests
 

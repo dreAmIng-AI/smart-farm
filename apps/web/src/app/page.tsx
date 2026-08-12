@@ -1,7 +1,9 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
   id: string;
@@ -76,6 +78,10 @@ async function apiRequest<T>(path: string, init: RequestInit): Promise<T> {
 }
 
 export default function HomePage() {
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
@@ -84,6 +90,75 @@ export default function HomePage() {
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    let isMounted = true;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (isMounted) {
+        setUserEmail(user?.email ?? null);
+        setIsAuthLoading(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setUserEmail(session?.user.email ?? null);
+        setIsAuthLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function handleSignIn(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = form.get("password");
+
+    if (typeof password !== "string") {
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setMessage("");
+    try {
+      const { error } = await createBrowserSupabaseClient().auth.signInWithPassword({ email, password });
+      if (error) {
+        throw error;
+      }
+      setMessage("로그인되었습니다. Farm 생성부터 시작하세요.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "로그인에 실패했습니다.");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setIsAuthenticating(true);
+    try {
+      const { error } = await createBrowserSupabaseClient().auth.signOut();
+      if (error) {
+        throw error;
+      }
+      setFarm(null);
+      setCropCycle(null);
+      setSchedule([]);
+      setTodayTasks([]);
+      setMessage("로그아웃되었습니다.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }
 
   async function handleFarmCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -212,11 +287,49 @@ export default function HomePage() {
         </p>
       </header>
 
+      {isAuthLoading ? <p className="status">인증 상태를 확인하고 있습니다.</p> : null}
+
+      {!isAuthLoading && !userEmail ? (
+        <section className="card stack" aria-labelledby="sign-in-heading">
+          <h2 id="sign-in-heading">로그인</h2>
+          <p className="muted">Supabase에서 생성한 테스트 계정으로 로그인하세요.</p>
+          <form className="stack" onSubmit={handleSignIn}>
+            <label>
+              이메일
+              <input
+                autoComplete="email"
+                name="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+            </label>
+            <label>
+              비밀번호
+              <input autoComplete="current-password" name="password" required type="password" />
+            </label>
+            <button disabled={isAuthenticating} type="submit">
+              이메일로 로그인
+            </button>
+          </form>
+        </section>
+      ) : null}
+
+      {!isAuthLoading && userEmail ? (
+        <div className="session-row">
+          <span>{userEmail}로 로그인됨</span>
+          <button className="secondary compact" disabled={isAuthenticating} onClick={handleSignOut} type="button">
+            로그아웃
+          </button>
+        </div>
+      ) : null}
+
       <p className="status" role="status">
         {message}
       </p>
 
-      <section className="card stack" aria-labelledby="farm-heading">
+      {userEmail ? <section className="card stack" aria-labelledby="farm-heading">
         <h2 id="farm-heading">1. Farm 생성</h2>
         <form className="stack" onSubmit={handleFarmCreate}>
           <label>
@@ -242,9 +355,9 @@ export default function HomePage() {
             Farm 만들기
           </button>
         </form>
-      </section>
+      </section> : null}
 
-      {farm ? (
+      {userEmail && farm ? (
         <section className="card stack" aria-labelledby="cycle-heading">
           <h2 id="cycle-heading">2. CropCycle 생성</h2>
           <p className="muted">현재 Farm: {farm.name}</p>
@@ -272,7 +385,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {cropCycle && farm ? (
+      {userEmail && cropCycle && farm ? (
         <section className="card stack" aria-labelledby="plan-heading">
           <h2 id="plan-heading">3. Plan · 일정 · Today</h2>
           <p className="muted">

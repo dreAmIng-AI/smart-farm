@@ -80,6 +80,6 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 
 1. `.env.example`을 `.env.local`로 복사하고 Supabase URL과 anon key를 설정합니다.
 2. `supabase/migrations/202608120001_core_v01_foundation.sql`을 대상 Supabase 프로젝트에 적용합니다.
-3. 인증된 Supabase 세션으로 접속한 뒤 `pnpm dev`를 실행합니다.
+3. `pnpm dev`를 실행하고 `http://localhost:3000`에서 Supabase Email 계정으로 로그인합니다.
 
-포함 흐름은 `Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today 조회`입니다. Fixture는 모두 `draft`이며 실제 농업 처방이 아닙니다. 로그인 UI, ActionLog, IssueRecord, Attachment, Weather/AI/Disease/Sensor/Market 기능은 이 Slice에 포함하지 않습니다.
+포함 흐름은 `로그인 → Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today 조회`입니다. Fixture는 모두 `draft`이며 실제 농업 처방이 아닙니다. ActionLog, IssueRecord, Attachment, Weather/AI/Disease/Sensor/Market 기능은 이 Slice에 포함하지 않습니다.
