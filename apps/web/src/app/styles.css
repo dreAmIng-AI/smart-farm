@@ -102,6 +102,13 @@ p {
   background: #e6f1e8;
 }
 
+.inline-status {
+  background: #f2f7f3;
+  border-radius: 0.5rem;
+  color: #18332a;
+  padding: 0.75rem;
+}
+
 .session-row {
   align-items: center;
   display: flex;

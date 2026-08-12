@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
@@ -18,16 +20,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data, error } = await auth.supabase
+  const farmId = randomUUID();
+  const { error } = await auth.supabase
     .from("farms")
     .insert({
+      id: farmId,
       name: parsed.data.name,
       region_code: parsed.data.regionCode,
       cultivation_environment: parsed.data.cultivationEnvironment,
       cultivation_method: parsed.data.cultivationMethod,
-    })
-    .select("id, name, region_code, cultivation_environment, cultivation_method")
-    .single();
+    });
 
   if (error) {
     return NextResponse.json(
@@ -38,11 +40,11 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
-      id: data.id,
-      name: data.name,
-      regionCode: data.region_code,
-      cultivationEnvironment: data.cultivation_environment,
-      cultivationMethod: data.cultivation_method,
+      id: farmId,
+      name: parsed.data.name,
+      regionCode: parsed.data.regionCode,
+      cultivationEnvironment: parsed.data.cultivationEnvironment,
+      cultivationMethod: parsed.data.cultivationMethod,
     },
     { status: 201 },
   );

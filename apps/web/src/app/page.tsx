@@ -82,6 +82,7 @@ export default function HomePage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [email, setEmail] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [farmFeedback, setFarmFeedback] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
@@ -152,6 +153,7 @@ export default function HomePage() {
       setCropCycle(null);
       setSchedule([]);
       setTodayTasks([]);
+      setFarmFeedback(null);
       setMessage("로그아웃되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
@@ -164,6 +166,7 @@ export default function HomePage() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setIsSubmitting(true);
+    setFarmFeedback("Farm을 생성하고 있습니다.");
 
     try {
       const created = await apiRequest<Farm>("/api/farms", {
@@ -180,8 +183,11 @@ export default function HomePage() {
       setSchedule([]);
       setTodayTasks([]);
       setMessage(`Farm “${created.name}”을 만들었습니다.`);
+      setFarmFeedback(`Farm “${created.name}”이 생성되었습니다.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Farm 생성에 실패했습니다.");
+      const errorText = error instanceof Error ? error.message : "Farm 생성에 실패했습니다.";
+      setMessage(errorText);
+      setFarmFeedback(errorText);
     } finally {
       setIsSubmitting(false);
     }
@@ -352,9 +358,14 @@ export default function HomePage() {
             <input name="cultivationMethod" defaultValue="protected_cultivation" />
           </label>
           <button disabled={isSubmitting} type="submit">
-            Farm 만들기
+            {isSubmitting ? "Farm 생성 중..." : "Farm 만들기"}
           </button>
         </form>
+        {farmFeedback ? (
+          <p className="inline-status" role="status">
+            {farmFeedback}
+          </p>
+        ) : null}
       </section> : null}
 
       {userEmail && farm ? (
