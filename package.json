@@ -1,0 +1,12 @@
+{
+  "name": "dreaming-smart-farm",
+  "private": true,
+  "packageManager": "pnpm@10.10.0",
+  "scripts": {
+    "dev": "pnpm --filter @dreaming/web dev",
+    "build": "pnpm --filter @dreaming/web build",
+    "lint": "pnpm --filter @dreaming/web lint",
+    "typecheck": "pnpm --filter @dreaming/web typecheck",
+    "test": "pnpm --filter @dreaming/web test"
+  }
+}
