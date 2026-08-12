@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 이 문서는 Core v0.1의 의도와 경계를 정의합니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 첫 Vertical Slice에는 `POST /api/farms`, `POST /api/farms/{farmId}/crop-cycles`, `POST /api/crop-cycles/{cropCycleId}/tasks/generate`, `GET /api/crop-cycles/{cropCycleId}/schedule`, `GET /api/farms/{farmId}/tasks/today`가 구현되어 있습니다. 이 문서는 그 이후 P0 endpoint의 요구와 경계도 함께 정의합니다.**
 
 ## 1. 공통 원칙
 
@@ -89,12 +89,15 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
       "verificationStatus": "draft",
       "sourceType": "template",
       "status": "pending",
-      "resultRequired": true
+      "resultRequired": true,
+      "scheduleState": "today"
     }
   ],
   "meta": { "count": 1 }
 }
 ```
+
+`scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다.
 
 ### 결과·문제 기록
 
@@ -119,8 +122,11 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 ## 5. 오류 코드
 
-- `UNAUTHORIZED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
-- `CROP_CYCLE_NOT_FOUND`, `TASK_NOT_FOUND`, `ISSUE_NOT_FOUND`
+- `UNAUTHORIZED`, `SUPABASE_NOT_CONFIGURED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
+- `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
+- `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
+- `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
+- `TASK_NOT_FOUND`, `ISSUE_NOT_FOUND`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`

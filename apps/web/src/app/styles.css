@@ -1,0 +1,151 @@
+:root {
+  color: #18332a;
+  background: #f5f8f3;
+  font-family: Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #20613f;
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+button.secondary {
+  background: #e3ece5;
+  color: #18332a;
+}
+
+input,
+select {
+  border: 1px solid #adc1b4;
+  border-radius: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.page-shell {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 46rem;
+  padding: 1rem;
+}
+
+.hero {
+  padding: 1rem 0;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.eyebrow,
+.muted {
+  color: #547064;
+}
+
+.draft-notice,
+.status {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.draft-notice {
+  background: #fff5d8;
+  color: #604a11;
+}
+
+.status {
+  background: #e6f1e8;
+}
+
+.card {
+  background: white;
+  border: 1px solid #dbe6dc;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.button-row {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.task-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-list li {
+  background: #f6faf6;
+  border-left: 4px solid #4d9870;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.task-list small,
+.task-list span {
+  color: #547064;
+}
+
+.task-list .overdue {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.task-list .today {
+  color: #17643d;
+  font-weight: 700;
+}
+
+@media (min-width: 42rem) {
+  .page-shell {
+    padding: 2rem;
+  }
+
+  .button-row {
+    grid-template-columns: repeat(2, max-content);
+  }
+}

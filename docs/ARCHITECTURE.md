@@ -35,7 +35,7 @@ Smart Farm Platform
 - DB 시간: UTC; UI 표시: Asia/Seoul
 - Supabase RLS, Secret의 클라이언트 노출 금지
 
-현재 저장소는 문서 기준 단계이며 애플리케이션 소스, Supabase migration, 패키지 설정은 아직 존재하지 않습니다. 실제 코드 구조와 도구 버전은 Core v0.1 구현 Task에서 필요한 최소 단위로 추가하고 ADR에 기록합니다.
+현재 저장소에는 Core v0.1 첫 Vertical Slice를 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Farm → CropCycle → TaskTemplate 적용 → FarmTask → 일정 → Today`이며, 결과 기록·문제·후속 작업은 이후 P0 Slice로 남겨 둡니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
 
 ## 4. Core Platform v0.1 흐름
 

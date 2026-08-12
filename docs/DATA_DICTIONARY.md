@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 이 문서는 Core v0.1의 설계 기준입니다. 실제 DB는 구현 시 migration과 함께 확정합니다.**
+**Note: 이 문서는 Core v0.1의 설계 기준입니다. 첫 Vertical Slice는 `supabase/migrations/202608120001_core_v01_foundation.sql`에 farms, farm_memberships, crop_cycles, task_templates, farm_tasks로 구현되어 있습니다. ActionLog, IssueRecord, Attachment은 다음 Slice에서 실제 요구가 생길 때 migration과 함께 추가합니다.**
 
 ## 1. 공통 규칙
 

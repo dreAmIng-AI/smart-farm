@@ -4,7 +4,7 @@ dreAmIng Smart Farm은 농업정보 포털이 아니라, 농업인이 **작기 �
 
 ## 지금 무엇을 개발하나요?
 
-현재 개발 범위는 **Core Platform v0.1**입니다. 코드는 아직 시작하지 않았으며, 이 저장소의 문서가 이후 구현의 기준입니다.
+현재 개발 범위는 **Core Platform v0.1**입니다. 첫 Vertical Slice의 코드와 Supabase migration이 준비되어 있으며, 이 저장소의 문서가 이후 구현의 기준입니다.
 
 ```text
 Farm → CropCycle → 작업계획 → Today → FarmTask 실행
@@ -15,7 +15,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 
 | 영역 | 역할 | 현재 위치 |
 |---|---|---|
-| Core Platform | 작물과 무관한 농작업 실행관리 기반 | Core v0.1을 개발 준비 중 |
+| Core Platform | 작물과 무관한 농작업 실행관리 기반 | 첫 Vertical Slice 구현 완료, 나머지 P0 진행 예정 |
 | Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop |
 | Labs | 날씨, 병해충, 분석, AI, 센서, 시장 등의 독립 실험 | Core v0.1의 필수 범위 아님 |
 
@@ -75,3 +75,11 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 - DB는 `snake_case`, TypeScript/API는 `camelCase`
 - DB 시간은 UTC, UI 표시는 Asia/Seoul
 - RLS 적용, Secret의 클라이언트 노출 금지
+
+## 첫 Vertical Slice 실행
+
+1. `.env.example`을 `.env.local`로 복사하고 Supabase URL과 anon key를 설정합니다.
+2. `supabase/migrations/202608120001_core_v01_foundation.sql`을 대상 Supabase 프로젝트에 적용합니다.
+3. 인증된 Supabase 세션으로 접속한 뒤 `pnpm dev`를 실행합니다.
+
+포함 흐름은 `Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today 조회`입니다. Fixture는 모두 `draft`이며 실제 농업 처방이 아닙니다. 로그인 UI, ActionLog, IssueRecord, Attachment, Weather/AI/Disease/Sensor/Market 기능은 이 Slice에 포함하지 않습니다.
