@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 첫 Vertical Slice에는 `POST /api/farms`, `POST /api/farms/{farmId}/crop-cycles`, `POST /api/crop-cycles/{cropCycleId}/tasks/generate`, `GET /api/crop-cycles/{cropCycleId}/schedule`, `GET /api/farms/{farmId}/tasks/today`가 구현되어 있습니다. 이 문서는 그 이후 P0 endpoint의 요구와 경계도 함께 정의합니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 `POST /api/farms`, `POST /api/farms/{farmId}/crop-cycles`, `POST /api/crop-cycles/{cropCycleId}/tasks/generate`, `GET /api/crop-cycles/{cropCycleId}/schedule`, `GET /api/farms/{farmId}/tasks/today`, `POST /api/tasks/{taskId}/action-logs`가 구현되어 있습니다. 이 문서는 그 이후 P0 endpoint의 요구와 경계도 함께 정의합니다.**
 
 ## 1. 공통 원칙
 
@@ -99,22 +99,19 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 `scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다.
 
-### 결과·문제 기록
+### 결과 기록 (현재 구현)
+
+`POST /api/tasks/{taskId}/action-logs`는 `completed` 또는 `not_checked`를 기록합니다. 완료는 FarmTask 상태를 `completed`로 바꾸며, 미확인은 상태를 유지합니다.
 
 ```json
 {
-  "actionType": "issue_reported",
-  "resultCode": "observed_issue",
-  "note": "관찰한 사실을 짧게 기록",
-  "performedAt": "2026-09-10T00:10:00Z",
-  "issue": {
-    "observedSymptom": "사용자 관찰 내용",
-    "severity": "unknown"
-  }
+  "actionType": "completed",
+  "note": "선택적 짧은 메모",
+  "performedAt": "2026-09-10T00:10:00.000Z"
 }
 ```
 
-문제 기록은 확정 진단을 의미하지 않습니다. `IssueRecord`에서 생성한 Follow-up FarmTask는 원본 IssueRecord를 추적해야 합니다.
+`performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. 문제 기록과 IssueRecord 연결은 다음 Slice에서 추가하며, 문제 기록은 확정 진단을 의미하지 않습니다.
 
 ## 4. P1 Attachment
 
@@ -126,7 +123,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
-- `TASK_NOT_FOUND`, `ISSUE_NOT_FOUND`
+- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_NOT_FOUND`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`

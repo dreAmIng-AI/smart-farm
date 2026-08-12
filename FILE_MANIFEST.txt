@@ -6,6 +6,8 @@ package.json
 pnpm-lock.yaml
 pnpm-workspace.yaml
 apps/web/eslint.config.mjs
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
 apps/web/next-env.d.ts
 apps/web/package.json
 apps/web/tsconfig.json
@@ -18,6 +20,8 @@ apps/web/src/app/api/farms/[farmId]/crop-cycles/route.ts
 apps/web/src/app/api/farms/[farmId]/tasks/today/route.ts
 apps/web/src/app/api/crop-cycles/[cropCycleId]/schedule/route.ts
 apps/web/src/app/api/crop-cycles/[cropCycleId]/tasks/generate/route.ts
+apps/web/src/app/api/tasks/[taskId]/action-logs/route.test.ts
+apps/web/src/app/api/tasks/[taskId]/action-logs/route.ts
 apps/web/src/lib/api/auth.test.ts
 apps/web/src/lib/api/auth.ts
 apps/web/src/lib/api/validation.test.ts
@@ -28,6 +32,9 @@ apps/web/src/lib/core/today.test.ts
 apps/web/src/lib/core/today.ts
 apps/web/src/lib/core/types.ts
 apps/web/src/lib/supabase/server.ts
+apps/web/src/lib/supabase/client.ts
+apps/web/src/lib/supabase/proxy.ts
+apps/web/src/proxy.ts
 docs/AI_SAFETY.md
 docs/API_CONTRACT.md
 docs/ARCHITECTURE.md
@@ -44,5 +51,7 @@ docs/agreements/SMART_AGRICULTURE_DEVELOPMENT_START_AGREEMENT.md
 docs/agreements/VIBE_CODING_COLLABORATION_AGREEMENT.md
 project/INITIAL_TASKS.md
 project/tasks/TASK-001-core-v01-foundation.md
+project/tasks/TASK-002-core-v01-task-results.md
 project/tasks/TASK_TEMPLATE.md
 supabase/migrations/202608120001_core_v01_foundation.sql
+supabase/migrations/202608120002_core_v01_task_results.sql

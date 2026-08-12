@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 이 문서는 Core v0.1의 설계 기준입니다. 첫 Vertical Slice는 `supabase/migrations/202608120001_core_v01_foundation.sql`에 farms, farm_memberships, crop_cycles, task_templates, farm_tasks로 구현되어 있습니다. ActionLog, IssueRecord, Attachment은 다음 Slice에서 실제 요구가 생길 때 migration과 함께 추가합니다.**
+**Note: 이 문서는 Core v0.1의 설계 기준입니다. 현재 migration은 farms, farm_memberships, crop_cycles, task_templates, farm_tasks와 action_logs를 구현합니다. IssueRecord와 Attachment은 다음 Slice에서 실제 요구가 생길 때 migration과 함께 추가합니다.**
 
 ## 1. 공통 규칙
 
@@ -111,6 +111,8 @@ TaskTemplate → FarmTask
 | result_code | text | N | 정상·문제·미확인 등 |
 | note | text | N | 짧은 메모 |
 | performed_at / created_at | timestamptz | Y | 현장 수행·저장 시각 |
+
+`202608120002_core_v01_task_results.sql`은 ActionLog를 실제 테이블·RLS로 구현합니다. 현재 UI/API는 `completed`, `not_checked`만 기록합니다. 완료는 FarmTask를 `completed`로 갱신하고, 미확인은 상태를 유지해 Today에 남깁니다.
 
 ### issue_records
 

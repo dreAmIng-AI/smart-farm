@@ -29,6 +29,8 @@ type FarmTask = {
   scheduleState?: "overdue" | "today";
 };
 
+type TaskResultAction = "completed" | "not_checked";
+
 function errorMessage(value: unknown): string {
   if (typeof value === "object" && value !== null && "error" in value) {
     const error = value.error;
@@ -60,6 +62,18 @@ function displayDate(value: string) {
   }).format(new Date(value));
 }
 
+function taskStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    cancelled: "취소됨",
+    completed: "완료",
+    in_progress: "진행 중",
+    issue_reported: "문제 기록됨",
+    pending: "예정",
+  };
+
+  return labels[status] ?? status;
+}
+
 async function apiRequest<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -83,6 +97,8 @@ export default function HomePage() {
   const [email, setEmail] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [farmFeedback, setFarmFeedback] = useState<string | null>(null);
+  const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
+  const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
@@ -154,6 +170,7 @@ export default function HomePage() {
       setSchedule([]);
       setTodayTasks([]);
       setFarmFeedback(null);
+      setActionNotes({});
       setMessage("로그아웃되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
@@ -278,15 +295,49 @@ export default function HomePage() {
     }
   }
 
+  async function handleTaskResult(taskId: string, actionType: TaskResultAction) {
+    if (!farm || !cropCycle) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setRecordingTaskId(taskId);
+    try {
+      await apiRequest(`/api/tasks/${taskId}/action-logs`, {
+        method: "POST",
+        body: JSON.stringify({
+          actionType,
+          note: actionNotes[taskId] ?? "",
+        }),
+      });
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id)]);
+      setActionNotes((notes) => {
+        const nextNotes = { ...notes };
+        delete nextNotes[taskId];
+        return nextNotes;
+      });
+      setMessage(
+        actionType === "completed"
+          ? "완료 결과를 기록했습니다. 작업이 Today에서 제외되었습니다."
+          : "확인하지 못함 결과를 기록했습니다. 작업은 재확인을 위해 Today에 남아 있습니다.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "작업 결과 기록에 실패했습니다.");
+    } finally {
+      setRecordingTaskId(null);
+      setIsSubmitting(false);
+    }
+  }
+
   const transplantDate = seoulDateInputValue();
 
   return (
     <main className="page-shell">
       <header className="hero stack">
         <p className="eyebrow">dreAmIng Smart Farm · Core v0.1</p>
-        <h1>첫 Vertical Slice</h1>
+        <h1>Core v0.1 Work Cycle</h1>
         <p>
-          Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정과 Today 조회
+          Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정과 Today → 결과 기록
         </p>
         <p className="draft-notice">
           현재 Template은 개발 Fixture이며 검증 상태가 <strong>draft</strong>입니다. 실제 농업 처방이 아닙니다.
@@ -423,7 +474,9 @@ export default function HomePage() {
                     <strong>{task.title}</strong>
                     <span>{displayDate(task.scheduledFor)}</span>
                     <small>{task.reason}</small>
-                    <small>우선순위 {task.priority} · 검증 상태 {task.verificationStatus}</small>
+                    <small>
+                      상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
+                    </small>
                   </li>
                 ))}
               </ol>
@@ -444,6 +497,37 @@ export default function HomePage() {
                     </span>
                     <small>{task.reason}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
+                    <div className="result-entry">
+                      <label>
+                        기록 메모 (선택 사항)
+                        <input
+                          disabled={isSubmitting}
+                          maxLength={1000}
+                          onChange={(event) =>
+                            setActionNotes((notes) => ({ ...notes, [task.id]: event.target.value }))
+                          }
+                          placeholder="관찰한 사실이나 작업 결과를 짧게 남기세요"
+                          value={actionNotes[task.id] ?? ""}
+                        />
+                      </label>
+                      <div className="action-buttons">
+                        <button
+                          disabled={isSubmitting}
+                          onClick={() => handleTaskResult(task.id, "completed")}
+                          type="button"
+                        >
+                          {recordingTaskId === task.id ? "기록 중..." : "완료 기록"}
+                        </button>
+                        <button
+                          className="secondary"
+                          disabled={isSubmitting}
+                          onClick={() => handleTaskResult(task.id, "not_checked")}
+                          type="button"
+                        >
+                          확인하지 못함
+                        </button>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ol>
