@@ -1,5 +1,11 @@
 # PRODUCT.md
 
+> **Status: SUPERSEDED**
+>
+> 이 문서는 초기 설향 중심 제품 정의 기록입니다. 현재 제품·개발 실행 기준으로 사용하지 않습니다.
+>
+> 현재 기준: [PRODUCT_PLAN.md](PRODUCT_PLAN.md), [PRD_CORE_V0.1.md](PRD_CORE_V0.1.md), [AGENTS.md](../AGENTS.md)
+
 ## 1. 제품 상태
 
 - 제품명: `dreAmIng Smart Farm` (임시명)

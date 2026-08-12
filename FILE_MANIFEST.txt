@@ -1,8 +1,3 @@
-.github/CODEOWNERS
-.github/ISSUE_TEMPLATE/bug.yml
-.github/ISSUE_TEMPLATE/feature.yml
-.github/pull_request_template.md
-.github/workflows/README.md
 AGENTS.md
 README.md
 docs/AI_SAFETY.md
@@ -13,6 +8,8 @@ docs/DATA_SOURCE_REVIEW.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/DOMAIN_MODEL.md
 docs/PRODUCT.md
+docs/PRODUCT_PLAN.md
+docs/PRD_CORE_V0.1.md
 docs/TEAM_TBD.md
 docs/adr/ADR-001-initial-architecture.md
 docs/agreements/SMART_AGRICULTURE_DEVELOPMENT_START_AGREEMENT.md

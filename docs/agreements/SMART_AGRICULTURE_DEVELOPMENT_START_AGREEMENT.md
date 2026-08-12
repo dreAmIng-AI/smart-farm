@@ -1,5 +1,11 @@
 # dreAmIng 스마트농업 개발 착수 의사결정서 — 합의본
 
+> **Status: SUPERSEDED**
+>
+> 이 문서는 초기 프로젝트 운영 및 의사결정 기록입니다. 설향을 제품 범위로 두고 외부 기능을 순차 계획한 내용은 현재 제품·개발 실행 기준으로 사용하지 않습니다.
+>
+> 현재 기준: [PRODUCT_PLAN.md](../PRODUCT_PLAN.md), [PRD_CORE_V0.1.md](../PRD_CORE_V0.1.md), [AGENTS.md](../../AGENTS.md)
+
 - 상태: `DECIDED WITH TBD IDENTITIES`
 - 목적: 첫 개발 범위와 기술·데이터·AI 기준을 고정한다.
 

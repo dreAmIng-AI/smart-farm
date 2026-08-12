@@ -1,10 +1,28 @@
-# DOMAIN_MODEL.md
+# Domain Model
+
+**Status: CURRENT IMPLEMENTATION CONTRACT**
 
 ## 1. 목적
 
-농업 현장의 개념을 데이터베이스 테이블보다 먼저 정의합니다.
+이 문서는 농업 현장의 개념과 관계를 DB 테이블보다 먼저 정의합니다. 새 제품 방향은 기존 핵심 도메인을 최대한 보존하며, 문서상 개념 추가가 자동으로 새 Entity나 Table 추가를 뜻하지는 않습니다.
 
-## 2. 핵심 객체
+## 2. 상위 개념
+
+```text
+dreAmIng Smart Farm Platform
+├── Core Platform: 작물 독립 농작업 실행관리
+├── Crop Packs: 작물·품종별 농업지식 데이터
+└── Labs: Core와 분리된 검증 실험
+```
+
+Core Platform의 Work Cycle은 다음과 같습니다.
+
+```text
+Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
+     → ActionLog → IssueRecord → Follow-up FarmTask → History
+```
+
+## 3. 핵심 객체
 
 ### User
 
@@ -16,111 +34,107 @@
 
 ### FarmMembership
 
-사용자와 농장의 관계 및 권한을 정의합니다.
+User와 Farm의 관계 및 접근 권한을 정의합니다.
 
 ### CropCycle
 
-한 농장에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다.
+하나의 Farm에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다. 작기 전체 작업계획의 시간적 범위가 됩니다.
 
 ### TaskTemplate
 
-농업 전문가가 검토한 생육단계별 기본 작업 기준입니다.
+Crop Pack이 제공하는 기준 작업입니다. 작물, 품종, 생육단계, 작업 시기, 작업 이유, 근거, 검증 상태를 표현할 수 있어야 합니다.
 
 ### FarmTask
 
-특정 농장·작기에 대해 실제 수행해야 하는 작업입니다. 초기 Mission Card의 데이터 원본입니다.
+특정 Farm과 CropCycle에서 실제로 예정·수행하는 작업입니다. Today와 일정의 데이터 원본이며, 초기 Mission Card는 FarmTask의 UI 표현일 뿐 별도 핵심 객체가 아닙니다.
 
 ### ActionLog
 
-사용자가 FarmTask를 확인하거나 실행한 결과입니다.
+사용자가 FarmTask를 확인하거나 실행한 결과의 이력입니다.
 
 ### IssueRecord
 
-작업 수행 중 발견한 문제 또는 이상 상황입니다.
+FarmTask 수행 중 사용자가 관찰한 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다.
 
 ### Attachment
 
-ActionLog 또는 IssueRecord에 연결된 사진 등 파일입니다.
+ActionLog 또는 IssueRecord에 연결하는 사진 등 파일입니다.
 
-## 3. 관계
+## 4. Crop Pack과 Growth Stage
+
+Crop Pack은 별도 DB Entity가 아니라, 기존 `TaskTemplate` 중심 구조로 우선 표현하는 제품 개념입니다.
+
+| Information | Meaning |
+|---|---|
+| Crop / Variety | 적용 작물과 품종 |
+| Growth Stage | 작업을 적용하는 생육 단계 |
+| Task Template | 기준 작업 |
+| Timing | 예정 시기 또는 조건 |
+| Reason | 작업 이유 |
+| Evidence | 공식자료·논문·검토 근거 |
+| Verification Status | 데이터 검증 수준 |
+
+Growth Stage 역시 Crop Pack의 의미 단위입니다. 현 단계에서 새 공통 테이블이나 설향 전용 enum을 만들지 않습니다.
+
+## 5. Farm Plan
+
+Farm Plan은 사용자가 이해하는 **작기 전체 작업계획**이라는 논리적 제품 개념입니다. 현재는 아래 관계로 표현할 수 있는지 먼저 확인합니다.
 
 ```text
-User N ─ N Farm           through FarmMembership
+CropCycle + TaskTemplate → Scheduled FarmTask[]
+```
+
+이 구조가 충분한 동안 `farm_plans` 테이블이나 새 Domain Entity를 추가하지 않습니다. 새 Entity가 필수라고 판단되면 코드 전에 이유, 대안, 영향, Core 개발 Blocking 여부를 보고합니다.
+
+## 6. 관계
+
+```text
+User N ─ N Farm                     through FarmMembership
 Farm 1 ─ N CropCycle
-CropCycle 1 ─ N FarmTask
-TaskTemplate 1 ─ N FarmTask
+CropCycle 1 ─ N FarmTask             scheduled plan and actual work
+TaskTemplate 1 ─ N FarmTask          when created from a template
 FarmTask 1 ─ N ActionLog
 FarmTask 1 ─ N IssueRecord
+IssueRecord 0..1 ─ N Follow-up FarmTask
 ActionLog 1 ─ N Attachment
 IssueRecord 1 ─ N Attachment
-IssueRecord 0..1 ─ N Follow-up FarmTask
 ```
 
-## 4. FarmTask 상태
+## 7. 상태와 업무 규칙
+
+### FarmTask 상태
 
 ```text
-pending
-→ in_progress
-→ completed
-
-pending | in_progress
-→ issue_reported
-
-pending
-→ cancelled
+pending → in_progress → completed
+pending | in_progress → issue_reported
+pending → cancelled
 ```
 
-초기 상태 값:
+초기 상태 값은 `pending`, `in_progress`, `completed`, `issue_reported`, `cancelled`입니다.
 
-- `pending`
-- `in_progress`
-- `completed`
-- `issue_reported`
-- `cancelled`
+### IssueRecord 상태
 
-## 5. IssueRecord 상태
+`open`, `needs_review`, `resolved`, `closed_without_action`
 
-- `open`
-- `needs_review`
-- `resolved`
-- `closed_without_action`
+### 업무 규칙
 
-## 6. 업무 규칙
+1. 종료된 CropCycle에는 새 자동 작업을 생성하지 않습니다.
+2. TaskTemplate은 기준, FarmTask는 실제 작기 작업입니다.
+3. FarmTask의 결과는 ActionLog로 남기고 현재 상태는 FarmTask가 보유합니다.
+4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.
+5. Attachment는 ActionLog 또는 IssueRecord에 연결합니다.
+6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.
+7. 검증되지 않은 농업 데이터는 `draft`로 표시하고, 실제 처방이나 자동 제어로 사용하지 않습니다.
 
-1. 종료된 작기에는 새 자동 작업을 생성하지 않습니다.
-2. 완료 작업의 기록은 삭제보다 수정 이력을 남기는 방식을 우선합니다.
-3. 한 작업에 여러 ActionLog를 허용하되 최종 상태는 FarmTask가 보유합니다.
-4. 문제 기록은 농업적 진단 확정이 아니라 사용자의 관찰 사실을 저장합니다.
-5. 후속 FarmTask는 원본 IssueRecord를 참조합니다.
-6. 초기 Mission Card는 FarmTask의 UI 표현입니다.
-7. 외부정보가 없어도 검토된 TaskTemplate으로 핵심 흐름이 작동해야 합니다.
+## 8. 검증 상태
 
-## 7. FarmTask 필수 의미
+| Status | Meaning |
+|---|---|
+| `draft` | 개발·연구·Mock·Fixture |
+| `evidence_checked` | 공식자료 또는 논문 근거 확인 |
+| `expert_reviewed` | 농업 전문가 검토 |
+| `field_validated` | 현장 검증 |
 
-- 무엇을 해야 하는가
-- 왜 해야 하는가
-- 언제 해야 하는가
-- 우선순위는 무엇인가
-- 근거 유형은 무엇인가
-- 어떤 결과를 기록해야 하는가
-- 전문가 확인이 필요한가
+## 9. 향후 Labs와 Integrations
 
-## 8. 외부정보 확장 객체
-
-첫 수직 기능 이후 추가합니다.
-
-### DataSource
-
-공식 데이터 출처와 라이선스 조건입니다.
-
-### ExternalRawData
-
-외부 응답 원본 또는 원본 참조입니다.
-
-### NormalizedContent
-
-서비스 내부 표준 형식으로 변환된 공식정보입니다.
-
-### ApiCallLog
-
-호출 성공·실패·캐시·fallback 기록입니다.
+Weather, Disease, Analytics, AI, Sensor, Market 및 추가 Crop Pack 실험은 Lab에서 독립적으로 검증합니다. DataSource, ExternalRawData, NormalizedContent, ApiCallLog 같은 외부정보 객체는 실제 Integration이 Core에 필요한 것으로 승인될 때만 도입합니다.

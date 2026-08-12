@@ -1,5 +1,9 @@
 # AI_SAFETY.md
 
+> **Status: REFERENCE**
+>
+> 이 문서는 향후 AI Lab의 안전 검토 참고자료입니다. AI는 Core Platform v0.1의 필수 범위가 아니며, 현재 실행 기준은 [PRODUCT_PLAN.md](PRODUCT_PLAN.md)와 [PRD_CORE_V0.1.md](PRD_CORE_V0.1.md)입니다.
+
 ## 1. 적용 시점
 
 AI는 첫 수직 기능에 포함하지 않습니다. 규칙 기반 작업 생성과 ActionLog 흐름이 안정된 이후 적용합니다.

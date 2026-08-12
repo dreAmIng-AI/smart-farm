@@ -1,5 +1,9 @@
 # 초기 2주 Task
 
+> **Status: REFERENCE**
+>
+> 이 문서는 초기 실행 초안입니다. 새로운 Task는 [PRODUCT_PLAN.md](../docs/PRODUCT_PLAN.md), [PRD_CORE_V0.1.md](../docs/PRD_CORE_V0.1.md), [AGENTS.md](../AGENTS.md)를 기준으로 작성하며, Core와 Lab의 범위를 혼합하지 않습니다.
+
 ## 공통 선행조건
 
 - 기술 통합 주·백업 책임자 지정

@@ -1,90 +1,77 @@
-# dreAmIng Smart Farm
+# dreAmIng Smart Farm Platform
 
-설향 딸기 시설재배 농가를 위한 **농작업 실행관리 서비스**입니다.
+dreAmIng Smart Farm은 농업정보 포털이 아니라, 농업인이 **작기 전체를 계획하고 오늘의 작업을 실행·기록하며 문제를 다음 행동과 이력으로 연결**하도록 돕는 농작업 실행관리 플랫폼입니다.
 
-농업인이 농장과 작기 정보를 등록하면 현재 생육단계와 농업 전문가가 검토한 작업 기준을 바탕으로 오늘 해야 할 작업을 제시하고, 완료·문제·사진·메모를 기록해 후속 작업과 이력으로 연결합니다.
+## 지금 무엇을 개발하나요?
 
-## 현재 개발 단계
-
-- 상태: `Stage 0 — 개발 계약 및 저장소 초기화`
-- 초기 사용자: 설향 딸기 시설재배 농업인
-- 초기 화면: 모바일 우선
-- 초기 판단 방식: 규칙 기반
-- 첫 AI 기능: 작업 기록 요약, 누락 정보 질문, 확인 작업 제안
-
-## 제품 핵심 흐름
+현재 개발 범위는 **Core Platform v0.1**입니다. 코드는 아직 시작하지 않았으며, 이 저장소의 문서가 이후 구현의 기준입니다.
 
 ```text
-농장 등록
-→ 작기 등록
-→ 오늘의 작업 생성
-→ 작업 확인
-→ 완료 또는 문제 기록
-→ 사진·메모 저장
-→ 작업 이력 조회
-→ 문제 발생 시 후속 작업 생성
+Farm → CropCycle → 작업계획 → Today → FarmTask 실행
+     → ActionLog → IssueRecord → Follow-up FarmTask → History
 ```
 
-## 첫 번째 수직 기능
+## 플랫폼 구조
 
-첫 수직 기능은 다음 조건을 모두 충족해야 완료로 인정합니다.
+| 영역 | 역할 | 현재 위치 |
+|---|---|---|
+| Core Platform | 작물과 무관한 농작업 실행관리 기반 | Core v0.1을 개발 준비 중 |
+| Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop |
+| Labs | 날씨, 병해충, 분석, AI, 센서, 시장 등의 독립 실험 | Core v0.1의 필수 범위 아님 |
 
-- 농장과 작기 정보를 저장할 수 있다.
-- 설향 딸기 생육단계에 맞는 오늘의 작업이 생성된다.
-- 작업 완료 또는 문제 발생 결과가 저장된다.
-- 사진 또는 짧은 메모를 남길 수 있다.
-- 작업 이력에서 결과를 다시 확인할 수 있다.
-- 문제 발생 시 후속 확인 작업을 생성할 수 있다.
-- lint, typecheck, test, build, CI를 통과한다.
-- 다른 팀원이 문서만 보고 로컬 실행을 재현할 수 있다.
+설향은 제품 범위가 아니라 **Core Platform v0.1을 현실적인 농업 사례로 검증하는 첫 Reference Crop**입니다. Core 코드와 DB에 `strawberry` 또는 `seolhyang` 전용 분기를 만들지 않습니다.
 
-## 확정 기술 기준
+## 무엇을 먼저 읽어야 하나요?
 
-- Web: Next.js + TypeScript
-- Database/Auth/Storage: Supabase
-- Deployment: Vercel
-- Repository: Monorepo
-- Time: UTC 저장, Asia/Seoul 표시
-- DB naming: snake_case
-- TypeScript/API JSON: camelCase
-- Merge: Squash and merge
+1. [제품 방향과 범위](docs/PRODUCT_PLAN.md)
+2. [Core Platform v0.1 PRD](docs/PRD_CORE_V0.1.md)
+3. [개발·협업 규칙](AGENTS.md)
+4. 구현 계약: [도메인](docs/DOMAIN_MODEL.md), [아키텍처](docs/ARCHITECTURE.md), [데이터](docs/DATA_DICTIONARY.md), [API](docs/API_CONTRACT.md)
+5. 작업을 시작할 때: [Task 템플릿](project/tasks/TASK_TEMPLATE.md)
 
-## 문서 안내
+위 다섯 단계가 현재 실행 기준의 Single Source of Truth입니다. 과거 계획과 합의는 삭제하지 않고 상태를 표시해 참고 자료로 보존합니다.
 
-### 합의 문서
+## Core v0.1에서 만드는 것
 
-- [바이브 코딩 협업 개발 운영안](docs/agreements/VIBE_CODING_COLLABORATION_AGREEMENT.md)
-- [스마트농업 개발 착수 의사결정서](docs/agreements/SMART_AGRICULTURE_DEVELOPMENT_START_AGREEMENT.md)
+- Farm과 CropCycle 생성
+- Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
+- 전체 일정과 Today의 오늘·지연 작업 확인
+- 완료·문제 있음·확인하지 못함 결과를 ActionLog로 기록
+- IssueRecord와 Follow-up FarmTask 연결
+- 작업·문제 이력 조회
 
-### 개발 계약
+날씨, 병해충, 센서, AI/LLM, 자동 제어, 시장 API, 복잡한 분석은 이 버전의 필수 기능이 아닙니다.
 
-- [제품 정의](docs/PRODUCT.md)
-- [도메인 모델](docs/DOMAIN_MODEL.md)
-- [아키텍처](docs/ARCHITECTURE.md)
-- [데이터 사전](docs/DATA_DICTIONARY.md)
-- [API 계약](docs/API_CONTRACT.md)
-- [AI 안전 기준](docs/AI_SAFETY.md)
-- [외부 데이터 검토 기준](docs/DATA_SOURCE_REVIEW.md)
-- [개발 로드맵](docs/DEVELOPMENT_ROADMAP.md)
-- [미정 사항](docs/TEAM_TBD.md)
+## 팀원은 어디에 기여할 수 있나요?
 
-### 협업 운영
+- **Core Owner**: Core Platform의 계약과 지속적인 개발을 책임집니다.
+- **Contributor**: Crop Pack, Lab 또는 승인된 작은 기능을 독립적으로 작업합니다.
+- **Reviewer**: 농업·데이터·기술 영역을 검토합니다.
 
-- [바이브코딩 활용 개발 규칙](AGENTS.md)
-- [Task 템플릿](project/tasks/TASK_TEMPLATE.md)
-- [초기 2주 Task](project/INITIAL_TASKS.md)
-- [PR 템플릿](.github/pull_request_template.md)
+Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈추지 않습니다. 모든 변경은 `1 Issue = 1 Branch = 1 PR` 원칙을 따릅니다.
 
-## 개발 원칙
+## 이전 기준과 달라진 점
 
-1. 제품 계약을 먼저 수정하고 코드를 수정합니다.
-2. 역할별 장기 브랜치가 아니라 작은 기능 단위로 작업합니다.
-3. 한 Issue는 한 Branch와 한 PR로 끝냅니다.
-4. 외부 API를 프런트엔드에서 직접 호출하지 않습니다.
-5. 공식정보, 농장 기록, 서비스 분석 결과를 구분합니다.
-6. 근거 없는 농작업이나 AI 판단을 생성하지 않습니다.
-7. 첫 수직 기능이 완료되기 전에는 외부 데이터, 센서, 가격, 범용 AI 기능을 확장하지 않습니다.
+| 이전 | 현재 |
+|---|---|
+| 설향 중심 서비스 | 작물 독립 Core Platform |
+| 설향 = 제품 범위 | 설향 = Reference Crop |
+| 오늘의 작업 중심 | 작기 계획 → 오늘 → 실행 → 기록 → 문제 → 후속 → 이력 |
+| 기능 순차 추가 | Core Track + Parallel Labs |
+| 팀 전체 공동 진행 의존 | Core Owner + Contributor + Reviewer / Non-blocking |
 
-## 현재 미정
+## 문서 상태
 
-담당자 이름, GitHub 사용자명, 첫 검증 농가·기관, 첫 수직 기능 목표일은 [TEAM_TBD.md](docs/TEAM_TBD.md)에서 관리합니다.
+- 현재 기준: [PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md), [PRD_CORE_V0.1.md](docs/PRD_CORE_V0.1.md), [AGENTS.md](AGENTS.md)
+- 구현 계약: [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md), [API_CONTRACT.md](docs/API_CONTRACT.md)
+- 미래 실험 참고: [AI_SAFETY.md](docs/AI_SAFETY.md), [DATA_SOURCE_REVIEW.md](docs/DATA_SOURCE_REVIEW.md)
+- 과거 방향: [PRODUCT.md](docs/PRODUCT.md), [개발 착수 합의](docs/agreements/SMART_AGRICULTURE_DEVELOPMENT_START_AGREEMENT.md)
+
+## 기술 기준
+
+- Next.js + TypeScript
+- Supabase PostgreSQL, Auth, Storage
+- Vercel, 기존 Monorepo 방향 유지
+- DB는 `snake_case`, TypeScript/API는 `camelCase`
+- DB 시간은 UTC, UI 표시는 Asia/Seoul
+- RLS 적용, Secret의 클라이언트 노출 금지

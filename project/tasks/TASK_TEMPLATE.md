@@ -10,7 +10,9 @@
 
 ## References
 
-- `docs/PRODUCT.md`
+- `docs/PRODUCT_PLAN.md`
+- `docs/PRD_CORE_V0.1.md`
+- `AGENTS.md`
 - `docs/DOMAIN_MODEL.md`
 - 관련 Issue/ADR/API 계약
 
@@ -54,6 +56,13 @@
 ## Security and Domain Safety
 
 권한, 개인정보, 농업 안전 조건
+
+추가로 다음을 명시합니다.
+
+- Core / Crop Pack / Lab 중 어느 영역에 속하는가
+- Crop-specific Core hardcoding이 없는가
+- Mock / Fixture / Draft 데이터의 검증 상태
+- Lab 결과가 Core의 선행 조건이 아닌가
 
 ## Handoff
 

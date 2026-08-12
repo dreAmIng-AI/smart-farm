@@ -1,79 +1,65 @@
-# DEVELOPMENT_ROADMAP.md
+# Development Roadmap
 
-## Stage 0. 개발 계약과 저장소 기반
+**Status: CURRENT EXECUTION ROADMAP**
 
-목표: 팀과 LLM이 동일한 기준으로 작업할 수 있게 합니다.
+이 로드맵은 외부 기능을 순차적으로 의무 구현하는 계획이 아닙니다. Core Track과 독립적인 Parallel Experiments를 구분합니다.
 
-산출물:
+## CORE TRACK
 
-- 제품·도메인·아키텍처·데이터·API 문서
-- AGENTS.md
-- Task·Issue·PR 템플릿
-- 초기 Monorepo 골격
-- CI 기본 설정
+### Core v0.1
 
-완료 기준:
+목표: 한 농업인이 Plan → Today → Execute → Record → Issue → Follow-up → History Work Cycle을 완료할 수 있게 합니다.
 
-- 팀 리더와 기술 통합 책임자가 문서 검토
-- 다른 팀원이 실행 방법을 이해할 수 있음
+- Farm, CropCycle
+- TaskTemplate에서 계획된 FarmTask 생성
+- 전체 일정과 Today
+- ActionLog, IssueRecord, Follow-up FarmTask
+- 작업·문제 이력
+- RLS, migration, Fixture, 테스트, Preview 배포
 
-## Stage 1. 첫 수직 기능
+완료 기준은 [PRD_CORE_V0.1.md](PRD_CORE_V0.1.md)의 Acceptance Criteria와 Definition of Done입니다.
 
-목표: 농장 등록부터 작업 이력까지 실제 연결합니다.
+### User Validation
 
-개발:
+목표: Prototype과 Reference Crop Fixture로 다음 가설을 검증합니다.
 
-- Auth·권한 기본
-- Farm·CropCycle
-- TaskTemplate
-- FarmTask 생성
-- 오늘 화면
-- ActionLog
-- IssueRecord
-- 사진·메모
-- 후속 작업
-- 이력
+- 작기 전체 계획이 필요한가?
+- Today의 작업이 현장에서 유용한가?
+- 결과·문제 기록의 입력 부담이 적절한가?
+- 후속 확인과 이력이 실제 의사결정에 도움이 되는가?
 
-완료 기준:
+### Core v0.2
 
-- E2E 흐름 작동
-- 필수 테스트·CI·Preview 배포
+사용자 검증에서 확인된 흐름·입력·이력의 문제를 우선 개선합니다. Lab의 결과는 승격 기준을 통과했을 때만 검토합니다.
 
-## Stage 2. 외부 날씨
+### Improvements
 
-목표: 지역 기반 날씨를 작업 근거로 사용합니다.
+안정성, 사용성, 데이터 품질, 운영상의 개선을 작은 Issue와 PR로 진행합니다.
 
-개발:
+## PARALLEL EXPERIMENTS
 
-- 데이터원 검토
-- WeatherAdapter
-- 캐시
-- 갱신일·출처 표시
-- 외부 실패 fallback
+다음은 독립 Lab입니다.
 
-## Stage 3. 공식 재배정보
+- Weather Lab
+- Disease Lab
+- Analytics Lab
+- AI Lab
+- Sensor Lab
+- Market Lab
+- Additional Crop Packs
 
-목표: 설향 생육단계와 공식 재배자료를 연결합니다.
+Lab은 데이터를 탐색·검증할 수 있으나 Core v0.1의 필수 의존성이나 완료 조건이 아닙니다.
 
-개발:
+## Lab → Core / Integration 승격 기준
 
-- FarmingGuideAdapter
-- 생육단계 매핑
-- 공식정보 표시
-- FarmTask 근거 연결
+Lab 결과는 다음을 확인하기 전 Core 범위가 되지 않습니다.
 
-## Stage 4. Mission Card 강화
+1. 사용자 가치와 사용 시나리오
+2. 데이터 안정성, 출처, 라이선스, 운영 가능성
+3. 농업 안전성과 Reviewer 검토
+4. 비용, 실패 처리, 유지보수 책임
+5. Core Work Cycle을 복잡하게 만들지 않는 명확한 계약
 
-목표: FarmTask UI에 이유·시간·근거·위험·결과 구조를 강화합니다.
+## 현재 하지 않는 것
 
-## Stage 5. 병해충 정보
-
-병명 확정이 아니라 발생환경 비교와 현장 확인 작업을 제공합니다.
-
-## Stage 6. 기록 요약 AI
-
-기록 요약, 누락 질문, 확인 작업 제안을 안전 기준과 함께 적용합니다.
-
-## Stage 7. 센서·가격·기타 확장
-
-현장 수요와 데이터 확보 가능성이 확인된 기능만 순차 적용합니다.
+Weather/Disease/Market API, Sensor, AI Chatbot, LLM 기반 농업 판단, 자동 제어, 복잡한 Analytics, Microservice 등은 Core v0.1 구현에 포함하지 않습니다.
