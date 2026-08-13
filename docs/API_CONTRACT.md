@@ -48,6 +48,7 @@
 | `POST /api/tasks/{taskId}/action-logs` | 결과 기록, 필요 시 IssueRecord 생성 |
 | `POST /api/action-logs/{actionLogId}/attachments` | 결과 기록에 사진 첨부 |
 | `POST /api/issues/{issueId}/attachments` | 문제 기록에 사진 첨부 |
+| `PATCH /api/issues/{issueId}` | IssueRecord 상태 변경 |
 | `POST /api/issues/{issueId}/follow-up-tasks` | IssueRecord 기반 후속 작업 생성 |
 | `GET /api/farms/{farmId}/history` | 작업·문제·후속 관계 이력 조회 |
 
@@ -147,6 +148,26 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 응답 FarmTask의 `sourceType`은 `issue_followup`, `parentIssueId`는 원본 IssueRecord ID입니다. 같은 IssueRecord와 예정일의 중복 생성은 `DUPLICATE_FOLLOW_UP_TASK`(409)로 거부합니다.
 
+### IssueRecord 상태 변경
+
+`PATCH /api/issues/{issueId}`는 접근 가능한 IssueRecord의 상태만 변경합니다. `status`에는 `open`, `needs_review`, `resolved`, `closed_without_action` 중 하나를 전달합니다. `resolved`는 서버 UTC 시각을 `resolvedAt`으로 기록하고, 다른 상태는 `resolvedAt`을 `null`로 비웁니다. 관찰 내용·심각도·원본 FarmTask 관계는 변경하지 않습니다. `resolved`와 `closed_without_action` 상태의 IssueRecord에서는 Follow-up FarmTask를 만들 수 없습니다.
+
+```json
+{
+  "status": "resolved"
+}
+```
+
+```json
+{
+  "issue": {
+    "id": "uuid",
+    "status": "resolved",
+    "resolvedAt": "2026-08-13T01:00:00.000Z"
+  }
+}
+```
+
 ### History 조회
 
 `GET /api/farms/{farmId}/history`는 접근 가능한 Farm의 ActionLog, IssueRecord, Follow-up FarmTask를 발생 시각 내림차순으로 반환합니다. Issue 항목은 연결된 ActionLog ID를, Follow-up 항목은 원본 IssueRecord ID를 포함해 관계를 추적할 수 있습니다. ActionLog와 Issue 항목은 `attachments` 배열을 포함하며, `signedUrl`은 비공개 Storage object를 한시적으로 읽는 URL입니다. Storage object가 없거나 읽을 수 없어도 나머지 이력 조회는 성공하고 해당 `signedUrl`은 `null`입니다.
@@ -184,7 +205,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
-- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`
+- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`

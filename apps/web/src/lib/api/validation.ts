@@ -20,6 +20,12 @@ export type CropCycleGrowthStageInput = {
 
 export type IssueSeverity = "low" | "medium" | "high" | "unknown";
 
+export type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
+
+export type IssueStatusInput = {
+  status: IssueStatus;
+};
+
 export type IssueInput = {
   observedSymptom: string;
   severity: IssueSeverity;
@@ -152,6 +158,27 @@ export function parseCropCycleGrowthStageInput(
   }
 
   return { ok: true, data: { growthStage } };
+}
+
+export function parseIssueStatusInput(value: unknown): Parsed<IssueStatusInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const status = value.status;
+  if (
+    status !== "open" &&
+    status !== "needs_review" &&
+    status !== "resolved" &&
+    status !== "closed_without_action"
+  ) {
+    return {
+      ok: false,
+      error: "status must be open, needs_review, resolved, or closed_without_action.",
+    };
+  }
+
+  return { ok: true, data: { status } };
 }
 
 export function parseActionLogInput(value: unknown): Parsed<ActionLogInput> {

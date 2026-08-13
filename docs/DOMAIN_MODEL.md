@@ -116,6 +116,8 @@ pending → cancelled
 
 `open`, `needs_review`, `resolved`, `closed_without_action`
 
+권한 있는 Farm 구성원은 상태를 변경할 수 있습니다. `resolved`로 변경한 시점만 `resolved_at`에 기록하며, `open`, `needs_review`, `closed_without_action`으로 변경하면 `resolved_at`은 비워집니다. 이 상태 변경은 관찰 내용·심각도 같은 원본 문제 기록을 수정하지 않습니다.
+
 ### 업무 규칙
 
 1. 종료된 CropCycle에는 새 자동 작업을 생성하지 않습니다.

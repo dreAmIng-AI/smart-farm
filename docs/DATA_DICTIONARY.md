@@ -130,7 +130,7 @@ TaskTemplate → FarmTask
 | expert_review_required | boolean | Y | 전문가 확인 필요 여부 |
 | created_at / resolved_at | timestamptz | Y/N | 생성·해결 시각 |
 
-`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 문제 기록 RPC를 구현합니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다.
+`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 문제 기록 RPC를 구현합니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다. `202608130001_core_v01_issue_status.sql`은 FarmMembership 기반 UPDATE RLS와 `status`, `resolved_at` 두 컬럼의 UPDATE 권한만 추가합니다. `resolved`에서만 `resolved_at`을 기록하며, 이 migration은 관찰 내용과 심각도를 변경할 권한을 부여하지 않습니다.
 
 ### attachments
 

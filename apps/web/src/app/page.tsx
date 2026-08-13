@@ -34,6 +34,7 @@ type FarmTask = {
 };
 
 type TaskResultAction = "completed" | "not_checked" | "issue_reported";
+type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
 
 type IssueDraft = {
   observedSymptom: string;
@@ -43,7 +44,7 @@ type IssueDraft = {
 
 type Issue = IssueDraft & {
   id: string;
-  status: "open" | "needs_review" | "resolved" | "closed_without_action";
+  status: IssueStatus;
   taskTitle: string;
 };
 
@@ -85,7 +86,7 @@ type HistoryItem =
       taskTitle: string;
       observedSymptom: string;
       severity: string;
-      status: "open" | "needs_review" | "resolved" | "closed_without_action";
+      status: IssueStatus;
       expertReviewRequired: boolean;
       attachments: HistoryAttachment[];
     }
@@ -153,6 +154,17 @@ function issueSeverityLabel(severity: string) {
   return labels[severity] ?? severity;
 }
 
+function issueStatusLabel(status: IssueStatus) {
+  const labels: Record<IssueStatus, string> = {
+    open: "열림",
+    needs_review: "검토 필요",
+    resolved: "해결됨",
+    closed_without_action: "조치 없이 종료",
+  };
+
+  return labels[status];
+}
+
 async function apiRequest<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -209,6 +221,8 @@ export default function HomePage() {
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [issueStatusDrafts, setIssueStatusDrafts] = useState<Record<string, IssueStatus>>({});
+  const [updatingIssueId, setUpdatingIssueId] = useState<string | null>(null);
   const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null);
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
@@ -286,6 +300,7 @@ export default function HomePage() {
       setIssueDrafts({});
       setHistory([]);
       setSelectedIssue(null);
+      setIssueStatusDrafts({});
       setAttachmentTarget(null);
       setAttachmentFile(null);
       setMessage("로그아웃되었습니다.");
@@ -319,6 +334,7 @@ export default function HomePage() {
       setTodayTasks([]);
       setHistory([]);
       setSelectedIssue(null);
+      setIssueStatusDrafts({});
       setAttachmentTarget(null);
       setAttachmentFile(null);
       setMessage(`Farm “${created.name}”을 만들었습니다.`);
@@ -356,6 +372,7 @@ export default function HomePage() {
       setTodayTasks([]);
       setHistory([]);
       setSelectedIssue(null);
+      setIssueStatusDrafts({});
       setAttachmentTarget(null);
       setAttachmentFile(null);
       setMessage("CropCycle을 만들었습니다. Draft Template을 적용해 계획을 생성하세요.");
@@ -469,6 +486,48 @@ export default function HomePage() {
 
   function selectIssueForFollowUp(issue: Issue) {
     setSelectedIssue(issue);
+  }
+
+  function issueStatusDraftFor(issueId: string, status: IssueStatus) {
+    return issueStatusDrafts[issueId] ?? status;
+  }
+
+  async function handleIssueStatusUpdate(issue: { id: string; status: IssueStatus; taskTitle: string }) {
+    if (!farm) {
+      return;
+    }
+
+    const nextStatus = issueStatusDraftFor(issue.id, issue.status);
+    setUpdatingIssueId(issue.id);
+    try {
+      const updated = await apiRequest<{ issue: { id: string; status: IssueStatus; resolvedAt: string | null } }>(
+        `/api/issues/${issue.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status: nextStatus }),
+        },
+      );
+      await loadHistory(farm.id);
+      setIssueStatusDrafts((drafts) => {
+        const nextDrafts = { ...drafts };
+        delete nextDrafts[updated.issue.id];
+        return nextDrafts;
+      });
+      setSelectedIssue((current) => {
+        if (current?.id !== updated.issue.id) {
+          return current;
+        }
+
+        return updated.issue.status === "open" || updated.issue.status === "needs_review"
+          ? { ...current, status: updated.issue.status }
+          : null;
+      });
+      setMessage(`${issue.taskTitle}의 문제 상태를 ${issueStatusLabel(updated.issue.status)}로 변경했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "문제 상태 변경에 실패했습니다.");
+    } finally {
+      setUpdatingIssueId(null);
+    }
   }
 
   async function handleTaskResult(task: FarmTask, actionType: TaskResultAction) {
@@ -971,10 +1030,50 @@ export default function HomePage() {
                       <>
                         <strong>{item.taskTitle} · 문제 기록</strong>
                         <small>
-                          관찰: {item.observedSymptom} · 심각도 {issueSeverityLabel(item.severity)} · 상태 {item.status}
+                          관찰: {item.observedSymptom} · 심각도 {issueSeverityLabel(item.severity)} · 상태 {issueStatusLabel(item.status)}
                         </small>
                         {item.expertReviewRequired ? <small>전문가 확인 필요</small> : null}
                         {item.attachments.length > 0 ? <AttachmentList attachments={item.attachments} /> : null}
+                        <div className="issue-status-entry">
+                          <label>
+                            문제 상태
+                            <select
+                              aria-label={`${item.taskTitle} 문제 상태`}
+                              disabled={updatingIssueId === item.issueId}
+                              onChange={(event) =>
+                                setIssueStatusDrafts((drafts) => ({
+                                  ...drafts,
+                                  [item.issueId]: event.target.value as IssueStatus,
+                                }))
+                              }
+                              value={issueStatusDraftFor(item.issueId, item.status)}
+                            >
+                              <option value="open">열림</option>
+                              <option value="needs_review">검토 필요</option>
+                              <option value="resolved">해결됨</option>
+                              <option value="closed_without_action">조치 없이 종료</option>
+                            </select>
+                          </label>
+                          <button
+                            className="secondary compact"
+                            disabled={
+                              updatingIssueId === item.issueId || issueStatusDraftFor(item.issueId, item.status) === item.status
+                            }
+                            onClick={() =>
+                              handleIssueStatusUpdate({
+                                id: item.issueId,
+                                status: item.status,
+                                taskTitle: item.taskTitle,
+                              })
+                            }
+                            type="button"
+                          >
+                            {updatingIssueId === item.issueId ? "저장 중..." : "상태 저장"}
+                          </button>
+                          <small className="field-hint">
+                            해결됨으로 바꾸면 해결 시각을 기록합니다. 다른 상태로 되돌리면 해결 시각은 비워집니다.
+                          </small>
+                        </div>
                         {item.status === "open" || item.status === "needs_review" ? (
                           <button
                             className="secondary compact"
