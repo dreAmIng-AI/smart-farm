@@ -33,7 +33,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 
 ## Core v0.1에서 만드는 것
 
-- Farm과 CropCycle 생성
+- Farm 생성·기본정보 수정과 CropCycle 생성
 - CropCycle의 현재 생육 단계 생성·변경
 - Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
 - 전체 일정과 Today의 오늘·지연 작업 확인
