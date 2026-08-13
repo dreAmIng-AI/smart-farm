@@ -14,6 +14,10 @@ export type CropCycleInput = {
   growthStage: string | null;
 };
 
+export type CropCycleGrowthStageInput = {
+  growthStage: string | null;
+};
+
 export type IssueSeverity = "low" | "medium" | "high" | "unknown";
 
 export type IssueInput = {
@@ -125,6 +129,29 @@ export function parseCropCycleInput(value: unknown): Parsed<CropCycleInput> {
       growthStage: optionalText(value.growthStage),
     },
   };
+}
+
+export function parseCropCycleGrowthStageInput(
+  value: unknown,
+): Parsed<CropCycleGrowthStageInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  if (!("growthStage" in value)) {
+    return { ok: false, error: "growthStage is required." };
+  }
+
+  if (value.growthStage !== null && typeof value.growthStage !== "string") {
+    return { ok: false, error: "growthStage must be a string or null." };
+  }
+
+  const growthStage = optionalText(value.growthStage);
+  if (growthStage && growthStage.length > 100) {
+    return { ok: false, error: "growthStage must not exceed 100 characters." };
+  }
+
+  return { ok: true, data: { growthStage } };
 }
 
 export function parseActionLogInput(value: unknown): Parsed<ActionLogInput> {

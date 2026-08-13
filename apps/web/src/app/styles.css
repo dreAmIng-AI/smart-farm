@@ -171,7 +171,8 @@ p {
 
 .issue-entry,
 .issue-follow-up,
-.attachment-entry {
+.attachment-entry,
+.growth-stage-entry {
   background: #fff8e8;
   border: 1px solid #ead9a1;
   border-radius: 0.5rem;
@@ -183,6 +184,11 @@ p {
 .attachment-entry {
   background: #eef7f0;
   border-color: #b9d9c1;
+}
+
+.growth-stage-entry {
+  background: #f3f6fe;
+  border-color: #c5d3ee;
 }
 
 .issue-entry summary {

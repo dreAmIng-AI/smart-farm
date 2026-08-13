@@ -40,6 +40,7 @@
 | `POST /api/farms` | Farm 생성 |
 | `GET/PATCH /api/farms/{farmId}` | 접근 가능한 Farm 조회·수정 |
 | `POST /api/farms/{farmId}/crop-cycles` | CropCycle 생성 |
+| `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
 | `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
 | `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
@@ -64,6 +65,18 @@
 ```
 
 Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는 특정 값에 의존하지 않습니다.
+
+### 현재 생육 단계 변경
+
+`PATCH /api/crop-cycles/{cropCycleId}`는 접근 가능한 CropCycle의 현재 `growthStage`만 바꿉니다. Crop Pack의 용어를 자유 텍스트로 받으며, Core는 작물별 선택 목록이나 농업 규칙을 하드코딩하지 않습니다. 빈 문자열 또는 `null`은 현재 생육 단계를 비웁니다. 최대 길이는 100자입니다.
+
+```json
+{
+  "growthStage": "flowering"
+}
+```
+
+성공 시 생성 API와 같은 CropCycle 정보를 `200`으로 반환합니다. 기존 FarmTask, TaskTemplate 또는 작기 일정은 자동 생성·수정·재일정하지 않습니다.
 
 ### 작기 계획 생성
 
@@ -169,7 +182,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 - `UNAUTHORIZED`, `SUPABASE_NOT_CONFIGURED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
-- `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
+- `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
