@@ -10,6 +10,8 @@ type Farm = {
   id: string;
   name: string;
   regionCode: string;
+  cultivationEnvironment: "facility" | "open_field";
+  cultivationMethod: string | null;
 };
 
 type CropCycle = {
@@ -214,6 +216,7 @@ export default function HomePage() {
   const [issueDrafts, setIssueDrafts] = useState<Record<string, IssueDraft>>({});
   const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
+  const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
   const [isUpdatingGrowthStage, setIsUpdatingGrowthStage] = useState(false);
@@ -345,6 +348,33 @@ export default function HomePage() {
       setFarmFeedback(errorText);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleFarmUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!farm) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    setIsUpdatingFarm(true);
+    try {
+      const updated = await apiRequest<Farm>(`/api/farms/${farm.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: form.get("name"),
+          regionCode: form.get("regionCode"),
+          cultivationEnvironment: form.get("cultivationEnvironment"),
+          cultivationMethod: form.get("cultivationMethod"),
+        }),
+      });
+      setFarm(updated);
+      setMessage(`Farm “${updated.name}” 기본정보를 저장했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Farm 기본정보 저장에 실패했습니다.");
+    } finally {
+      setIsUpdatingFarm(false);
     }
   }
 
@@ -730,6 +760,36 @@ export default function HomePage() {
           <p className="inline-status" role="status">
             {farmFeedback}
           </p>
+        ) : null}
+        {farm ? (
+          <details className="farm-settings" open>
+            <summary>현재 Farm 기본정보 수정</summary>
+            <p className="field-hint">Farm 기본정보만 변경합니다. 기존 CropCycle, FarmTask, 결과와 이력은 바꾸지 않습니다.</p>
+            <form className="stack" key={`${farm.id}:${farm.name}:${farm.regionCode}:${farm.cultivationEnvironment}:${farm.cultivationMethod ?? ""}`} onSubmit={handleFarmUpdate}>
+              <label>
+                농장명
+                <input defaultValue={farm.name} name="name" required />
+              </label>
+              <label>
+                지역 코드
+                <input defaultValue={farm.regionCode} name="regionCode" required />
+              </label>
+              <label>
+                재배 환경
+                <select defaultValue={farm.cultivationEnvironment} name="cultivationEnvironment">
+                  <option value="facility">시설 재배</option>
+                  <option value="open_field">노지 재배</option>
+                </select>
+              </label>
+              <label>
+                재배 방식 (선택)
+                <input defaultValue={farm.cultivationMethod ?? ""} name="cultivationMethod" />
+              </label>
+              <button disabled={isUpdatingFarm} type="submit">
+                {isUpdatingFarm ? "Farm 저장 중..." : "Farm 기본정보 저장"}
+              </button>
+            </form>
+          </details>
         ) : null}
       </section> : null}
 

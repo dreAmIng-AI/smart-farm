@@ -30,7 +30,7 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### Farm
 
-사용자가 운영하거나 관리하는 농장 단위입니다.
+사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 이름, 지역 코드, 재배 환경, 재배 방식을 수정할 수 있으며, 이 변경은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다.
 
 ### FarmMembership
 

@@ -172,6 +172,7 @@ p {
 .issue-entry,
 .issue-follow-up,
 .issue-status-entry,
+.farm-settings,
 .attachment-entry,
 .growth-stage-entry {
   background: #fff8e8;
@@ -190,6 +191,21 @@ p {
 .growth-stage-entry {
   background: #f3f6fe;
   border-color: #c5d3ee;
+}
+
+.farm-settings {
+  background: #f3f6fe;
+  border-color: #c5d3ee;
+}
+
+.farm-settings summary {
+  color: #18332a;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.farm-settings[open] summary {
+  margin-bottom: 0.15rem;
 }
 
 .issue-status-entry {

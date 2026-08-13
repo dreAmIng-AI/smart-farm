@@ -54,6 +54,21 @@
 
 ## 3. 주요 입력 예시
 
+### Farm 조회·기본정보 수정
+
+`GET /api/farms/{farmId}`는 접근 가능한 Farm의 기본정보를 반환합니다. `PATCH /api/farms/{farmId}`는 `name`, `regionCode`, `cultivationEnvironment`, `cultivationMethod` 전체를 유효성 검증한 뒤 갱신합니다. 기존 `farm_memberships` 기반 RLS를 재사용하며, 하위 CropCycle·FarmTask·ActionLog·IssueRecord는 변경하지 않습니다.
+
+```json
+{
+  "name": "Demo Farm",
+  "regionCode": "KR-DEMO",
+  "cultivationEnvironment": "facility",
+  "cultivationMethod": "protected_cultivation"
+}
+```
+
+성공 시 `200`과 갱신된 camelCase Farm 객체를 반환합니다. 접근할 수 없는 Farm은 `FARM_NOT_FOUND`(404)로 응답합니다.
+
 ### CropCycle 생성
 
 ```json
@@ -202,7 +217,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 ## 5. 오류 코드
 
 - `UNAUTHORIZED`, `SUPABASE_NOT_CONFIGURED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
-- `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
+- `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`, `FARM_UPDATE_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`

@@ -49,7 +49,7 @@ Next.js Mobile UI
 
 Core Domain Logic은 다음 책임을 가집니다.
 
-- Farm과 CropCycle의 유효성 검사
+- Farm 기본정보와 CropCycle의 유효성 검사·권한 있는 갱신
 - CropCycle 현재 생육 단계의 유효성 검사와 권한 있는 갱신
 - TaskTemplate을 계획된 FarmTask로 적용
 - Today의 오늘·지연 작업 조회
