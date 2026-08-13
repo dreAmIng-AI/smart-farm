@@ -457,7 +457,7 @@ export default function HomePage() {
       );
       await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
       setSelectedIssue(null);
-      setMessage(`${created.farmTask.title} 재확인 작업을 만들었습니다.`);
+      setMessage(`${created.farmTask.title} 작업을 만들었습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "재확인 작업 생성에 실패했습니다.");
     } finally {
