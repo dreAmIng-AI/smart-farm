@@ -17,6 +17,7 @@ type CropCycle = {
   cropCode: string;
   cultivar: string | null;
   transplantDate: string;
+  growthStage: string | null;
 };
 
 type FarmTask = {
@@ -202,6 +203,8 @@ export default function HomePage() {
   const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
+  const [growthStageDraft, setGrowthStageDraft] = useState("");
+  const [isUpdatingGrowthStage, setIsUpdatingGrowthStage] = useState(false);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -275,6 +278,7 @@ export default function HomePage() {
       }
       setFarm(null);
       setCropCycle(null);
+      setGrowthStageDraft("");
       setSchedule([]);
       setTodayTasks([]);
       setFarmFeedback(null);
@@ -310,6 +314,7 @@ export default function HomePage() {
       });
       setFarm(created);
       setCropCycle(null);
+      setGrowthStageDraft("");
       setSchedule([]);
       setTodayTasks([]);
       setHistory([]);
@@ -346,6 +351,7 @@ export default function HomePage() {
         }),
       });
       setCropCycle(created);
+      setGrowthStageDraft(created.growthStage ?? "");
       setSchedule([]);
       setTodayTasks([]);
       setHistory([]);
@@ -357,6 +363,32 @@ export default function HomePage() {
       setMessage(error instanceof Error ? error.message : "CropCycle 생성에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGrowthStageUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!cropCycle) {
+      return;
+    }
+
+    setIsUpdatingGrowthStage(true);
+    try {
+      const updated = await apiRequest<CropCycle>(`/api/crop-cycles/${cropCycle.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ growthStage: growthStageDraft }),
+      });
+      setCropCycle(updated);
+      setGrowthStageDraft(updated.growthStage ?? "");
+      setMessage(
+        updated.growthStage
+          ? `현재 생육 단계를 “${updated.growthStage}”로 저장했습니다.`
+          : "현재 생육 단계 설정을 비웠습니다.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "생육 단계 저장에 실패했습니다.");
+    } finally {
+      setIsUpdatingGrowthStage(false);
     }
   }
 
@@ -677,8 +709,31 @@ export default function HomePage() {
         <section className="card stack" aria-labelledby="plan-heading">
           <h2 id="plan-heading">3. Plan · 일정 · Today · 이력</h2>
           <p className="muted">
-            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate}
+            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
           </p>
+          <section className="growth-stage-entry stack" aria-labelledby="growth-stage-heading">
+            <h3 id="growth-stage-heading">현재 생육 단계</h3>
+            <p className="field-hint">
+              Crop Pack의 단계 용어를 직접 입력합니다. 저장해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다.
+            </p>
+            <form className="stack" onSubmit={handleGrowthStageUpdate}>
+              <label>
+                생육 단계 (선택 사항)
+                <input
+                  disabled={isUpdatingGrowthStage}
+                  maxLength={100}
+                  onChange={(event) => setGrowthStageDraft(event.target.value)}
+                  placeholder="예: flowering"
+                  value={growthStageDraft}
+                />
+              </label>
+              <div className="button-row">
+                <button disabled={isUpdatingGrowthStage} type="submit">
+                  {isUpdatingGrowthStage ? "저장 중..." : "생육 단계 저장"}
+                </button>
+              </div>
+            </form>
+          </section>
           <div className="button-row">
             <button disabled={isSubmitting} onClick={handlePlanGeneration} type="button">
               Draft TaskTemplate 적용

@@ -61,6 +61,8 @@ TaskTemplate → FarmTask
 | status | text | Y | active, completed, cancelled |
 | ended_at | timestamptz | N | 종료 시각 |
 
+`growth_stage`는 현재 작기의 Crop Pack 단계 용어를 저장하는 선택 텍스트입니다. `PATCH /api/crop-cycles/{cropCycleId}`로 접근 가능한 사용자가 값을 변경하거나 null로 비울 수 있습니다. 이 Slice는 최초 migration의 기존 컬럼과 RLS update 정책을 재사용하므로 새 DB migration이 없습니다. 생육 단계 변경은 이미 생성된 FarmTask의 일정이나 템플릿을 자동으로 변경하지 않습니다.
+
 ### task_templates
 
 | Field | Type | Required | Meaning |

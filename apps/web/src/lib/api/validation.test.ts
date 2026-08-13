@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseAttachmentFile,
   parseActionLogInput,
+  parseCropCycleGrowthStageInput,
   parseCropCycleInput,
   parseFarmInput,
   parseFollowUpTaskInput,
@@ -58,6 +59,30 @@ describe("CropCycle input", () => {
     ).toMatchObject({
       ok: false,
       error: "transplantDate must be a valid YYYY-MM-DD date.",
+    });
+  });
+});
+
+describe("CropCycle growth stage input", () => {
+  it("accepts a generic Crop Pack stage and allows clearing it", () => {
+    expect(parseCropCycleGrowthStageInput({ growthStage: "flowering" })).toEqual({
+      ok: true,
+      data: { growthStage: "flowering" },
+    });
+    expect(parseCropCycleGrowthStageInput({ growthStage: "" })).toEqual({
+      ok: true,
+      data: { growthStage: null },
+    });
+  });
+
+  it("rejects a missing or oversized growth stage", () => {
+    expect(parseCropCycleGrowthStageInput({})).toMatchObject({
+      ok: false,
+      error: "growthStage is required.",
+    });
+    expect(parseCropCycleGrowthStageInput({ growthStage: "a".repeat(101) })).toMatchObject({
+      ok: false,
+      error: "growthStage must not exceed 100 characters.",
     });
   });
 });
