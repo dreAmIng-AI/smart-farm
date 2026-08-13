@@ -38,7 +38,7 @@ TaskTemplate → FarmTask
 | cultivation_method | text | N | 재배방식 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
 
-초기 foundation migration은 FarmMembership 기반 SELECT·UPDATE RLS와 `updated_at` trigger를 이미 제공합니다. `GET/PATCH /api/farms/{farmId}`는 이 기존 계약을 재사용하며, Farm 기본정보 수정에 필요한 새 DB migration은 없습니다. 수정 대상은 `name`, `region_code`, `cultivation_environment`, `cultivation_method`이며 하위 CropCycle과 FarmTask를 변경하지 않습니다.
+초기 foundation migration은 FarmMembership 기반 SELECT·UPDATE RLS와 `updated_at` trigger를 이미 제공합니다. `GET /api/farms`, `GET/PATCH /api/farms/{farmId}`와 `GET /api/farms/{farmId}/crop-cycles`는 이 기존 계약을 재사용하며, Farm 목록·작기 선택과 기본정보 수정에 필요한 새 DB migration은 없습니다. 수정 대상은 `name`, `region_code`, `cultivation_environment`, `cultivation_method`이며 하위 CropCycle과 FarmTask를 변경하지 않습니다.
 
 ### farm_memberships
 

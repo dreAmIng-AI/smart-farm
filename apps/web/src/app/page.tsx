@@ -16,10 +16,12 @@ type Farm = {
 
 type CropCycle = {
   id: string;
+  farmId: string;
   cropCode: string;
   cultivar: string | null;
   transplantDate: string;
   growthStage: string | null;
+  status: "active" | "completed" | "cancelled";
 };
 
 type FarmTask = {
@@ -145,6 +147,16 @@ function taskStatusLabel(status: string) {
   return labels[status] ?? status;
 }
 
+function cropCycleStatusLabel(status: CropCycle["status"]) {
+  const labels: Record<CropCycle["status"], string> = {
+    active: "진행 중",
+    completed: "완료",
+    cancelled: "취소",
+  };
+
+  return labels[status];
+}
+
 function issueSeverityLabel(severity: string) {
   const labels: Record<string, string> = {
     high: "높음",
@@ -215,8 +227,10 @@ export default function HomePage() {
   const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
   const [issueDrafts, setIssueDrafts] = useState<Record<string, IssueDraft>>({});
   const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
+  const [farms, setFarms] = useState<Farm[]>([]);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
+  const [cropCycles, setCropCycles] = useState<CropCycle[]>([]);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
   const [isUpdatingGrowthStage, setIsUpdatingGrowthStage] = useState(false);
@@ -231,6 +245,7 @@ export default function HomePage() {
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
+  const [isRestoringContext, setIsRestoringContext] = useState(false);
   const [message, setMessage] = useState(
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
   );
@@ -261,6 +276,33 @@ export default function HomePage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!userEmail) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadFarms() {
+      try {
+        const result = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
+        if (isMounted) {
+          setFarms(result.items);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setMessage(error instanceof Error ? error.message : "Farm 목록을 불러오지 못했습니다.");
+        }
+      }
+    }
+
+    void loadFarms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userEmail]);
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -293,7 +335,9 @@ export default function HomePage() {
       if (error) {
         throw error;
       }
+      setFarms([]);
       setFarm(null);
+      setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
       setSchedule([]);
@@ -331,6 +375,8 @@ export default function HomePage() {
         }),
       });
       setFarm(created);
+      setFarms((items) => [created, ...items.filter((item) => item.id !== created.id)]);
+      setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
       setSchedule([]);
@@ -370,6 +416,7 @@ export default function HomePage() {
         }),
       });
       setFarm(updated);
+      setFarms((items) => items.map((item) => (item.id === updated.id ? updated : item)));
       setMessage(`Farm “${updated.name}” 기본정보를 저장했습니다.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Farm 기본정보 저장에 실패했습니다.");
@@ -397,6 +444,7 @@ export default function HomePage() {
         }),
       });
       setCropCycle(created);
+      setCropCycles((items) => [created, ...items.filter((item) => item.id !== created.id)]);
       setGrowthStageDraft(created.growthStage ?? "");
       setSchedule([]);
       setTodayTasks([]);
@@ -426,6 +474,7 @@ export default function HomePage() {
         body: JSON.stringify({ growthStage: growthStageDraft }),
       });
       setCropCycle(updated);
+      setCropCycles((items) => items.map((item) => (item.id === updated.id ? updated : item)));
       setGrowthStageDraft(updated.growthStage ?? "");
       setMessage(
         updated.growthStage
@@ -460,6 +509,86 @@ export default function HomePage() {
       method: "GET",
     });
     setHistory(result.items);
+  }
+
+  async function loadCropCycles(farmId: string) {
+    const result = await apiRequest<{ items: CropCycle[] }>(`/api/farms/${farmId}/crop-cycles`, {
+      method: "GET",
+    });
+    setCropCycles(result.items);
+    return result.items;
+  }
+
+  function clearCropCycleContext() {
+    setCropCycle(null);
+    setGrowthStageDraft("");
+    setSchedule([]);
+    setActionNotes({});
+    setIssueDrafts({});
+    setRecordingTaskId(null);
+    setSelectedIssue(null);
+    setIssueStatusDrafts({});
+    setAttachmentTarget(null);
+    setAttachmentFile(null);
+  }
+
+  async function handleSavedFarmSelect(farmId: string) {
+    const selectedFarm = farms.find((item) => item.id === farmId);
+    if (!selectedFarm) {
+      setFarm(null);
+      setCropCycles([]);
+      clearCropCycleContext();
+      setTodayTasks([]);
+      setHistory([]);
+      return;
+    }
+
+    setIsRestoringContext(true);
+    setFarm(selectedFarm);
+    setFarmFeedback(null);
+    clearCropCycleContext();
+    setTodayTasks([]);
+    setHistory([]);
+    try {
+      const cropCycleItems = await loadCropCycles(selectedFarm.id);
+      await Promise.all([loadTodayTasks(selectedFarm.id), loadHistory(selectedFarm.id)]);
+      setMessage(
+        `${selectedFarm.name}을 열었습니다. ${cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."}`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "저장된 Farm 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsRestoringContext(false);
+    }
+  }
+
+  async function handleSavedCropCycleSelect(cropCycleId: string) {
+    const selectedCropCycle = cropCycles.find((item) => item.id === cropCycleId);
+    if (!selectedCropCycle) {
+      clearCropCycleContext();
+      return;
+    }
+
+    setIsRestoringContext(true);
+    setCropCycle(selectedCropCycle);
+    setGrowthStageDraft(selectedCropCycle.growthStage ?? "");
+    setSchedule([]);
+    setSelectedIssue(null);
+    setIssueStatusDrafts({});
+    setAttachmentTarget(null);
+    setAttachmentFile(null);
+    try {
+      await Promise.all([
+        loadSchedule(selectedCropCycle.id),
+        farm ? loadTodayTasks(farm.id) : Promise.resolve(),
+        farm ? loadHistory(farm.id) : Promise.resolve(),
+      ]);
+      setMessage(`${selectedCropCycle.cropCode} CropCycle의 기존 일정과 기록을 불러왔습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "저장된 CropCycle 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsRestoringContext(false);
+    }
   }
 
   async function handlePlanGeneration() {
@@ -729,6 +858,49 @@ export default function HomePage() {
       <p className="status" role="status">
         {message}
       </p>
+
+      {userEmail ? (
+        <section className="card saved-context stack" aria-labelledby="saved-context-heading">
+          <h2 id="saved-context-heading">저장된 Farm·CropCycle 열기</h2>
+          <p className="field-hint">
+            이전에 만든 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
+          </p>
+          <label>
+            Farm 선택
+            <select
+              disabled={isRestoringContext}
+              onChange={(event) => void handleSavedFarmSelect(event.target.value)}
+              value={farm?.id ?? ""}
+            >
+              <option value="">Farm을 선택하세요</option>
+              {farms.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.regionCode}
+                </option>
+              ))}
+            </select>
+          </label>
+          {farm ? (
+            <label>
+              CropCycle 선택
+              <select
+                disabled={isRestoringContext}
+                onChange={(event) => void handleSavedCropCycleSelect(event.target.value)}
+                value={cropCycle?.id ?? ""}
+              >
+                <option value="">CropCycle을 선택하세요</option>
+                {cropCycles.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.cropCode}
+                    {item.cultivar ? ` · ${item.cultivar}` : ""} · {item.transplantDate} · {cropCycleStatusLabel(item.status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {isRestoringContext ? <small className="field-hint">저장된 데이터를 불러오는 중입니다.</small> : null}
+        </section>
+      ) : null}
 
       {userEmail ? <section className="card stack" aria-labelledby="farm-heading">
         <h2 id="farm-heading">1. Farm 생성</h2>

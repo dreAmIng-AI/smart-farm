@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 vi.mock("@/lib/api/auth", () => ({
   requireAuthenticatedSupabaseUser: vi.fn(),
@@ -12,11 +12,25 @@ const requireAuthenticatedUser = vi.mocked(requireAuthenticatedSupabaseUser);
 
 describe("POST /api/farms", () => {
   const insert = vi.fn();
-  const from = vi.fn(() => ({ insert }));
+  const order = vi.fn();
+  const select = vi.fn(() => ({ order }));
+  const from = vi.fn(() => ({ insert, select }));
 
   beforeEach(() => {
     vi.clearAllMocks();
     insert.mockResolvedValue({ error: null });
+    order.mockResolvedValue({
+      data: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Farm",
+          region_code: "KR-DEMO",
+          cultivation_environment: "facility",
+          cultivation_method: "protected_cultivation",
+        },
+      ],
+      error: null,
+    });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
       supabase: { from },
@@ -50,6 +64,27 @@ describe("POST /api/farms", () => {
       id: expect.any(String),
       name: "Demo Farm",
       regionCode: "KR-DEMO",
+    });
+  });
+
+  it("lists only Farms visible to the authenticated user", async () => {
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    expect(from).toHaveBeenCalledWith("farms");
+    expect(select).toHaveBeenCalledWith("id, name, region_code, cultivation_environment, cultivation_method");
+    expect(order).toHaveBeenCalledWith("created_at", { ascending: false });
+    await expect(response.json()).resolves.toEqual({
+      items: [
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          name: "Demo Farm",
+          regionCode: "KR-DEMO",
+          cultivationEnvironment: "facility",
+          cultivationMethod: "protected_cultivation",
+        },
+      ],
+      meta: { count: 1 },
     });
   });
 });

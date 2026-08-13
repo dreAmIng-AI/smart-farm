@@ -35,7 +35,7 @@ Smart Farm Platform
 - DB 시간: UTC; UI 표시: Asia/Seoul
 - Supabase RLS, Secret의 클라이언트 노출 금지
 
-현재 저장소에는 Core v0.1의 계획·Today·결과·문제·사진 첨부·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm → CropCycle·현재 생육 단계 → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History`입니다. 완료·문제 기록은 각각 PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. 현재 생육 단계는 기존 `crop_cycles.growth_stage`를 권한 있는 사용자만 갱신하며 FarmTask를 자동 생성·재일정하지 않습니다. 사진은 결과와 분리된 Route Handler에서 비공개 Supabase Storage에 저장하고 Attachment 메타데이터를 기록합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
+현재 저장소에는 Core v0.1의 계획·Today·결과·문제·사진 첨부·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm 생성·선택 → CropCycle 생성·선택·현재 생육 단계 → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History`입니다. 선택 UI는 기존 RLS가 허용한 Farm과 CropCycle만 조회해, 기존 일정·Today·이력을 다시 불러오며 작업 계획을 자동으로 생성하지 않습니다. 완료·문제 기록은 각각 PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. 현재 생육 단계는 기존 `crop_cycles.growth_stage`를 권한 있는 사용자만 갱신하며 FarmTask를 자동 생성·재일정하지 않습니다. 사진은 결과와 분리된 Route Handler에서 비공개 Supabase Storage에 저장하고 Attachment 메타데이터를 기록합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
 
 ## 4. Core Platform v0.1 흐름
 

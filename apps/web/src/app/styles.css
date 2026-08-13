@@ -198,6 +198,11 @@ p {
   border-color: #c5d3ee;
 }
 
+.saved-context {
+  background: #eef7f0;
+  border-color: #b9d9c1;
+}
+
 .farm-settings summary {
   color: #18332a;
   cursor: pointer;
