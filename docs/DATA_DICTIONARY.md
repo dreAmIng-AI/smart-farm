@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_memberships, crop_cycles, task_templates, farm_tasks, action_logs와 issue_records를 구현합니다. Attachment은 실제 요구가 생길 때 migration과 함께 추가합니다.**
+**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_memberships, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
 
 ## 1. 공통 규칙
 
@@ -112,7 +112,7 @@ TaskTemplate → FarmTask
 | note | text | N | 짧은 메모 |
 | performed_at / created_at | timestamptz | Y | 현장 수행·저장 시각 |
 
-`202608120002_core_v01_task_results.sql`은 ActionLog를 실제 테이블·RLS로 구현합니다. 현재 UI/API는 `completed`, `not_checked`만 기록합니다. 완료는 FarmTask를 `completed`로 갱신하고, 미확인은 상태를 유지해 Today에 남깁니다.
+`202608120002_core_v01_task_results.sql`은 ActionLog를 실제 테이블·RLS로 구현합니다. UI/API는 `completed`, `not_checked`, `issue_reported`를 기록합니다. 완료는 FarmTask를 `completed`로 갱신하고, 미확인은 상태를 유지해 Today에 남깁니다.
 
 ### issue_records
 
@@ -140,6 +140,8 @@ TaskTemplate → FarmTask
 | storage_path | text | Y | Supabase Storage 경로 |
 | mime_type / file_size_bytes | text / bigint | Y | 파일 형식·크기 |
 | captured_at / created_at | timestamptz | N/Y | 촬영·업로드 시각 |
+
+`202608120004_core_v01_attachments.sql`은 `attachments`와 비공개 `farm-attachments` Storage 버킷을 구현합니다. 한 Attachment는 ActionLog 또는 IssueRecord 중 정확히 하나만 참조합니다. 허용 파일은 JPEG, PNG, WebP이고 파일당 최대 10MB입니다. `storage_path`는 `farm_id/action_log_id/file` 구조이며, Attachment와 Storage object 모두 FarmMembership 기반 RLS를 적용합니다. `captured_at`은 P1에서 아직 별도로 수집하지 않아 null입니다.
 
 ## 4. 검증 상태
 

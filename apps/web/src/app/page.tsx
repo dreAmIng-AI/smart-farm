@@ -1,7 +1,8 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -46,7 +47,22 @@ type Issue = IssueDraft & {
 };
 
 type TaskResultResponse = {
+  actionLog: {
+    id: string;
+  };
   issue?: Omit<Issue, "taskTitle">;
+};
+
+type AttachmentTarget = {
+  id: string;
+  kind: "action_log" | "issue";
+  taskTitle: string;
+};
+
+type HistoryAttachment = {
+  id: string;
+  mimeType: string;
+  signedUrl: string | null;
 };
 
 type HistoryItem =
@@ -58,6 +74,7 @@ type HistoryItem =
       actionType: string;
       resultCode: string | null;
       note: string | null;
+      attachments: HistoryAttachment[];
     }
   | {
       id: string;
@@ -69,6 +86,7 @@ type HistoryItem =
       severity: string;
       status: "open" | "needs_review" | "resolved" | "closed_without_action";
       expertReviewRequired: boolean;
+      attachments: HistoryAttachment[];
     }
   | {
       id: string;
@@ -151,6 +169,28 @@ async function apiRequest<T>(path: string, init: RequestInit): Promise<T> {
   return data as T;
 }
 
+function AttachmentList({ attachments }: { attachments: HistoryAttachment[] }) {
+  return (
+    <div className="attachment-list" aria-label="첨부 사진">
+      {attachments.map((attachment) =>
+        attachment.signedUrl ? (
+          <a href={attachment.signedUrl} key={attachment.id} rel="noreferrer" target="_blank">
+            <Image
+              alt="기록 첨부 사진"
+              height={72}
+              src={attachment.signedUrl}
+              unoptimized
+              width={72}
+            />
+          </a>
+        ) : (
+          <small key={attachment.id}>첨부 사진을 현재 열 수 없습니다.</small>
+        ),
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -166,6 +206,10 @@ export default function HomePage() {
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [attachmentTarget, setAttachmentTarget] = useState<AttachmentTarget | null>(null);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [message, setMessage] = useState(
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
@@ -238,6 +282,8 @@ export default function HomePage() {
       setIssueDrafts({});
       setHistory([]);
       setSelectedIssue(null);
+      setAttachmentTarget(null);
+      setAttachmentFile(null);
       setMessage("로그아웃되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
@@ -268,6 +314,8 @@ export default function HomePage() {
       setTodayTasks([]);
       setHistory([]);
       setSelectedIssue(null);
+      setAttachmentTarget(null);
+      setAttachmentFile(null);
       setMessage(`Farm “${created.name}”을 만들었습니다.`);
       setFarmFeedback(`Farm “${created.name}”이 생성되었습니다.`);
     } catch (error) {
@@ -302,6 +350,8 @@ export default function HomePage() {
       setTodayTasks([]);
       setHistory([]);
       setSelectedIssue(null);
+      setAttachmentTarget(null);
+      setAttachmentFile(null);
       setMessage("CropCycle을 만들었습니다. Draft Template을 적용해 계획을 생성하세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "CropCycle 생성에 실패했습니다.");
@@ -419,6 +469,9 @@ export default function HomePage() {
           return nextDrafts;
         });
         setSelectedIssue({ ...recorded.issue, taskTitle: task.title });
+        setAttachmentTarget({ id: recorded.issue.id, kind: "issue", taskTitle: task.title });
+      } else {
+        setAttachmentTarget({ id: recorded.actionLog.id, kind: "action_log", taskTitle: task.title });
       }
       setMessage(
         actionType === "completed"
@@ -432,6 +485,40 @@ export default function HomePage() {
     } finally {
       setRecordingTaskId(null);
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleAttachmentUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!attachmentTarget || !attachmentFile || !farm) {
+      return;
+    }
+
+    setIsUploadingAttachment(true);
+    try {
+      const form = new FormData();
+      form.append("file", attachmentFile);
+      const targetPath =
+        attachmentTarget.kind === "issue"
+          ? `/api/issues/${attachmentTarget.id}/attachments`
+          : `/api/action-logs/${attachmentTarget.id}/attachments`;
+      const response = await fetch(targetPath, { method: "POST", body: form });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(errorMessage(data));
+      }
+      await loadHistory(farm.id);
+      setAttachmentFile(null);
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = "";
+      }
+      setMessage("사진을 비공개 이력에 첨부했습니다.");
+    } catch (error) {
+      setMessage(
+        `${error instanceof Error ? error.message : "사진 업로드에 실패했습니다."} 결과·문제 기록은 그대로 유지됩니다.`,
+      );
+    } finally {
+      setIsUploadingAttachment(false);
     }
   }
 
@@ -767,6 +854,47 @@ export default function HomePage() {
             </section>
           ) : null}
 
+          {attachmentTarget ? (
+            <section className="attachment-entry stack" aria-labelledby="attachment-heading">
+              <h3 id="attachment-heading">사진 첨부 (선택)</h3>
+              <p className="muted">
+                {attachmentTarget.taskTitle}의 {attachmentTarget.kind === "issue" ? "문제 기록" : "결과 기록"}에 사진을
+                추가합니다. JPEG, PNG, WebP 파일을 10MB까지 올릴 수 있습니다.
+              </p>
+              <p className="field-hint">사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다.</p>
+              <form className="stack" onSubmit={handleAttachmentUpload}>
+                <label>
+                  사진 파일
+                  <input
+                    accept="image/jpeg,image/png,image/webp"
+                    capture="environment"
+                    disabled={isUploadingAttachment}
+                    onChange={(event) => setAttachmentFile(event.target.files?.[0] ?? null)}
+                    ref={attachmentInputRef}
+                    required
+                    type="file"
+                  />
+                </label>
+                <div className="action-buttons">
+                  <button disabled={!attachmentFile || isUploadingAttachment} type="submit">
+                    {isUploadingAttachment ? "사진 업로드 중..." : "사진 첨부"}
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={isUploadingAttachment}
+                    onClick={() => {
+                      setAttachmentFile(null);
+                      setAttachmentTarget(null);
+                    }}
+                    type="button"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : null}
+
           <div className="stack" aria-live="polite">
             <h3>이력</h3>
             {history.length > 0 ? (
@@ -781,6 +909,7 @@ export default function HomePage() {
                           결과 기록: {item.actionType}
                           {item.note ? ` · ${item.note}` : ""}
                         </small>
+                        {item.attachments.length > 0 ? <AttachmentList attachments={item.attachments} /> : null}
                       </>
                     ) : null}
                     {item.kind === "issue" ? (
@@ -790,6 +919,7 @@ export default function HomePage() {
                           관찰: {item.observedSymptom} · 심각도 {issueSeverityLabel(item.severity)} · 상태 {item.status}
                         </small>
                         {item.expertReviewRequired ? <small>전문가 확인 필요</small> : null}
+                        {item.attachments.length > 0 ? <AttachmentList attachments={item.attachments} /> : null}
                         {item.status === "open" || item.status === "needs_review" ? (
                           <button
                             className="secondary compact"

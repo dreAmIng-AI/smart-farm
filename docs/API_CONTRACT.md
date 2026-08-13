@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·후속 작업·이력 endpoint가 구현되어 있습니다. 이 문서는 현재 P0 계약과 경계를 정의합니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력 endpoint가 구현되어 있습니다. 이 문서는 현재 구현 계약과 경계를 정의합니다.**
 
 ## 1. 공통 원칙
 
@@ -45,6 +45,8 @@
 | `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
 | `GET /api/tasks/{taskId}` | 작업 상세와 근거·검증 상태 조회 |
 | `POST /api/tasks/{taskId}/action-logs` | 결과 기록, 필요 시 IssueRecord 생성 |
+| `POST /api/action-logs/{actionLogId}/attachments` | 결과 기록에 사진 첨부 |
+| `POST /api/issues/{issueId}/attachments` | 문제 기록에 사진 첨부 |
 | `POST /api/issues/{issueId}/follow-up-tasks` | IssueRecord 기반 후속 작업 생성 |
 | `GET /api/farms/{farmId}/history` | 작업·문제·후속 관계 이력 조회 |
 
@@ -134,11 +136,34 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 ### History 조회
 
-`GET /api/farms/{farmId}/history`는 접근 가능한 Farm의 ActionLog, IssueRecord, Follow-up FarmTask를 발생 시각 내림차순으로 반환합니다. Issue 항목은 연결된 ActionLog ID를, Follow-up 항목은 원본 IssueRecord ID를 포함해 관계를 추적할 수 있습니다.
+`GET /api/farms/{farmId}/history`는 접근 가능한 Farm의 ActionLog, IssueRecord, Follow-up FarmTask를 발생 시각 내림차순으로 반환합니다. Issue 항목은 연결된 ActionLog ID를, Follow-up 항목은 원본 IssueRecord ID를 포함해 관계를 추적할 수 있습니다. ActionLog와 Issue 항목은 `attachments` 배열을 포함하며, `signedUrl`은 비공개 Storage object를 한시적으로 읽는 URL입니다. Storage object가 없거나 읽을 수 없어도 나머지 이력 조회는 성공하고 해당 `signedUrl`은 `null`입니다.
 
 ## 4. P1 Attachment
 
-사진은 `POST /api/action-logs/{actionLogId}/attachments` 또는 IssueRecord에 연결하는 동일한 계약으로 추가할 수 있습니다. 업로드 실패가 ActionLog 저장을 취소하지 않도록 결과 기록과 파일 업로드를 분리합니다.
+`POST /api/action-logs/{actionLogId}/attachments`와 `POST /api/issues/{issueId}/attachments`는 `multipart/form-data`의 `file` 필드 하나를 받습니다. JPEG, PNG, WebP만 허용하며 파일당 최대 10MB입니다. 서버는 MIME type과 파일 헤더를 함께 검증하고, 비공개 `farm-attachments` 버킷에 업로드한 뒤 Attachment 메타데이터를 저장합니다.
+
+```text
+Content-Type: multipart/form-data
+file: <JPEG | PNG | WebP, maximum 10 MB>
+```
+
+성공 시 `201`과 아래 구조를 반환합니다.
+
+```json
+{
+  "attachment": {
+    "id": "uuid",
+    "actionLogId": "uuid 또는 null",
+    "issueRecordId": "uuid 또는 null",
+    "storagePath": "farm-id/action-log-id/file-id.png",
+    "mimeType": "image/png",
+    "fileSizeBytes": 12345,
+    "capturedAt": null
+  }
+}
+```
+
+`actionLogId`와 `issueRecordId` 중 하나만 값이 있습니다. 업로드는 결과·문제 기록이 성공한 뒤의 별도 요청이므로 `STORAGE_UPLOAD_FAILED` 또는 `ATTACHMENT_CREATE_FAILED`가 발생해도 기존 ActionLog·IssueRecord는 취소하거나 삭제하지 않습니다.
 
 ## 5. 오류 코드
 
@@ -148,6 +173,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
+- `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`
