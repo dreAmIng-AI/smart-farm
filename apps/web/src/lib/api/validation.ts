@@ -35,6 +35,12 @@ export type FollowUpTaskInput = {
   priority: "low" | "medium" | "high";
 };
 
+export type AttachmentFileInput = {
+  extension: "jpg" | "png" | "webp";
+  fileSizeBytes: number;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -216,6 +222,68 @@ export function parseFollowUpTaskInput(value: unknown): Parsed<FollowUpTaskInput
   }
 
   return { ok: true, data: { title, scheduledFor, priority } };
+}
+
+const attachmentTypes = {
+  "image/jpeg": { extension: "jpg", matches: (bytes: Uint8Array) => bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff },
+  "image/png": {
+    extension: "png",
+    matches: (bytes: Uint8Array) =>
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a,
+  },
+  "image/webp": {
+    extension: "webp",
+    matches: (bytes: Uint8Array) =>
+      bytes.length >= 12 &&
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50,
+  },
+} as const;
+
+const MAX_ATTACHMENT_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+export async function parseAttachmentFile(value: unknown): Promise<Parsed<AttachmentFileInput>> {
+  if (!(value instanceof File)) {
+    return { ok: false, error: "file is required." };
+  }
+
+  if (value.size === 0 || value.size > MAX_ATTACHMENT_FILE_SIZE_BYTES) {
+    return { ok: false, error: "file must be between 1 byte and 10 MB." };
+  }
+
+  const mimeType = value.type as AttachmentFileInput["mimeType"];
+  const attachmentType = attachmentTypes[mimeType];
+  if (!attachmentType) {
+    return { ok: false, error: "file must be a JPEG, PNG, or WebP image." };
+  }
+
+  const bytes = new Uint8Array(await value.slice(0, 12).arrayBuffer());
+  if (!attachmentType.matches(bytes)) {
+    return { ok: false, error: "file contents do not match its image type." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      extension: attachmentType.extension,
+      fileSizeBytes: value.size,
+      mimeType,
+    },
+  };
 }
 
 export function isUuid(value: string | undefined): value is string {

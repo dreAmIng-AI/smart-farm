@@ -170,13 +170,19 @@ p {
 }
 
 .issue-entry,
-.issue-follow-up {
+.issue-follow-up,
+.attachment-entry {
   background: #fff8e8;
   border: 1px solid #ead9a1;
   border-radius: 0.5rem;
   display: grid;
   gap: 0.6rem;
   padding: 0.75rem;
+}
+
+.attachment-entry {
+  background: #eef7f0;
+  border-color: #b9d9c1;
 }
 
 .issue-entry summary {
@@ -223,6 +229,26 @@ p {
 .history-list span,
 .history-list small {
   color: #547064;
+}
+
+.attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.attachment-list a {
+  display: block;
+}
+
+.attachment-list img {
+  border: 1px solid #adc1b4;
+  border-radius: 0.5rem;
+  display: block;
+  height: 4.5rem;
+  object-fit: cover;
+  width: 4.5rem;
 }
 
 .task-list small,

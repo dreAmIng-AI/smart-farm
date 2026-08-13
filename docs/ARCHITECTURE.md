@@ -35,7 +35,7 @@ Smart Farm Platform
 - DB 시간: UTC; UI 표시: Asia/Seoul
 - Supabase RLS, Secret의 클라이언트 노출 금지
 
-현재 저장소에는 Core v0.1의 계획·Today·결과·문제·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm → CropCycle → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog → IssueRecord → Follow-up FarmTask → History`입니다. 완료·문제 기록은 각각 PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
+현재 저장소에는 Core v0.1의 계획·Today·결과·문제·사진 첨부·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm → CropCycle → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History`입니다. 완료·문제 기록은 각각 PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. 사진은 결과와 분리된 Route Handler에서 비공개 Supabase Storage에 저장하고 Attachment 메타데이터를 기록합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
 
 ## 4. Core Platform v0.1 흐름
 
@@ -54,6 +54,7 @@ Core Domain Logic은 다음 책임을 가집니다.
 - Today의 오늘·지연 작업 조회
 - ActionLog를 통한 결과 기록과 FarmTask 상태 변경
 - IssueRecord와 Follow-up FarmTask 생성·연결
+- Attachment 파일 검증·비공개 Storage 저장·이력 조회
 - 이력 조회
 
 Core는 설향이나 특정 작물 이름으로 로직을 분기하지 않습니다. Crop Pack 데이터가 템플릿과 근거를 제공하고 Core는 이를 실행 흐름에 적용합니다.
@@ -64,7 +65,9 @@ Core는 설향이나 특정 작물 이름으로 로직을 분기하지 않습니
 - 작기 전체 계획은 `CropCycle + TaskTemplate → Scheduled FarmTask[]`로 우선 표현합니다.
 - Farm과 사용자 접근은 Supabase Auth 및 RLS로 제한합니다.
 - Farmer는 접근 가능한 Farm 데이터만 다루고, Admin의 범위는 승인된 최소 운영 현황으로 제한합니다.
-- 사진 저장 실패가 ActionLog의 텍스트 기록 전체를 잃게 하지 않도록 분리합니다.
+- 사진은 JPEG/PNG/WebP, 파일당 10MB까지 허용하며 파일 시그니처와 MIME type을 함께 검증합니다.
+- 사진 저장 실패가 ActionLog의 텍스트 기록 전체를 잃게 하지 않도록 결과 기록 뒤의 별도 요청으로 분리합니다.
+- Storage object는 Farm ID와 ActionLog ID 경로를 함께 사용하고, Storage RLS와 Attachment RLS 모두 Farm 접근권한을 확인합니다.
 
 ## 6. Crop Pack 경계
 

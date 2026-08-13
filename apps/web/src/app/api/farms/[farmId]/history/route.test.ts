@@ -21,6 +21,10 @@ describe("GET /api/farms/:farmId/history", () => {
   const actionLogSelect = vi.fn(() => ({ in: actionLogIn }));
   const issueIn = vi.fn();
   const issueSelect = vi.fn(() => ({ in: issueIn }));
+  const attachmentIn = vi.fn();
+  const attachmentSelect = vi.fn(() => ({ in: attachmentIn }));
+  const createSignedUrl = vi.fn();
+  const storageFrom = vi.fn(() => ({ createSignedUrl }));
   const from = vi.fn((table: string) => {
     if (table === "farms") {
       return { select: farmSelect };
@@ -31,7 +35,13 @@ describe("GET /api/farms/:farmId/history", () => {
     if (table === "action_logs") {
       return { select: actionLogSelect };
     }
-    return { select: issueSelect };
+    if (table === "issue_records") {
+      return { select: issueSelect };
+    }
+    if (table === "attachments") {
+      return { select: attachmentSelect };
+    }
+    throw new Error(`Unexpected table: ${table}`);
   });
 
   beforeEach(() => {
@@ -88,9 +98,30 @@ describe("GET /api/farms/:farmId/history", () => {
       ],
       error: null,
     });
+    attachmentIn.mockImplementation((column: string) => {
+      if (column === "action_log_id") {
+        return Promise.resolve({
+          data: [
+            {
+              id: "66666666-6666-4666-8666-666666666666",
+              action_log_id: "55555555-5555-4555-8555-555555555555",
+              issue_record_id: null,
+              storage_path: "farm/action-log/action-photo.png",
+              mime_type: "image/png",
+              file_size_bytes: 8,
+              captured_at: null,
+              created_at: "2026-08-13T00:00:02.000Z",
+            },
+          ],
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: [], error: null });
+    });
+    createSignedUrl.mockResolvedValue({ data: { signedUrl: "https://example.test/action-photo.png" }, error: null });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
-      supabase: { from },
+      supabase: { from, storage: { from: storageFrom } },
       userId: "test-user-id",
     } as never);
   });
@@ -111,7 +142,11 @@ describe("GET /api/farms/:farmId/history", () => {
           actionLogId: "55555555-5555-4555-8555-555555555555",
           observedSymptom: "Observed an unexpected condition.",
         },
-        { kind: "action_log", actionType: "issue_reported" },
+        {
+          kind: "action_log",
+          actionType: "issue_reported",
+          attachments: [{ mimeType: "image/png", signedUrl: "https://example.test/action-photo.png" }],
+        },
       ],
     });
   });

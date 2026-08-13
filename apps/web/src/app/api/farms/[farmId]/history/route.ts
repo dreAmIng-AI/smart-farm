@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ATTACHMENT_BUCKET } from "@/lib/api/attachments";
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 import { isUuid } from "@/lib/api/validation";
 
@@ -35,6 +36,26 @@ type IssueRow = {
   created_at: string;
 };
 
+type AttachmentRow = {
+  action_log_id: string | null;
+  captured_at: string | null;
+  created_at: string;
+  file_size_bytes: number;
+  id: string;
+  issue_record_id: string | null;
+  mime_type: string;
+  storage_path: string;
+};
+
+type HistoryAttachment = {
+  capturedAt: string | null;
+  createdAt: string;
+  fileSizeBytes: number;
+  id: string;
+  mimeType: string;
+  signedUrl: string | null;
+};
+
 type HistoryItem =
   | {
       id: string;
@@ -45,6 +66,7 @@ type HistoryItem =
       actionType: string;
       resultCode: string | null;
       note: string | null;
+      attachments: HistoryAttachment[];
     }
   | {
       id: string;
@@ -58,6 +80,7 @@ type HistoryItem =
       severity: string;
       status: string;
       expertReviewRequired: boolean;
+      attachments: HistoryAttachment[];
     }
   | {
       id: string;
@@ -150,6 +173,75 @@ export async function GET(_request: Request, context: RouteContext) {
   const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
   const actionLogs = (actionLogResult.data ?? []) as ActionLogRow[];
   const issues = (issueResult.data ?? []) as IssueRow[];
+  const actionLogIds = actionLogs.map((log) => log.id);
+  const issueIds = issues.map((issue) => issue.id);
+  const [actionAttachmentResult, issueAttachmentResult] = await Promise.all([
+    actionLogIds.length > 0
+      ? auth.supabase
+          .from("attachments")
+          .select("id, action_log_id, issue_record_id, storage_path, mime_type, file_size_bytes, captured_at, created_at")
+          .in("action_log_id", actionLogIds)
+      : Promise.resolve({ data: [], error: null }),
+    issueIds.length > 0
+      ? auth.supabase
+          .from("attachments")
+          .select("id, action_log_id, issue_record_id, storage_path, mime_type, file_size_bytes, captured_at, created_at")
+          .in("issue_record_id", issueIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (actionAttachmentResult.error || issueAttachmentResult.error) {
+    return NextResponse.json(
+      {
+        error: {
+          code: "HISTORY_LOOKUP_FAILED",
+          message:
+            actionAttachmentResult.error?.message ??
+            issueAttachmentResult.error?.message ??
+            "Attachment history lookup failed.",
+        },
+      },
+      { status: 400 },
+    );
+  }
+
+  const attachmentRows = [
+    ...((actionAttachmentResult.data ?? []) as AttachmentRow[]),
+    ...((issueAttachmentResult.data ?? []) as AttachmentRow[]),
+  ];
+  const attachments = await Promise.all(
+    attachmentRows.map(async (attachment) => {
+      const { data, error } = await auth.supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .createSignedUrl(attachment.storage_path, 60 * 60);
+
+      return {
+        capturedAt: attachment.captured_at,
+        createdAt: attachment.created_at,
+        fileSizeBytes: attachment.file_size_bytes,
+        id: attachment.id,
+        mimeType: attachment.mime_type,
+        signedUrl: error ? null : (data?.signedUrl ?? null),
+      } satisfies HistoryAttachment;
+    }),
+  );
+  const actionAttachmentsById = new Map<string, HistoryAttachment[]>();
+  const issueAttachmentsById = new Map<string, HistoryAttachment[]>();
+  attachmentRows.forEach((attachment, index) => {
+    const historyAttachment = attachments[index];
+    if (attachment.action_log_id) {
+      actionAttachmentsById.set(attachment.action_log_id, [
+        ...(actionAttachmentsById.get(attachment.action_log_id) ?? []),
+        historyAttachment,
+      ]);
+    }
+    if (attachment.issue_record_id) {
+      issueAttachmentsById.set(attachment.issue_record_id, [
+        ...(issueAttachmentsById.get(attachment.issue_record_id) ?? []),
+        historyAttachment,
+      ]);
+    }
+  });
   const followUps = tasks.filter(
     (task): task is FarmTaskRow & { parent_issue_id: string } =>
       task.source_type === "issue_followup" && task.parent_issue_id !== null,
@@ -165,6 +257,7 @@ export async function GET(_request: Request, context: RouteContext) {
       actionType: log.action_type,
       resultCode: log.result_code,
       note: log.note,
+      attachments: actionAttachmentsById.get(log.id) ?? [],
     })),
     ...issues.map((issue) => ({
       id: `issue:${issue.id}`,
@@ -178,6 +271,7 @@ export async function GET(_request: Request, context: RouteContext) {
       severity: issue.severity,
       status: issue.status,
       expertReviewRequired: issue.expert_review_required,
+      attachments: issueAttachmentsById.get(issue.id) ?? [],
     })),
     ...followUps.map((task) => ({
       id: `follow-up:${task.id}`,

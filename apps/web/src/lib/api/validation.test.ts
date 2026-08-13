@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  parseAttachmentFile,
   parseActionLogInput,
   parseCropCycleInput,
   parseFarmInput,
   parseFollowUpTaskInput,
 } from "@/lib/api/validation";
+
+const validPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 describe("Farm input", () => {
   it("accepts required Farm information", () => {
@@ -129,5 +132,26 @@ describe("Follow-up FarmTask input", () => {
     expect(
       parseFollowUpTaskInput({ title: "Recheck", scheduledFor: "2026-02-30", priority: "medium" }),
     ).toMatchObject({ ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." });
+  });
+});
+
+describe("Attachment file input", () => {
+  it("accepts a PNG image with a matching signature", async () => {
+    await expect(parseAttachmentFile(new File([validPng], "field-photo.png", { type: "image/png" }))).resolves.toEqual({
+      ok: true,
+      data: { extension: "png", fileSizeBytes: 8, mimeType: "image/png" },
+    });
+  });
+
+  it("rejects a file with a mismatched image signature", async () => {
+    await expect(
+      parseAttachmentFile(new File([new Uint8Array([1, 2, 3])], "not-an-image.png", { type: "image/png" })),
+    ).resolves.toMatchObject({ ok: false, error: "file contents do not match its image type." });
+  });
+
+  it("rejects an unsupported file type", async () => {
+    await expect(
+      parseAttachmentFile(new File([validPng], "field-photo.gif", { type: "image/gif" })),
+    ).resolves.toMatchObject({ ok: false, error: "file must be a JPEG, PNG, or WebP image." });
   });
 });
