@@ -45,11 +45,17 @@ button.compact {
 }
 
 input,
-select {
+select,
+textarea {
   border: 1px solid #adc1b4;
   border-radius: 0.5rem;
   min-height: 2.75rem;
   padding: 0.6rem 0.75rem;
+}
+
+textarea {
+  min-height: 5.5rem;
+  resize: vertical;
 }
 
 label {
@@ -161,6 +167,62 @@ p {
   gap: 0.6rem;
   margin-top: 0.4rem;
   padding-top: 0.75rem;
+}
+
+.issue-entry,
+.issue-follow-up {
+  background: #fff8e8;
+  border: 1px solid #ead9a1;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
+.issue-entry summary {
+  color: #725200;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.issue-entry[open] summary {
+  margin-bottom: 0.15rem;
+}
+
+.checkbox-label {
+  align-items: center;
+  display: flex;
+  font-weight: 700;
+  gap: 0.5rem;
+}
+
+.checkbox-label input {
+  min-height: auto;
+}
+
+.issue-button {
+  background: #8a5a00;
+}
+
+.history-list {
+  display: grid;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.history-list li {
+  background: #f6faf6;
+  border-left: 4px solid #adc1b4;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.history-list span,
+.history-list small {
+  color: #547064;
 }
 
 .task-list small,

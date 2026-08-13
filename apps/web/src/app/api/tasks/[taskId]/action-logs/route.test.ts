@@ -81,4 +81,50 @@ describe("POST /api/tasks/:taskId/action-logs", () => {
       error: { code: "INVALID_STATUS_TRANSITION" },
     });
   });
+
+  it("records an issue through the ActionLog endpoint and returns the linked IssueRecord", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          action_log_id: "22222222-2222-4222-8222-222222222222",
+          issue_id: "33333333-3333-4333-8333-333333333333",
+          task_status: "issue_reported",
+          issue_status: "open",
+        },
+      ],
+      error: null,
+    });
+
+    const response = await POST(
+      new Request(`http://localhost/api/tasks/${taskId}/action-logs`, {
+        method: "POST",
+        body: JSON.stringify({
+          actionType: "issue_reported",
+          note: "Observed during planned work.",
+          issue: {
+            observedSymptom: "Observed an unexpected condition.",
+            severity: "unknown",
+            expertReviewRequired: true,
+          },
+        }),
+      }),
+      { params: Promise.resolve({ taskId }) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(rpc).toHaveBeenCalledWith(
+      "record_farm_task_issue",
+      expect.objectContaining({
+        p_task_id: taskId,
+        p_observed_symptom: "Observed an unexpected condition.",
+        p_severity: "unknown",
+        p_expert_review_required: true,
+      }),
+    );
+    await expect(response.json()).resolves.toMatchObject({
+      actionLog: { actionType: "issue_reported", resultCode: "observed_issue" },
+      issue: { id: "33333333-3333-4333-8333-333333333333", status: "open" },
+      task: { id: taskId, status: "issue_reported" },
+    });
+  });
 });

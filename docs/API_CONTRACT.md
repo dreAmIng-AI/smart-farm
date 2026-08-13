@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 `POST /api/farms`, `POST /api/farms/{farmId}/crop-cycles`, `POST /api/crop-cycles/{cropCycleId}/tasks/generate`, `GET /api/crop-cycles/{cropCycleId}/schedule`, `GET /api/farms/{farmId}/tasks/today`, `POST /api/tasks/{taskId}/action-logs`가 구현되어 있습니다. 이 문서는 그 이후 P0 endpoint의 요구와 경계도 함께 정의합니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·후속 작업·이력 endpoint가 구현되어 있습니다. 이 문서는 현재 P0 계약과 경계를 정의합니다.**
 
 ## 1. 공통 원칙
 
@@ -99,19 +99,42 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 `scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다.
 
-### 결과 기록 (현재 구현)
+### 결과·문제 기록
 
-`POST /api/tasks/{taskId}/action-logs`는 `completed` 또는 `not_checked`를 기록합니다. 완료는 FarmTask 상태를 `completed`로 바꾸며, 미확인은 상태를 유지합니다.
+`POST /api/tasks/{taskId}/action-logs`는 `completed`, `not_checked`, `issue_reported`를 기록합니다. 완료는 FarmTask 상태를 `completed`로 바꾸며 미확인은 상태를 유지합니다. 문제 기록은 FarmTask 상태를 `issue_reported`로 바꾸고, 연결된 ActionLog와 IssueRecord를 하나의 RPC에서 생성합니다.
 
 ```json
 {
-  "actionType": "completed",
+  "actionType": "issue_reported",
   "note": "선택적 짧은 메모",
+  "issue": {
+    "observedSymptom": "사용자가 관찰한 사실",
+    "severity": "unknown",
+    "expertReviewRequired": false
+  },
   "performedAt": "2026-09-10T00:10:00.000Z"
 }
 ```
 
-`performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. 문제 기록과 IssueRecord 연결은 다음 Slice에서 추가하며, 문제 기록은 확정 진단을 의미하지 않습니다.
+`performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. `issue_reported`에는 `issue`가 필수이고, `observedSymptom`은 관찰 사실입니다. 문제 기록은 확정 진단을 의미하지 않습니다.
+
+### Follow-up FarmTask 생성
+
+`POST /api/issues/{issueId}/follow-up-tasks`는 접근 가능한 미해결(`open`, `needs_review`) IssueRecord에서만 후속 FarmTask를 만듭니다. `scheduledFor`는 UI가 입력한 Asia/Seoul 날짜이며, 서버가 해당 날짜 자정의 UTC 시각으로 변환합니다.
+
+```json
+{
+  "title": "관찰 내용 재확인",
+  "scheduledFor": "2026-09-11",
+  "priority": "medium"
+}
+```
+
+응답 FarmTask의 `sourceType`은 `issue_followup`, `parentIssueId`는 원본 IssueRecord ID입니다. 같은 IssueRecord와 예정일의 중복 생성은 `DUPLICATE_FOLLOW_UP_TASK`(409)로 거부합니다.
+
+### History 조회
+
+`GET /api/farms/{farmId}/history`는 접근 가능한 Farm의 ActionLog, IssueRecord, Follow-up FarmTask를 발생 시각 내림차순으로 반환합니다. Issue 항목은 연결된 ActionLog ID를, Follow-up 항목은 원본 IssueRecord ID를 포함해 관계를 추적할 수 있습니다.
 
 ## 4. P1 Attachment
 
@@ -123,7 +146,8 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
-- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_NOT_FOUND`
+- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`
+- `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`

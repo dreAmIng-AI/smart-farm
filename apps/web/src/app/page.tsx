@@ -20,16 +20,65 @@ type CropCycle = {
 
 type FarmTask = {
   id: string;
+  parentIssueId?: string | null;
   title: string;
   reason: string;
   scheduledFor: string;
   priority: string;
   verificationStatus: string;
+  sourceType: string;
   status: string;
   scheduleState?: "overdue" | "today";
 };
 
-type TaskResultAction = "completed" | "not_checked";
+type TaskResultAction = "completed" | "not_checked" | "issue_reported";
+
+type IssueDraft = {
+  observedSymptom: string;
+  severity: "low" | "medium" | "high" | "unknown";
+  expertReviewRequired: boolean;
+};
+
+type Issue = IssueDraft & {
+  id: string;
+  status: "open" | "needs_review" | "resolved" | "closed_without_action";
+  taskTitle: string;
+};
+
+type TaskResultResponse = {
+  issue?: Omit<Issue, "taskTitle">;
+};
+
+type HistoryItem =
+  | {
+      id: string;
+      kind: "action_log";
+      occurredAt: string;
+      taskTitle: string;
+      actionType: string;
+      resultCode: string | null;
+      note: string | null;
+    }
+  | {
+      id: string;
+      kind: "issue";
+      occurredAt: string;
+      issueId: string;
+      taskTitle: string;
+      observedSymptom: string;
+      severity: string;
+      status: "open" | "needs_review" | "resolved" | "closed_without_action";
+      expertReviewRequired: boolean;
+    }
+  | {
+      id: string;
+      kind: "follow_up_task";
+      occurredAt: string;
+      taskTitle: string;
+      parentIssueId: string;
+      status: string;
+      scheduledFor: string;
+    };
 
 function errorMessage(value: unknown): string {
   if (typeof value === "object" && value !== null && "error" in value) {
@@ -74,6 +123,17 @@ function taskStatusLabel(status: string) {
   return labels[status] ?? status;
 }
 
+function issueSeverityLabel(severity: string) {
+  const labels: Record<string, string> = {
+    high: "높음",
+    low: "낮음",
+    medium: "보통",
+    unknown: "알 수 없음",
+  };
+
+  return labels[severity] ?? severity;
+}
+
 async function apiRequest<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -98,11 +158,15 @@ export default function HomePage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [farmFeedback, setFarmFeedback] = useState<string | null>(null);
   const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
+  const [issueDrafts, setIssueDrafts] = useState<Record<string, IssueDraft>>({});
   const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [message, setMessage] = useState(
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
   );
@@ -171,6 +235,9 @@ export default function HomePage() {
       setTodayTasks([]);
       setFarmFeedback(null);
       setActionNotes({});
+      setIssueDrafts({});
+      setHistory([]);
+      setSelectedIssue(null);
       setMessage("로그아웃되었습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
@@ -199,6 +266,8 @@ export default function HomePage() {
       setCropCycle(null);
       setSchedule([]);
       setTodayTasks([]);
+      setHistory([]);
+      setSelectedIssue(null);
       setMessage(`Farm “${created.name}”을 만들었습니다.`);
       setFarmFeedback(`Farm “${created.name}”이 생성되었습니다.`);
     } catch (error) {
@@ -231,6 +300,8 @@ export default function HomePage() {
       setCropCycle(created);
       setSchedule([]);
       setTodayTasks([]);
+      setHistory([]);
+      setSelectedIssue(null);
       setMessage("CropCycle을 만들었습니다. Draft Template을 적용해 계획을 생성하세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "CropCycle 생성에 실패했습니다.");
@@ -255,6 +326,13 @@ export default function HomePage() {
     setTodayTasks(result.items);
   }
 
+  async function loadHistory(farmId: string) {
+    const result = await apiRequest<{ items: HistoryItem[] }>(`/api/farms/${farmId}/history`, {
+      method: "GET",
+    });
+    setHistory(result.items);
+  }
+
   async function handlePlanGeneration() {
     if (!cropCycle || !farm) {
       return;
@@ -266,7 +344,7 @@ export default function HomePage() {
         `/api/crop-cycles/${cropCycle.id}/tasks/generate`,
         { method: "POST" },
       );
-      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id)]);
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
       setMessage(
         generated.generatedCount > 0
           ? `${generated.generatedCount}개의 Draft FarmTask를 생성했습니다.`
@@ -286,8 +364,8 @@ export default function HomePage() {
 
     setIsSubmitting(true);
     try {
-      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id)]);
-      setMessage("일정과 Today를 새로고침했습니다.");
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
+      setMessage("일정, Today, 이력을 새로고침했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "조회에 실패했습니다.");
     } finally {
@@ -295,37 +373,95 @@ export default function HomePage() {
     }
   }
 
-  async function handleTaskResult(taskId: string, actionType: TaskResultAction) {
+  function issueDraftFor(taskId: string): IssueDraft {
+    return issueDrafts[taskId] ?? {
+      observedSymptom: "",
+      severity: "unknown",
+      expertReviewRequired: false,
+    };
+  }
+
+  function updateIssueDraft(taskId: string, updates: Partial<IssueDraft>) {
+    setIssueDrafts((drafts) => ({ ...drafts, [taskId]: { ...issueDraftFor(taskId), ...updates } }));
+  }
+
+  function selectIssueForFollowUp(issue: Issue) {
+    setSelectedIssue(issue);
+  }
+
+  async function handleTaskResult(task: FarmTask, actionType: TaskResultAction) {
     if (!farm || !cropCycle) {
       return;
     }
 
+    const taskId = task.id;
     setIsSubmitting(true);
     setRecordingTaskId(taskId);
     try {
-      await apiRequest(`/api/tasks/${taskId}/action-logs`, {
+      const recorded = await apiRequest<TaskResultResponse>(`/api/tasks/${taskId}/action-logs`, {
         method: "POST",
         body: JSON.stringify({
           actionType,
           note: actionNotes[taskId] ?? "",
+          ...(actionType === "issue_reported" ? { issue: issueDraftFor(taskId) } : {}),
         }),
       });
-      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id)]);
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
       setActionNotes((notes) => {
         const nextNotes = { ...notes };
         delete nextNotes[taskId];
         return nextNotes;
       });
+      if (recorded.issue) {
+        setIssueDrafts((drafts) => {
+          const nextDrafts = { ...drafts };
+          delete nextDrafts[taskId];
+          return nextDrafts;
+        });
+        setSelectedIssue({ ...recorded.issue, taskTitle: task.title });
+      }
       setMessage(
         actionType === "completed"
           ? "완료 결과를 기록했습니다. 작업이 Today에서 제외되었습니다."
-          : "확인하지 못함 결과를 기록했습니다. 작업은 재확인을 위해 Today에 남아 있습니다.",
+          : actionType === "not_checked"
+            ? "확인하지 못함 결과를 기록했습니다. 작업은 재확인을 위해 Today에 남아 있습니다."
+            : "관찰한 문제를 기록했습니다. 원본 작업은 문제 기록 상태가 되었고, 필요하면 재확인 작업을 만드세요.",
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "작업 결과 기록에 실패했습니다.");
     } finally {
       setRecordingTaskId(null);
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleFollowUpCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!farm || !cropCycle || !selectedIssue) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    setIsCreatingFollowUp(true);
+    try {
+      const created = await apiRequest<{ farmTask: { title: string; scheduledFor: string } }>(
+        `/api/issues/${selectedIssue.id}/follow-up-tasks`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            title: form.get("title"),
+            scheduledFor: form.get("scheduledFor"),
+            priority: form.get("priority"),
+          }),
+        },
+      );
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
+      setSelectedIssue(null);
+      setMessage(`${created.farmTask.title} 재확인 작업을 만들었습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "재확인 작업 생성에 실패했습니다.");
+    } finally {
+      setIsCreatingFollowUp(false);
     }
   }
 
@@ -452,7 +588,7 @@ export default function HomePage() {
 
       {userEmail && cropCycle && farm ? (
         <section className="card stack" aria-labelledby="plan-heading">
-          <h2 id="plan-heading">3. Plan · 일정 · Today</h2>
+          <h2 id="plan-heading">3. Plan · 일정 · Today · 이력</h2>
           <p className="muted">
             {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate}
           </p>
@@ -461,7 +597,7 @@ export default function HomePage() {
               Draft TaskTemplate 적용
             </button>
             <button className="secondary" disabled={isSubmitting} onClick={handleRefresh} type="button">
-              일정·Today 새로고침
+              일정·Today·이력 새로고침
             </button>
           </div>
 
@@ -477,6 +613,7 @@ export default function HomePage() {
                     <small>
                       상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
                     </small>
+                    {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                   </li>
                 ))}
               </ol>
@@ -497,6 +634,7 @@ export default function HomePage() {
                     </span>
                     <small>{task.reason}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
+                    {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <div className="result-entry">
                       <label>
                         기록 메모 (선택 사항)
@@ -513,7 +651,7 @@ export default function HomePage() {
                       <div className="action-buttons">
                         <button
                           disabled={isSubmitting}
-                          onClick={() => handleTaskResult(task.id, "completed")}
+                          onClick={() => handleTaskResult(task, "completed")}
                           type="button"
                         >
                           {recordingTaskId === task.id ? "기록 중..." : "완료 기록"}
@@ -521,18 +659,168 @@ export default function HomePage() {
                         <button
                           className="secondary"
                           disabled={isSubmitting}
-                          onClick={() => handleTaskResult(task.id, "not_checked")}
+                          onClick={() => handleTaskResult(task, "not_checked")}
                           type="button"
                         >
                           확인하지 못함
                         </button>
                       </div>
+                      <details className="issue-entry">
+                        <summary>문제 있음 기록</summary>
+                        <p className="field-hint">
+                          관찰한 사실만 기록합니다. 이 기록은 농업적 확정 진단이나 처방이 아닙니다.
+                        </p>
+                        <label>
+                          관찰 내용
+                          <textarea
+                            disabled={isSubmitting}
+                            maxLength={1000}
+                            onChange={(event) => updateIssueDraft(task.id, { observedSymptom: event.target.value })}
+                            placeholder="예: 작업 중 관찰한 상태를 사실대로 적어주세요"
+                            required
+                            value={issueDraftFor(task.id).observedSymptom}
+                          />
+                        </label>
+                        <label>
+                          심각도
+                          <select
+                            disabled={isSubmitting}
+                            onChange={(event) =>
+                              updateIssueDraft(task.id, {
+                                severity: event.target.value as IssueDraft["severity"],
+                              })
+                            }
+                            value={issueDraftFor(task.id).severity}
+                          >
+                            <option value="unknown">알 수 없음</option>
+                            <option value="low">낮음</option>
+                            <option value="medium">보통</option>
+                            <option value="high">높음</option>
+                          </select>
+                        </label>
+                        <label className="checkbox-label">
+                          <input
+                            checked={issueDraftFor(task.id).expertReviewRequired}
+                            disabled={isSubmitting}
+                            onChange={(event) =>
+                              updateIssueDraft(task.id, { expertReviewRequired: event.target.checked })
+                            }
+                            type="checkbox"
+                          />
+                          전문가 확인이 필요함
+                        </label>
+                        <button
+                          className="issue-button"
+                          disabled={isSubmitting || issueDraftFor(task.id).observedSymptom.trim().length === 0}
+                          onClick={() => handleTaskResult(task, "issue_reported")}
+                          type="button"
+                        >
+                          {recordingTaskId === task.id ? "문제 기록 중..." : "문제 기록"}
+                        </button>
+                      </details>
                     </div>
                   </li>
                 ))}
               </ol>
             ) : (
               <p className="muted">오늘 또는 지연된 작업이 없습니다.</p>
+            )}
+          </div>
+
+          {selectedIssue ? (
+            <section className="issue-follow-up stack" aria-labelledby="follow-up-heading">
+              <h3 id="follow-up-heading">문제 재확인 작업</h3>
+              <p className="muted">
+                {selectedIssue.taskTitle} · 관찰: {selectedIssue.observedSymptom} · 심각도 {issueSeverityLabel(selectedIssue.severity)}
+              </p>
+              <form className="stack" onSubmit={handleFollowUpCreate}>
+                <label>
+                  재확인 작업 제목
+                  <input defaultValue={`${selectedIssue.taskTitle} 재확인`} maxLength={200} name="title" required />
+                </label>
+                <label>
+                  재확인 예정일
+                  <input defaultValue={seoulDateInputValue()} name="scheduledFor" required type="date" />
+                </label>
+                <label>
+                  우선순위
+                  <select defaultValue="medium" name="priority">
+                    <option value="low">낮음</option>
+                    <option value="medium">보통</option>
+                    <option value="high">높음</option>
+                  </select>
+                </label>
+                <div className="action-buttons">
+                  <button disabled={isCreatingFollowUp} type="submit">
+                    {isCreatingFollowUp ? "생성 중..." : "재확인 작업 만들기"}
+                  </button>
+                  <button
+                    className="secondary"
+                    disabled={isCreatingFollowUp}
+                    onClick={() => setSelectedIssue(null)}
+                    type="button"
+                  >
+                    취소
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : null}
+
+          <div className="stack" aria-live="polite">
+            <h3>이력</h3>
+            {history.length > 0 ? (
+              <ol className="history-list">
+                {history.map((item) => (
+                  <li key={item.id}>
+                    <span>{displayDate(item.occurredAt)}</span>
+                    {item.kind === "action_log" ? (
+                      <>
+                        <strong>{item.taskTitle}</strong>
+                        <small>
+                          결과 기록: {item.actionType}
+                          {item.note ? ` · ${item.note}` : ""}
+                        </small>
+                      </>
+                    ) : null}
+                    {item.kind === "issue" ? (
+                      <>
+                        <strong>{item.taskTitle} · 문제 기록</strong>
+                        <small>
+                          관찰: {item.observedSymptom} · 심각도 {issueSeverityLabel(item.severity)} · 상태 {item.status}
+                        </small>
+                        {item.expertReviewRequired ? <small>전문가 확인 필요</small> : null}
+                        {item.status === "open" || item.status === "needs_review" ? (
+                          <button
+                            className="secondary compact"
+                            onClick={() =>
+                              selectIssueForFollowUp({
+                                id: item.issueId,
+                                observedSymptom: item.observedSymptom,
+                                severity: item.severity as Issue["severity"],
+                                expertReviewRequired: item.expertReviewRequired,
+                                status: item.status,
+                                taskTitle: item.taskTitle,
+                              })
+                            }
+                            type="button"
+                          >
+                            재확인 작업 만들기
+                          </button>
+                        ) : null}
+                      </>
+                    ) : null}
+                    {item.kind === "follow_up_task" ? (
+                      <>
+                        <strong>{item.taskTitle} · 재확인 작업</strong>
+                        <small>예정일 {displayDate(item.scheduledFor)} · 상태 {taskStatusLabel(item.status)}</small>
+                      </>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="muted">아직 결과·문제·재확인 작업 이력이 없습니다.</p>
             )}
           </div>
         </section>

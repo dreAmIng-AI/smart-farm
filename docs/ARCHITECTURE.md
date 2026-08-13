@@ -35,7 +35,7 @@ Smart Farm Platform
 - DB 시간: UTC; UI 표시: Asia/Seoul
 - Supabase RLS, Secret의 클라이언트 노출 금지
 
-현재 저장소에는 Core v0.1의 계획·Today·기본 결과 기록을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm → CropCycle → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog`입니다. 완료 기록은 ActionLog 생성과 FarmTask 상태 갱신을 하나의 PostgreSQL RPC로 처리합니다. 문제·후속 작업은 이후 P0 Slice로 남겨 둡니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
+현재 저장소에는 Core v0.1의 계획·Today·결과·문제·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 → Farm → CropCycle → TaskTemplate 적용 → FarmTask → 일정 → Today → ActionLog → IssueRecord → Follow-up FarmTask → History`입니다. 완료·문제 기록은 각각 PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
 
 ## 4. Core Platform v0.1 흐름
 
