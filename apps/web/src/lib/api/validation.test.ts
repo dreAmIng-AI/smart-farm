@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { parseActionLogInput, parseCropCycleInput, parseFarmInput } from "@/lib/api/validation";
+import {
+  parseActionLogInput,
+  parseCropCycleInput,
+  parseFarmInput,
+  parseFollowUpTaskInput,
+} from "@/lib/api/validation";
 
 describe("Farm input", () => {
   it("accepts required Farm information", () => {
@@ -72,10 +77,27 @@ describe("ActionLog input", () => {
     });
   });
 
-  it("rejects problem reporting until the IssueRecord Slice", () => {
-    expect(parseActionLogInput({ actionType: "issue_reported" })).toMatchObject({
+  it("accepts a problem report with an observed fact", () => {
+    expect(
+      parseActionLogInput({
+        actionType: "issue_reported",
+        note: "Checked during the planned work.",
+        issue: {
+          observedSymptom: "Observed an unexpected condition.",
+          severity: "unknown",
+          expertReviewRequired: false,
+        },
+      }),
+    ).toMatchObject({
+      ok: true,
+      data: { actionType: "issue_reported", issue: { severity: "unknown" } },
+    });
+  });
+
+  it("rejects a problem report without an observed fact", () => {
+    expect(parseActionLogInput({ actionType: "issue_reported", issue: {} })).toMatchObject({
       ok: false,
-      error: "actionType must be completed or not_checked.",
+      error: "issue.observedSymptom is required and must not exceed 1000 characters.",
     });
   });
 
@@ -89,5 +111,23 @@ describe("ActionLog input", () => {
       ok: false,
       error: "performedAt must be an ISO 8601 UTC timestamp.",
     });
+  });
+});
+
+describe("Follow-up FarmTask input", () => {
+  it("accepts a generic follow-up without crop-specific input", () => {
+    expect(
+      parseFollowUpTaskInput({
+        title: "Recheck observed issue",
+        scheduledFor: "2026-08-14",
+        priority: "medium",
+      }),
+    ).toMatchObject({ ok: true });
+  });
+
+  it("rejects an invalid follow-up date", () => {
+    expect(
+      parseFollowUpTaskInput({ title: "Recheck", scheduledFor: "2026-02-30", priority: "medium" }),
+    ).toMatchObject({ ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." });
   });
 });

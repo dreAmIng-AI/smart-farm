@@ -16,6 +16,10 @@ export type TaskStatus =
 
 export type TaskPriority = "low" | "medium" | "high";
 
+export type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
+
+export type IssueSeverity = "low" | "medium" | "high" | "unknown";
+
 export type CropCycle = {
   id: string;
   farmId: string;

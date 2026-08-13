@@ -15,7 +15,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 
 | 영역 | 역할 | 현재 위치 |
 |---|---|---|
-| Core Platform | 작물과 무관한 농작업 실행관리 기반 | 계획·Today·기본 결과 기록 구현, Issue·후속·이력 진행 예정 |
+| Core Platform | 작물과 무관한 농작업 실행관리 기반 | 계획·Today·결과·Issue·후속·이력 구현 |
 | Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop |
 | Labs | 날씨, 병해충, 분석, AI, 센서, 시장 등의 독립 실험 | Core v0.1의 필수 범위 아님 |
 
@@ -82,4 +82,4 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 2. `supabase/migrations/`의 migration을 파일명 순서대로 대상 Supabase 프로젝트에 적용합니다.
 3. `pnpm dev`를 실행하고 `http://localhost:3000`에서 Supabase Email 계정으로 로그인합니다.
 
-포함 흐름은 `로그인 → Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 완료·미확인 결과 기록`입니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 미확인 기록은 재확인을 위해 작업 상태를 유지합니다. Fixture는 모두 `draft`이며 실제 농업 처방이 아닙니다. IssueRecord, Attachment, Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.
+포함 흐름은 `로그인 → Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 결과 기록 → IssueRecord → Follow-up FarmTask → 이력`입니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Attachment, Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.
