@@ -171,6 +171,7 @@ p {
 
 .issue-entry,
 .issue-follow-up,
+.issue-status-entry,
 .attachment-entry,
 .growth-stage-entry {
   background: #fff8e8;
@@ -189,6 +190,12 @@ p {
 .growth-stage-entry {
   background: #f3f6fe;
   border-color: #c5d3ee;
+}
+
+.issue-status-entry {
+  background: #f3f6fe;
+  border-color: #c5d3ee;
+  margin-top: 0.35rem;
 }
 
 .issue-entry summary {

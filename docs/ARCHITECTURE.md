@@ -54,7 +54,7 @@ Core Domain Logic은 다음 책임을 가집니다.
 - TaskTemplate을 계획된 FarmTask로 적용
 - Today의 오늘·지연 작업 조회
 - ActionLog를 통한 결과 기록과 FarmTask 상태 변경
-- IssueRecord와 Follow-up FarmTask 생성·연결
+- IssueRecord 상태 변경과 Follow-up FarmTask 생성·연결
 - Attachment 파일 검증·비공개 Storage 저장·이력 조회
 - 이력 조회
 

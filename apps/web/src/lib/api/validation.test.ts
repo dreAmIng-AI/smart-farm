@@ -7,6 +7,7 @@ import {
   parseCropCycleInput,
   parseFarmInput,
   parseFollowUpTaskInput,
+  parseIssueStatusInput,
 } from "@/lib/api/validation";
 
 const validPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -83,6 +84,26 @@ describe("CropCycle growth stage input", () => {
     expect(parseCropCycleGrowthStageInput({ growthStage: "a".repeat(101) })).toMatchObject({
       ok: false,
       error: "growthStage must not exceed 100 characters.",
+    });
+  });
+});
+
+describe("Issue status input", () => {
+  it("accepts the existing generic IssueRecord statuses", () => {
+    expect(parseIssueStatusInput({ status: "needs_review" })).toEqual({
+      ok: true,
+      data: { status: "needs_review" },
+    });
+    expect(parseIssueStatusInput({ status: "closed_without_action" })).toEqual({
+      ok: true,
+      data: { status: "closed_without_action" },
+    });
+  });
+
+  it("rejects an unsupported IssueRecord status", () => {
+    expect(parseIssueStatusInput({ status: "diagnosed" })).toMatchObject({
+      ok: false,
+      error: "status must be open, needs_review, resolved, or closed_without_action.",
     });
   });
 });
