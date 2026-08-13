@@ -37,9 +37,9 @@
 
 | Resource / action | Intent |
 |---|---|
-| `POST /api/farms` | Farm 생성 |
+| `GET/POST /api/farms` | 접근 가능한 Farm 목록 조회·Farm 생성 |
 | `GET/PATCH /api/farms/{farmId}` | 접근 가능한 Farm 조회·수정 |
-| `POST /api/farms/{farmId}/crop-cycles` | CropCycle 생성 |
+| `GET/POST /api/farms/{farmId}/crop-cycles` | 접근 가능한 Farm의 CropCycle 목록 조회·CropCycle 생성 |
 | `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
 | `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
@@ -68,6 +68,10 @@
 ```
 
 성공 시 `200`과 갱신된 camelCase Farm 객체를 반환합니다. 접근할 수 없는 Farm은 `FARM_NOT_FOUND`(404)로 응답합니다.
+
+### 저장된 Farm·CropCycle 목록 조회
+
+`GET /api/farms`는 로그인 사용자가 FarmMembership RLS로 접근할 수 있는 Farm 목록을 생성일 내림차순으로 반환합니다. `GET /api/farms/{farmId}/crop-cycles`는 접근 가능한 Farm의 CropCycle 목록을 정식일 내림차순으로 반환합니다. 두 목록 조회 모두 기존 RLS를 그대로 사용하며, 선택한 CropCycle의 TaskTemplate 적용이나 FarmTask 생성을 수행하지 않습니다. 성공 응답은 `{ items, meta: { count } }` 형식입니다.
 
 ### CropCycle 생성
 

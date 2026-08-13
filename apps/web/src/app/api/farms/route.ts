@@ -5,6 +5,43 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 import { parseFarmInput } from "@/lib/api/validation";
 
+type FarmRow = {
+  id: string;
+  name: string;
+  region_code: string;
+  cultivation_environment: "facility" | "open_field";
+  cultivation_method: string | null;
+};
+
+export async function GET() {
+  const auth = await requireAuthenticatedSupabaseUser();
+  if (!auth.ok) {
+    return auth.response;
+  }
+
+  const { data, error } = await auth.supabase
+    .from("farms")
+    .select("id, name, region_code, cultivation_environment, cultivation_method")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json(
+      { error: { code: "FARM_LOOKUP_FAILED", message: error.message } },
+      { status: 400 },
+    );
+  }
+
+  const items = ((data ?? []) as FarmRow[]).map((farm) => ({
+    id: farm.id,
+    name: farm.name,
+    regionCode: farm.region_code,
+    cultivationEnvironment: farm.cultivation_environment,
+    cultivationMethod: farm.cultivation_method,
+  }));
+
+  return NextResponse.json({ items, meta: { count: items.length } });
+}
+
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedSupabaseUser();
   if (!auth.ok) {
