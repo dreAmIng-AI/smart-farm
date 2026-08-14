@@ -18,6 +18,12 @@ export type CropCycleGrowthStageInput = {
   growthStage: string | null;
 };
 
+export type CropCycleTerminalStatus = "completed" | "cancelled";
+
+export type CropCycleStatusInput = {
+  status: CropCycleTerminalStatus;
+};
+
 export type IssueSeverity = "low" | "medium" | "high" | "unknown";
 
 export type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
@@ -158,6 +164,18 @@ export function parseCropCycleGrowthStageInput(
   }
 
   return { ok: true, data: { growthStage } };
+}
+
+export function parseCropCycleStatusInput(value: unknown): Parsed<CropCycleStatusInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  if (value.status !== "completed" && value.status !== "cancelled") {
+    return { ok: false, error: "status must be completed or cancelled." };
+  }
+
+  return { ok: true, data: { status: value.status } };
 }
 
 export function parseIssueStatusInput(value: unknown): Parsed<IssueStatusInput> {

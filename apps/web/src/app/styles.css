@@ -39,6 +39,10 @@ button.secondary {
   color: #18332a;
 }
 
+button.danger {
+  background: #9b2c2c;
+}
+
 button.compact {
   min-height: auto;
   padding: 0.45rem 0.7rem;
@@ -174,7 +178,8 @@ p {
 .issue-status-entry,
 .farm-settings,
 .attachment-entry,
-.growth-stage-entry {
+.growth-stage-entry,
+.crop-cycle-lifecycle-entry {
   background: #fff8e8;
   border: 1px solid #ead9a1;
   border-radius: 0.5rem;
@@ -191,6 +196,11 @@ p {
 .growth-stage-entry {
   background: #f3f6fe;
   border-color: #c5d3ee;
+}
+
+.crop-cycle-lifecycle-entry {
+  background: #fff8e8;
+  border-color: #ead9a1;
 }
 
 .farm-settings {

@@ -33,6 +33,7 @@ describe("PATCH /api/crop-cycles/:cropCycleId", () => {
         transplant_date: "2026-08-13",
         growth_stage: "flowering",
         status: "active",
+        ended_at: null,
       },
       error: null,
     });

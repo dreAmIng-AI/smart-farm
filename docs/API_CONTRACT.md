@@ -41,6 +41,7 @@
 | `GET/PATCH /api/farms/{farmId}` | 접근 가능한 Farm 조회·수정 |
 | `GET/POST /api/farms/{farmId}/crop-cycles` | 접근 가능한 Farm의 CropCycle 목록 조회·CropCycle 생성 |
 | `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
+| `PATCH /api/crop-cycles/{cropCycleId}/status` | 진행 중 CropCycle 완료·취소 처리 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
 | `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
 | `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
@@ -97,6 +98,16 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 ```
 
 성공 시 생성 API와 같은 CropCycle 정보를 `200`으로 반환합니다. 기존 FarmTask, TaskTemplate 또는 작기 일정은 자동 생성·수정·재일정하지 않습니다.
+
+### CropCycle 종료
+
+`PATCH /api/crop-cycles/{cropCycleId}/status`는 접근 가능한 `active` CropCycle만 `completed` 또는 `cancelled`로 종료합니다. 서버 UTC 시각을 `endedAt`에 기록하고, 기존 FarmTask·ActionLog·IssueRecord·Attachment를 변경하거나 삭제하지 않습니다. 종료된 CropCycle은 다시 활성화하지 않으며 `CROP_CYCLE_ALREADY_ENDED`(409)로 거부합니다. 종료된 CropCycle에서 작업 계획 생성을 요청하면 `CROP_CYCLE_NOT_ACTIVE`(409)로 거부합니다.
+
+```json
+{
+  "status": "completed"
+}
+```
 
 ### 작기 계획 생성
 
@@ -222,7 +233,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 - `UNAUTHORIZED`, `SUPABASE_NOT_CONFIGURED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`, `FARM_UPDATE_FAILED`
-- `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`
+- `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_ALREADY_ENDED`, `CROP_CYCLE_NOT_ACTIVE`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`

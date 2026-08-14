@@ -34,7 +34,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 ## Core v0.1에서 만드는 것
 
 - Farm 생성·목록 선택·기본정보 수정과 CropCycle 생성·선택
-- CropCycle의 현재 생육 단계 생성·변경
+- CropCycle의 현재 생육 단계 생성·변경과 완료·취소 처리
 - Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
 - 전체 일정과 Today의 오늘·지연 작업 확인
 - 완료·문제 있음·확인하지 못함 결과를 ActionLog로 기록
@@ -85,4 +85,4 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 2. `supabase/migrations/`의 migration을 파일명 순서대로 대상 Supabase 프로젝트에 적용합니다.
 3. `pnpm dev`를 실행하고 `http://localhost:3000`에서 Supabase Email 계정으로 로그인합니다.
 
-포함 흐름은 `로그인 → Farm 생성·선택 → CropCycle 생성·선택·현재 생육 단계 변경 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 결과 기록 → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → 이력`입니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.
+포함 흐름은 `로그인 → Farm 생성·선택 → CropCycle 생성·선택·현재 생육 단계 변경·종료 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 결과 기록 → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → 이력`입니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료된 작기는 새 작업 계획을 만들 수 없지만 기존 일정과 이력은 계속 조회할 수 있습니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.

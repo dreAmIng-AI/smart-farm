@@ -38,7 +38,7 @@ User와 Farm의 관계 및 접근 권한을 정의합니다.
 
 ### CropCycle
 
-하나의 Farm에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다. 작기 전체 작업계획의 시간적 범위가 되며, 현재 생육 단계는 Crop Pack의 용어를 텍스트로 기록합니다. Core는 작물별 단계 목록을 하드코딩하지 않습니다.
+하나의 Farm에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다. 작기 전체 작업계획의 시간적 범위가 되며, 현재 생육 단계는 Crop Pack의 용어를 텍스트로 기록합니다. 진행 중 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료 시각과 기존 일정·기록은 보존합니다. Core는 작물별 단계 목록을 하드코딩하지 않습니다.
 
 ### TaskTemplate
 
@@ -102,6 +102,15 @@ IssueRecord 1 ─ N Attachment
 
 ## 7. 상태와 업무 규칙
 
+### CropCycle 상태
+
+```text
+active → completed
+active → cancelled
+```
+
+`completed`와 `cancelled`는 terminal 상태입니다. 종료 시점은 `ended_at`에 서버 UTC로 기록하며, Core v0.1에서는 재활성화하지 않습니다.
+
 ### FarmTask 상태
 
 ```text
@@ -120,7 +129,7 @@ pending → cancelled
 
 ### 업무 규칙
 
-1. 종료된 CropCycle에는 새 자동 작업을 생성하지 않습니다.
+1. 종료된 CropCycle에는 새 자동 작업을 생성하지 않으며, 기존 일정·결과·이력은 보존합니다.
 2. TaskTemplate은 기준, FarmTask는 실제 작기 작업입니다.
 3. FarmTask의 결과는 ActionLog로 남기고 현재 상태는 FarmTask가 보유합니다.
 4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.

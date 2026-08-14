@@ -63,7 +63,7 @@ TaskTemplate → FarmTask
 | status | text | Y | active, completed, cancelled |
 | ended_at | timestamptz | N | 종료 시각 |
 
-`growth_stage`는 현재 작기의 Crop Pack 단계 용어를 저장하는 선택 텍스트입니다. `PATCH /api/crop-cycles/{cropCycleId}`로 접근 가능한 사용자가 값을 변경하거나 null로 비울 수 있습니다. 이 Slice는 최초 migration의 기존 컬럼과 RLS update 정책을 재사용하므로 새 DB migration이 없습니다. 생육 단계 변경은 이미 생성된 FarmTask의 일정이나 템플릿을 자동으로 변경하지 않습니다.
+`growth_stage`는 현재 작기의 Crop Pack 단계 용어를 저장하는 선택 텍스트입니다. `PATCH /api/crop-cycles/{cropCycleId}`로 접근 가능한 사용자가 값을 변경하거나 null로 비울 수 있습니다. `PATCH /api/crop-cycles/{cropCycleId}/status`는 진행 중 작기를 `completed` 또는 `cancelled`로 변경합니다. `202608140001_core_v01_crop_cycle_lifecycle.sql`의 trigger가 서버 UTC 시각을 `ended_at`에 기록하고, 종료 상태의 재변경과 종료 시각 변경을 DB에서 막습니다. 생육 단계 변경과 작기 종료는 이미 생성된 FarmTask의 일정이나 템플릿을 자동으로 변경하지 않습니다.
 
 ### task_templates
 

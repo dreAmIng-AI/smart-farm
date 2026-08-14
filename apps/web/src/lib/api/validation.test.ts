@@ -5,6 +5,7 @@ import {
   parseActionLogInput,
   parseCropCycleGrowthStageInput,
   parseCropCycleInput,
+  parseCropCycleStatusInput,
   parseFarmInput,
   parseFollowUpTaskInput,
   parseIssueStatusInput,
@@ -84,6 +85,26 @@ describe("CropCycle growth stage input", () => {
     expect(parseCropCycleGrowthStageInput({ growthStage: "a".repeat(101) })).toMatchObject({
       ok: false,
       error: "growthStage must not exceed 100 characters.",
+    });
+  });
+});
+
+describe("CropCycle terminal status input", () => {
+  it("accepts completed and cancelled terminal statuses", () => {
+    expect(parseCropCycleStatusInput({ status: "completed" })).toEqual({
+      ok: true,
+      data: { status: "completed" },
+    });
+    expect(parseCropCycleStatusInput({ status: "cancelled" })).toEqual({
+      ok: true,
+      data: { status: "cancelled" },
+    });
+  });
+
+  it("rejects reopening or an unsupported status", () => {
+    expect(parseCropCycleStatusInput({ status: "active" })).toMatchObject({
+      ok: false,
+      error: "status must be completed or cancelled.",
     });
   });
 });
