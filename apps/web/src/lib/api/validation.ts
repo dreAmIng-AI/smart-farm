@@ -24,6 +24,17 @@ export type CropCycleStatusInput = {
   status: CropCycleTerminalStatus;
 };
 
+export type FarmMemberRole = "admin" | "farmer";
+
+export type FarmInvitationInput = {
+  email: string;
+  role: FarmMemberRole;
+};
+
+export type FarmInvitationAcceptanceInput = {
+  token: string;
+};
+
 export type IssueSeverity = "low" | "medium" | "high" | "unknown";
 
 export type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
@@ -176,6 +187,61 @@ export function parseCropCycleStatusInput(value: unknown): Parsed<CropCycleStatu
   }
 
   return { ok: true, data: { status: value.status } };
+}
+
+function parseFarmMemberRole(value: unknown): Parsed<FarmMemberRole> {
+  if (value !== "admin" && value !== "farmer") {
+    return { ok: false, error: "role must be admin or farmer." };
+  }
+
+  return { ok: true, data: value };
+}
+
+export function parseFarmInvitationInput(value: unknown): Parsed<FarmInvitationInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const email = requiredText(value.email)?.toLowerCase();
+  const role = parseFarmMemberRole(value.role);
+
+  if (!email || email.length > 320 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "email must be a valid email address." };
+  }
+
+  if (!role.ok) {
+    return role;
+  }
+
+  return { ok: true, data: { email, role: role.data } };
+}
+
+export function parseFarmMemberRoleInput(value: unknown): Parsed<{ role: FarmMemberRole }> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const role = parseFarmMemberRole(value.role);
+  if (!role.ok) {
+    return role;
+  }
+
+  return { ok: true, data: { role: role.data } };
+}
+
+export function parseFarmInvitationAcceptanceInput(
+  value: unknown,
+): Parsed<FarmInvitationAcceptanceInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const token = requiredText(value.token);
+  if (!token || !isUuid(token)) {
+    return { ok: false, error: "token must be a UUID." };
+  }
+
+  return { ok: true, data: { token } };
 }
 
 export function parseIssueStatusInput(value: unknown): Parsed<IssueStatusInput> {

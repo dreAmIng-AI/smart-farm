@@ -6,6 +6,9 @@ import {
   parseCropCycleGrowthStageInput,
   parseCropCycleInput,
   parseCropCycleStatusInput,
+  parseFarmInvitationAcceptanceInput,
+  parseFarmInvitationInput,
+  parseFarmMemberRoleInput,
   parseFarmInput,
   parseFollowUpTaskInput,
   parseIssueStatusInput,
@@ -41,6 +44,37 @@ describe("Farm input", () => {
         cultivationEnvironment: "facility",
       }),
     ).toMatchObject({ ok: false, error: "name and regionCode are required." });
+  });
+});
+
+describe("Farm invitation input", () => {
+  it("normalizes a valid invitation email and accepts a collaboration role", () => {
+    expect(parseFarmInvitationInput({ email: "FARMER@example.com", role: "farmer" })).toEqual({
+      ok: true,
+      data: { email: "farmer@example.com", role: "farmer" },
+    });
+  });
+
+  it("rejects an invalid invitation email or owner invitation", () => {
+    expect(parseFarmInvitationInput({ email: "farmer", role: "farmer" })).toMatchObject({
+      ok: false,
+      error: "email must be a valid email address.",
+    });
+    expect(parseFarmInvitationInput({ email: "farmer@example.com", role: "owner" })).toMatchObject({
+      ok: false,
+      error: "role must be admin or farmer.",
+    });
+  });
+
+  it("validates a role update and an invitation UUID token", () => {
+    expect(parseFarmMemberRoleInput({ role: "admin" })).toEqual({ ok: true, data: { role: "admin" } });
+    expect(
+      parseFarmInvitationAcceptanceInput({ token: "11111111-1111-4111-8111-111111111111" }),
+    ).toEqual({ ok: true, data: { token: "11111111-1111-4111-8111-111111111111" } });
+    expect(parseFarmInvitationAcceptanceInput({ token: "invalid" })).toMatchObject({
+      ok: false,
+      error: "token must be a UUID.",
+    });
   });
 });
 

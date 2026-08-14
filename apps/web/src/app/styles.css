@@ -177,6 +177,7 @@ p {
 .issue-follow-up,
 .issue-status-entry,
 .farm-settings,
+.farm-collaboration,
 .attachment-entry,
 .growth-stage-entry,
 .crop-cycle-lifecycle-entry {
@@ -208,19 +209,57 @@ p {
   border-color: #c5d3ee;
 }
 
+.farm-collaboration {
+  background: #eef7f0;
+  border-color: #b9d9c1;
+}
+
 .saved-context {
   background: #eef7f0;
   border-color: #b9d9c1;
 }
 
-.farm-settings summary {
+.farm-settings summary,
+.farm-collaboration summary {
   color: #18332a;
   cursor: pointer;
   font-weight: 700;
 }
 
-.farm-settings[open] summary {
+.farm-settings[open] summary,
+.farm-collaboration[open] summary {
   margin-bottom: 0.15rem;
+}
+
+.invite-link,
+.member-list {
+  border-top: 1px solid #b9d9c1;
+  padding-top: 0.75rem;
+}
+
+.member-row {
+  align-items: center;
+  background: #f7fbf8;
+  border: 1px solid #dbe6dc;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0.7rem;
+}
+
+.member-row > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.member-row strong {
+  overflow-wrap: anywhere;
+}
+
+.member-row small {
+  color: #547064;
 }
 
 .issue-status-entry {
@@ -317,5 +356,9 @@ p {
 
   .button-row {
     grid-template-columns: repeat(2, max-content);
+  }
+
+  .member-row {
+    grid-template-columns: minmax(0, 1fr) max-content max-content;
   }
 }

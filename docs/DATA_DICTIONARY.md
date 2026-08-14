@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_memberships, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
+**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
 
 ## 1. 공통 규칙
 
@@ -49,6 +49,25 @@ TaskTemplate → FarmTask
 | user_id | uuid | Y | Supabase Auth 사용자 |
 | role | text | Y | owner, farmer, admin |
 | created_at | timestamptz | Y | 생성 시각 |
+
+`owner`, `admin`, `farmer`는 기존 값과 제약을 유지합니다. 이 Slice는 Farm·작기·작업 기록의 기존 FarmMembership RLS를 변경하지 않습니다. 구성원 관리 권한만 owner와 admin에 별도 RPC로 제한합니다.
+
+### farm_invitations
+
+| Field | Type | Required | Meaning |
+|---|---|---:|---|
+| id | uuid | Y | 초대 식별자 |
+| farm_id | uuid | Y | 대상 Farm |
+| email | text | Y | 소문자로 정규화한 수신 이메일 |
+| role | text | Y | admin 또는 farmer |
+| token_hash | text | Y | 초대 링크 토큰의 SHA-256 해시 |
+| status | text | Y | pending, accepted, revoked, expired |
+| invited_by | uuid | N | 초대한 Supabase Auth 사용자 |
+| expires_at | timestamptz | Y | 생성 후 7일의 UTC 만료 시각 |
+| accepted_at / revoked_at | timestamptz | N | 수락·취소 시각 |
+| created_at | timestamptz | Y | 생성 시각 |
+
+`202608140002_core_v01_farm_memberships.sql`은 `farm_invitations`와 role-checked security-definer RPC를 추가합니다. 대기 중인 초대는 Farm과 이메일 조합당 하나이며, 새 초대를 만들면 같은 대상의 이전 대기 초대는 취소됩니다. 이메일은 동일 이메일 수락 확인과 관리 UI를 위해 초대 테이블에만 최소 보관하고, 토큰 원문은 저장하지 않습니다.
 
 ### crop_cycles
 
@@ -164,4 +183,4 @@ TaskTemplate → FarmTask
 
 ## 6. PII
 
-사용자 이메일 등 인증정보는 Supabase Auth를 따르며 애플리케이션 테이블에 불필요하게 복제하지 않습니다. Farm 데이터는 FarmMembership와 RLS로 보호합니다.
+사용자 계정의 원본 이메일과 인증정보는 Supabase Auth가 관리합니다. 다만 대기 중 FarmInvitation은 같은 이메일 수락 확인을 위해 정규화한 수신 이메일만 최소 보관하며, manager RLS와 security-definer RPC로 보호합니다. FarmMembership의 구성원 이메일은 Auth에서 권한 있는 owner/admin에게만 조회해 반환하며 별도 복제하지 않습니다. Farm 데이터는 FarmMembership와 RLS로 보호합니다.

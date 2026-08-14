@@ -39,6 +39,11 @@
 |---|---|
 | `GET/POST /api/farms` | 접근 가능한 Farm 목록 조회·Farm 생성 |
 | `GET/PATCH /api/farms/{farmId}` | 접근 가능한 Farm 조회·수정 |
+| `GET /api/farms/{farmId}/collaboration` | 현재 사용자의 역할과 관리 가능한 구성원·대기 초대 조회 |
+| `POST /api/farms/{farmId}/invitations` | 역할 제한이 적용된 직접 전달용 초대 링크 생성 |
+| `DELETE /api/farms/{farmId}/invitations/{invitationId}` | 대기 중 Farm 초대 취소 |
+| `PATCH/DELETE /api/farms/{farmId}/members/{memberUserId}` | owner의 역할 변경 또는 owner/admin의 구성원 제거 |
+| `POST /api/farm-invitations/accept` | 로그인 이메일과 일치하는 초대 링크 수락 |
 | `GET/POST /api/farms/{farmId}/crop-cycles` | 접근 가능한 Farm의 CropCycle 목록 조회·CropCycle 생성 |
 | `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
 | `PATCH /api/crop-cycles/{cropCycleId}/status` | 진행 중 CropCycle 완료·취소 처리 |
@@ -73,6 +78,27 @@
 ### 저장된 Farm·CropCycle 목록 조회
 
 `GET /api/farms`는 로그인 사용자가 FarmMembership RLS로 접근할 수 있는 Farm 목록을 생성일 내림차순으로 반환합니다. `GET /api/farms/{farmId}/crop-cycles`는 접근 가능한 Farm의 CropCycle 목록을 정식일 내림차순으로 반환합니다. 두 목록 조회 모두 기존 RLS를 그대로 사용하며, 선택한 CropCycle의 TaskTemplate 적용이나 FarmTask 생성을 수행하지 않습니다. 성공 응답은 `{ items, meta: { count } }` 형식입니다.
+
+### Farm 구성원 초대·역할
+
+`GET /api/farms/{farmId}/collaboration`은 현재 사용자의 `actorRole`을 반환합니다. owner/admin에게만 구성원 이메일·역할과 유효한 대기 초대 목록을 반환하며 farmer에는 빈 목록을 반환합니다. `POST /api/farms/{farmId}/invitations`는 `{ "email", "role" }`을 받아 직접 전달할 `inviteUrl`을 반환합니다. `role`은 `admin` 또는 `farmer`이며, owner만 admin을 초대할 수 있습니다. 초대 원문 토큰은 응답에서만 반환하고 DB에는 저장하지 않습니다.
+
+```json
+{
+  "email": "farmer@example.com",
+  "role": "farmer"
+}
+```
+
+`POST /api/farm-invitations/accept`는 로그인한 사용자가 링크의 UUID 토큰을 수락합니다. DB RPC가 Supabase Auth 이메일과 초대 이메일을 비교하고 FarmMembership 생성 및 초대 상태 변경을 원자적으로 수행합니다. 이메일 불일치, 만료, 취소, 중복 수락은 `FARM_INVITATION_ACCEPT_FAILED`(400)입니다.
+
+```json
+{
+  "token": "11111111-1111-4111-8111-111111111111"
+}
+```
+
+owner만 `PATCH /api/farms/{farmId}/members/{memberUserId}`로 non-owner를 admin/farmer로 변경할 수 있습니다. `DELETE /api/farms/{farmId}/members/{memberUserId}`는 owner가 admin/farmer를, admin이 farmer만 제거할 수 있습니다. owner 역할 이전·제거 및 자동 이메일 발송은 이 Slice 범위 밖입니다.
 
 ### CropCycle 생성
 
