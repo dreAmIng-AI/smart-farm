@@ -34,7 +34,11 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### FarmMembership
 
-User와 Farm의 관계 및 접근 권한을 정의합니다.
+User와 Farm의 관계 및 접근 권한을 정의합니다. 기존 `owner`, `admin`, `farmer` 이름은 유지합니다. 이 Slice에서는 기존 Farm 운영 데이터 RLS를 바꾸지 않고 구성원 관리 권한만 구분합니다. owner는 admin·farmer 초대, 역할 변경, 제거를 할 수 있고 admin은 farmer 초대·제거만 할 수 있습니다. farmer는 구성원 관리를 할 수 없습니다.
+
+### FarmInvitation
+
+FarmMembership를 만들기 전의 대기 중 초대입니다. 이메일, 초대 역할(admin 또는 farmer), 만료 시각과 상태를 보관하며, 초대 링크의 원문 토큰은 저장하지 않고 SHA-256 해시만 보관합니다. 같은 이메일로 로그인한 사용자만 수락할 수 있으며 수락은 FarmMembership 생성과 초대 상태 변경을 하나의 DB 트랜잭션으로 처리합니다.
 
 ### CropCycle
 
@@ -90,6 +94,7 @@ CropCycle + TaskTemplate → Scheduled FarmTask[]
 
 ```text
 User N ─ N Farm                     through FarmMembership
+Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
 CropCycle 1 ─ N FarmTask             scheduled plan and actual work
 TaskTemplate 1 ─ N FarmTask          when created from a template
@@ -136,6 +141,7 @@ pending → cancelled
 5. Attachment는 ActionLog 또는 IssueRecord에 연결합니다.
 6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.
 7. 검증되지 않은 농업 데이터는 `draft`로 표시하고, 실제 처방이나 자동 제어로 사용하지 않습니다.
+8. FarmInvitation은 7일 뒤 만료되며, owner는 admin·farmer를, admin은 farmer만 초대할 수 있습니다. 역할 변경은 owner만 할 수 있고 owner 역할 이전·제거는 이 Slice 범위 밖입니다.
 
 ## 8. 검증 상태
 

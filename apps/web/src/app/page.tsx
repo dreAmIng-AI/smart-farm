@@ -14,6 +14,38 @@ type Farm = {
   cultivationMethod: string | null;
 };
 
+type FarmRole = "owner" | "admin" | "farmer";
+
+type FarmMember = {
+  userId: string;
+  email: string;
+  role: FarmRole;
+  createdAt: string;
+};
+
+type FarmInvitation = {
+  id: string;
+  email: string;
+  role: Exclude<FarmRole, "owner">;
+  status: "pending";
+  expiresAt: string;
+  createdAt: string;
+};
+
+type FarmCollaboration = {
+  actorRole: FarmRole;
+  members: FarmMember[];
+  invitations: FarmInvitation[];
+};
+
+type FarmInvitationResponse = {
+  id: string;
+  email: string;
+  role: Exclude<FarmRole, "owner">;
+  expiresAt: string;
+  inviteUrl: string;
+};
+
 type CropCycle = {
   id: string;
   farmId: string;
@@ -159,6 +191,16 @@ function cropCycleStatusLabel(status: CropCycle["status"]) {
   return labels[status];
 }
 
+function farmRoleLabel(role: FarmRole) {
+  const labels: Record<FarmRole, string> = {
+    admin: "관리자",
+    farmer: "작업자",
+    owner: "소유자",
+  };
+
+  return labels[role];
+}
+
 function issueSeverityLabel(severity: string) {
   const labels: Record<string, string> = {
     high: "높음",
@@ -232,6 +274,11 @@ export default function HomePage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
+  const [farmCollaboration, setFarmCollaboration] = useState<FarmCollaboration | null>(null);
+  const [isLoadingFarmCollaboration, setIsLoadingFarmCollaboration] = useState(false);
+  const [isSavingFarmCollaboration, setIsSavingFarmCollaboration] = useState(false);
+  const [farmCollaborationFeedback, setFarmCollaborationFeedback] = useState<string | null>(null);
+  const [latestInviteUrl, setLatestInviteUrl] = useState<string | null>(null);
   const [cropCycles, setCropCycles] = useState<CropCycle[]>([]);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
@@ -247,12 +294,14 @@ export default function HomePage() {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const invitationAcceptanceAttempted = useRef(false);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [isRestoringContext, setIsRestoringContext] = useState(false);
   const [message, setMessage] = useState(
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const selectedFarmId = farm?.id;
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -307,6 +356,78 @@ export default function HomePage() {
     };
   }, [userEmail]);
 
+  useEffect(() => {
+    if (!userEmail || invitationAcceptanceAttempted.current) {
+      return;
+    }
+
+    const token = new URLSearchParams(window.location.search).get("invite");
+    if (!token) {
+      return;
+    }
+
+    invitationAcceptanceAttempted.current = true;
+
+    async function acceptInvitation() {
+      try {
+        const accepted = await apiRequest<{ farmId: string; role: Exclude<FarmRole, "owner"> }>(
+          "/api/farm-invitations/accept",
+          { method: "POST", body: JSON.stringify({ token }) },
+        );
+        const farmsResult = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
+        setFarms(farmsResult.items);
+        setMessage(`Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 Farm을 선택해 시작하세요.`);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Farm 초대를 수락하지 못했습니다.");
+      } finally {
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.delete("invite");
+        window.history.replaceState({}, "", nextUrl);
+      }
+    }
+
+    void acceptInvitation();
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (!selectedFarmId || !userEmail) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadFarmCollaboration() {
+      setIsLoadingFarmCollaboration(true);
+      try {
+        const collaboration = await apiRequest<FarmCollaboration>(
+          `/api/farms/${selectedFarmId}/collaboration`,
+          { method: "GET" },
+        );
+        if (isMounted) {
+          setFarmCollaboration(collaboration);
+          setFarmCollaborationFeedback(null);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setFarmCollaboration(null);
+          setFarmCollaborationFeedback(
+            error instanceof Error ? error.message : "Farm 구성원 정보를 불러오지 못했습니다.",
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingFarmCollaboration(false);
+        }
+      }
+    }
+
+    void loadFarmCollaboration();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedFarmId, userEmail]);
+
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -340,6 +461,9 @@ export default function HomePage() {
       }
       setFarms([]);
       setFarm(null);
+      setFarmCollaboration(null);
+      setFarmCollaborationFeedback(null);
+      setLatestInviteUrl(null);
       setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
@@ -378,6 +502,9 @@ export default function HomePage() {
         }),
       });
       setFarm(created);
+      setFarmCollaboration(null);
+      setFarmCollaborationFeedback(null);
+      setLatestInviteUrl(null);
       setFarms((items) => [created, ...items.filter((item) => item.id !== created.id)]);
       setCropCycles([]);
       setCropCycle(null);
@@ -425,6 +552,120 @@ export default function HomePage() {
       setMessage(error instanceof Error ? error.message : "Farm 기본정보 저장에 실패했습니다.");
     } finally {
       setIsUpdatingFarm(false);
+    }
+  }
+
+  async function refreshFarmCollaboration() {
+    if (!farm) {
+      return;
+    }
+
+    const collaboration = await apiRequest<FarmCollaboration>(`/api/farms/${farm.id}/collaboration`, {
+      method: "GET",
+    });
+    setFarmCollaboration(collaboration);
+  }
+
+  async function handleFarmInvitationCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!farm) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    setIsSavingFarmCollaboration(true);
+    try {
+      const invitation = await apiRequest<FarmInvitationResponse>(`/api/farms/${farm.id}/invitations`, {
+        method: "POST",
+        body: JSON.stringify({ email: form.get("inviteEmail"), role: form.get("inviteRole") }),
+      });
+      setLatestInviteUrl(invitation.inviteUrl);
+      await refreshFarmCollaboration();
+      setFarmCollaborationFeedback(
+        `${invitation.email}에게 보낼 초대 링크를 만들었습니다. 만료 전까지 링크를 직접 전달하세요.`,
+      );
+    } catch (error) {
+      setFarmCollaborationFeedback(
+        error instanceof Error ? error.message : "Farm 초대 링크를 만들지 못했습니다.",
+      );
+    } finally {
+      setIsSavingFarmCollaboration(false);
+    }
+  }
+
+  async function handleFarmMemberRoleChange(memberUserId: string, role: Exclude<FarmRole, "owner">) {
+    if (!farm) {
+      return;
+    }
+
+    setIsSavingFarmCollaboration(true);
+    try {
+      await apiRequest(`/api/farms/${farm.id}/members/${memberUserId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role }),
+      });
+      await refreshFarmCollaboration();
+      setFarmCollaborationFeedback("구성원 역할을 변경했습니다.");
+    } catch (error) {
+      setFarmCollaborationFeedback(
+        error instanceof Error ? error.message : "구성원 역할을 변경하지 못했습니다.",
+      );
+    } finally {
+      setIsSavingFarmCollaboration(false);
+    }
+  }
+
+  async function handleFarmMemberRemove(member: FarmMember) {
+    if (!farm || !window.confirm(`${member.email} 구성원을 Farm에서 제거할까요?`)) {
+      return;
+    }
+
+    setIsSavingFarmCollaboration(true);
+    try {
+      await apiRequest(`/api/farms/${farm.id}/members/${member.userId}`, { method: "DELETE" });
+      await refreshFarmCollaboration();
+      setFarmCollaborationFeedback(`${member.email} 구성원을 제거했습니다.`);
+    } catch (error) {
+      setFarmCollaborationFeedback(
+        error instanceof Error ? error.message : "구성원을 제거하지 못했습니다.",
+      );
+    } finally {
+      setIsSavingFarmCollaboration(false);
+    }
+  }
+
+  async function handleFarmInvitationRevoke(invitation: FarmInvitation) {
+    if (!farm || !window.confirm(`${invitation.email}에게 보낸 초대를 취소할까요?`)) {
+      return;
+    }
+
+    setIsSavingFarmCollaboration(true);
+    try {
+      await apiRequest(`/api/farms/${farm.id}/invitations/${invitation.id}`, { method: "DELETE" });
+      if (latestInviteUrl) {
+        setLatestInviteUrl(null);
+      }
+      await refreshFarmCollaboration();
+      setFarmCollaborationFeedback(`${invitation.email} 초대를 취소했습니다.`);
+    } catch (error) {
+      setFarmCollaborationFeedback(
+        error instanceof Error ? error.message : "초대를 취소하지 못했습니다.",
+      );
+    } finally {
+      setIsSavingFarmCollaboration(false);
+    }
+  }
+
+  async function handleInvitationLinkCopy() {
+    if (!latestInviteUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(latestInviteUrl);
+      setFarmCollaborationFeedback("초대 링크를 클립보드에 복사했습니다.");
+    } catch {
+      setFarmCollaborationFeedback("초대 링크를 직접 선택해 복사하세요.");
     }
   }
 
@@ -565,6 +806,9 @@ export default function HomePage() {
     const selectedFarm = farms.find((item) => item.id === farmId);
     if (!selectedFarm) {
       setFarm(null);
+      setFarmCollaboration(null);
+      setFarmCollaborationFeedback(null);
+      setLatestInviteUrl(null);
       setCropCycles([]);
       clearCropCycleContext();
       setTodayTasks([]);
@@ -575,6 +819,9 @@ export default function HomePage() {
     setIsRestoringContext(true);
     setFarm(selectedFarm);
     setFarmFeedback(null);
+    setFarmCollaboration(null);
+    setFarmCollaborationFeedback(null);
+    setLatestInviteUrl(null);
     clearCropCycleContext();
     setTodayTasks([]);
     setHistory([]);
@@ -963,6 +1210,7 @@ export default function HomePage() {
           </p>
         ) : null}
         {farm ? (
+          <>
           <details className="farm-settings" open>
             <summary>현재 Farm 기본정보 수정</summary>
             <p className="field-hint">Farm 기본정보만 변경합니다. 기존 CropCycle, FarmTask, 결과와 이력은 바꾸지 않습니다.</p>
@@ -991,6 +1239,125 @@ export default function HomePage() {
               </button>
             </form>
           </details>
+          <details className="farm-collaboration" open>
+            <summary>Farm 구성원과 초대 관리</summary>
+            <p className="field-hint">
+              자동 이메일은 보내지 않습니다. 만든 초대 링크를 복사해 해당 이메일의 팀원에게 직접 전달하세요.
+            </p>
+            {isLoadingFarmCollaboration ? <small className="field-hint">구성원 정보를 불러오는 중입니다.</small> : null}
+            {farmCollaboration ? (
+              <>
+                <p className="muted">내 역할: {farmRoleLabel(farmCollaboration.actorRole)}</p>
+                {farmCollaboration.actorRole === "farmer" ? (
+                  <p className="field-hint">작업자는 Farm 운영 데이터를 사용할 수 있지만 구성원과 초대는 관리할 수 없습니다.</p>
+                ) : (
+                  <>
+                    <form className="stack" onSubmit={handleFarmInvitationCreate}>
+                      <label>
+                        초대할 이메일
+                        <input autoComplete="email" name="inviteEmail" required type="email" />
+                      </label>
+                      <label>
+                        초대 역할
+                        <select defaultValue="farmer" name="inviteRole">
+                          <option value="farmer">작업자</option>
+                          {farmCollaboration.actorRole === "owner" ? <option value="admin">관리자</option> : null}
+                        </select>
+                      </label>
+                      <button disabled={isSavingFarmCollaboration} type="submit">
+                        초대 링크 만들기
+                      </button>
+                    </form>
+
+                    {latestInviteUrl ? (
+                      <div className="invite-link stack">
+                        <label>
+                          새 초대 링크
+                          <input aria-label="새 초대 링크" readOnly value={latestInviteUrl} />
+                        </label>
+                        <button className="secondary compact" onClick={() => void handleInvitationLinkCopy()} type="button">
+                          링크 복사
+                        </button>
+                      </div>
+                    ) : null}
+
+                    <div className="member-list stack">
+                      <h3>현재 구성원</h3>
+                      {farmCollaboration.members.length === 0 ? <p className="field-hint">표시할 구성원이 없습니다.</p> : null}
+                      {farmCollaboration.members.map((member) => {
+                        const isOwner = member.role === "owner";
+                        const canChangeRole = farmCollaboration.actorRole === "owner" && !isOwner;
+                        const canRemove =
+                          !isOwner &&
+                          (farmCollaboration.actorRole === "owner" ||
+                            (farmCollaboration.actorRole === "admin" && member.role === "farmer"));
+
+                        return (
+                          <div className="member-row" key={member.userId}>
+                            <div>
+                              <strong>{member.email}</strong>
+                              <small>{farmRoleLabel(member.role)}</small>
+                            </div>
+                            {canChangeRole ? (
+                              <select
+                                aria-label={`${member.email} 역할`}
+                                defaultValue={member.role}
+                                disabled={isSavingFarmCollaboration}
+                                onChange={(event) =>
+                                  void handleFarmMemberRoleChange(
+                                    member.userId,
+                                    event.target.value as Exclude<FarmRole, "owner">,
+                                  )
+                                }
+                              >
+                                <option value="farmer">작업자</option>
+                                <option value="admin">관리자</option>
+                              </select>
+                            ) : null}
+                            {canRemove ? (
+                              <button
+                                className="danger compact"
+                                disabled={isSavingFarmCollaboration}
+                                onClick={() => void handleFarmMemberRemove(member)}
+                                type="button"
+                              >
+                                제거
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="member-list stack">
+                      <h3>보낸 초대</h3>
+                      {farmCollaboration.invitations.length === 0 ? <p className="field-hint">대기 중인 초대가 없습니다.</p> : null}
+                      {farmCollaboration.invitations.map((invitation) => (
+                        <div className="member-row" key={invitation.id}>
+                          <div>
+                            <strong>{invitation.email}</strong>
+                            <small>
+                              {farmRoleLabel(invitation.role)} · {displayDate(invitation.expiresAt)} 만료
+                            </small>
+                          </div>
+                          <button
+                            className="danger compact"
+                            disabled={isSavingFarmCollaboration}
+                            onClick={() => void handleFarmInvitationRevoke(invitation)}
+                            type="button"
+                          >
+                            초대 취소
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : null}
+            {farmCollaborationFeedback ? <p className="inline-status" role="status">{farmCollaborationFeedback}</p> : null}
+          </details>
+          </>
         ) : null}
       </section> : null}
 

@@ -34,6 +34,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 ## Core v0.1에서 만드는 것
 
 - Farm 생성·목록 선택·기본정보 수정과 CropCycle 생성·선택
+- Farm 구성원 초대 링크 생성·수락과 owner/admin/farmer 역할 관리
 - CropCycle의 현재 생육 단계 생성·변경과 완료·취소 처리
 - Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
 - 전체 일정과 Today의 오늘·지연 작업 확인
@@ -78,6 +79,10 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 - DB는 `snake_case`, TypeScript/API는 `camelCase`
 - DB 시간은 UTC, UI 표시는 Asia/Seoul
 - RLS 적용, Secret의 클라이언트 노출 금지
+
+## Farm 협업
+
+Farm owner는 admin과 farmer를 초대하고, owner 역할을 제외한 구성원 역할을 변경하거나 제거할 수 있습니다. Farm admin은 farmer만 초대·제거할 수 있으며 farmer는 구성원 관리를 할 수 없습니다. 자동 이메일은 보내지 않습니다. 생성된 링크를 직접 전달하면, 동일한 이메일로 로그인한 사용자가 7일 안에 수락할 수 있습니다. 초대 토큰 원문은 저장하지 않습니다.
 
 ## 현재 Vertical Slice 실행
 
