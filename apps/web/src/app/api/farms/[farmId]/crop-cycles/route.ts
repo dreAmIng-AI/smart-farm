@@ -13,6 +13,7 @@ type CropCycleRow = {
   transplant_date: string;
   growth_stage: string | null;
   status: "active" | "completed" | "cancelled";
+  ended_at: string | null;
 };
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -51,7 +52,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data, error } = await auth.supabase
     .from("crop_cycles")
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status")
+    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .eq("farm_id", farmId)
     .order("transplant_date", { ascending: false });
 
@@ -70,6 +71,7 @@ export async function GET(_request: Request, context: RouteContext) {
     transplantDate: cropCycle.transplant_date,
     growthStage: cropCycle.growth_stage,
     status: cropCycle.status,
+    endedAt: cropCycle.ended_at,
   }));
 
   return NextResponse.json({ items, meta: { count: items.length } });
@@ -127,7 +129,7 @@ export async function POST(request: Request, context: RouteContext) {
       transplant_date: parsed.data.transplantDate,
       growth_stage: parsed.data.growthStage,
     })
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status")
+    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .single();
 
   if (error) {
@@ -146,6 +148,7 @@ export async function POST(request: Request, context: RouteContext) {
       transplantDate: data.transplant_date,
       growthStage: data.growth_stage,
       status: data.status,
+      endedAt: data.ended_at,
     },
     { status: 201 },
   );

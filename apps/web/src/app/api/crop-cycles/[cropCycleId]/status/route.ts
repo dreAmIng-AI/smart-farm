@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
-import { isUuid, parseCropCycleGrowthStageInput } from "@/lib/api/validation";
+import { isUuid, parseCropCycleStatusInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
 
@@ -20,7 +20,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const payload: unknown = await request.json().catch(() => null);
-  const parsed = parseCropCycleGrowthStageInput(payload);
+  const parsed = parseCropCycleStatusInput(payload);
   if (!parsed.ok) {
     return NextResponse.json(
       { error: { code: "VALIDATION_ERROR", message: parsed.error } },
@@ -30,7 +30,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: lookupError } = await auth.supabase
     .from("crop_cycles")
-    .select("id")
+    .select("id, status")
     .eq("id", cropCycleId)
     .maybeSingle();
 
@@ -48,17 +48,32 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
+  if (existing.status !== "active") {
+    return NextResponse.json(
+      { error: { code: "CROP_CYCLE_ALREADY_ENDED", message: "Crop cycle is already ended." } },
+      { status: 409 },
+    );
+  }
+
   const { data, error } = await auth.supabase
     .from("crop_cycles")
-    .update({ growth_stage: parsed.data.growthStage })
+    .update({ status: parsed.data.status })
     .eq("id", cropCycleId)
+    .eq("status", "active")
     .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
-    .single();
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json(
       { error: { code: "CROP_CYCLE_UPDATE_FAILED", message: error.message } },
       { status: 400 },
+    );
+  }
+
+  if (!data) {
+    return NextResponse.json(
+      { error: { code: "CROP_CYCLE_ALREADY_ENDED", message: "Crop cycle is already ended." } },
+      { status: 409 },
     );
   }
 

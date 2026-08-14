@@ -27,7 +27,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { data: cropCycle, error: cropCycleError } = await auth.supabase
     .from("crop_cycles")
-    .select("id")
+    .select("id, status")
     .eq("id", cropCycleId)
     .maybeSingle();
 
@@ -52,6 +52,13 @@ export async function POST(_request: Request, context: RouteContext) {
         },
       },
       { status: 404 },
+    );
+  }
+
+  if (cropCycle.status !== "active") {
+    return NextResponse.json(
+      { error: { code: "CROP_CYCLE_NOT_ACTIVE", message: "Crop cycle must be active to generate tasks." } },
+      { status: 409 },
     );
   }
 

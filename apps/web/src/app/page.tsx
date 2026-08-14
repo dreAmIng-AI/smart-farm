@@ -22,6 +22,7 @@ type CropCycle = {
   transplantDate: string;
   growthStage: string | null;
   status: "active" | "completed" | "cancelled";
+  endedAt: string | null;
 };
 
 type FarmTask = {
@@ -39,6 +40,7 @@ type FarmTask = {
 
 type TaskResultAction = "completed" | "not_checked" | "issue_reported";
 type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
+type CropCycleTerminalStatus = Exclude<CropCycle["status"], "active">;
 
 type IssueDraft = {
   observedSymptom: string;
@@ -234,6 +236,7 @@ export default function HomePage() {
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
   const [isUpdatingGrowthStage, setIsUpdatingGrowthStage] = useState(false);
+  const [isEndingCropCycle, setIsEndingCropCycle] = useState(false);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -485,6 +488,32 @@ export default function HomePage() {
       setMessage(error instanceof Error ? error.message : "생육 단계 저장에 실패했습니다.");
     } finally {
       setIsUpdatingGrowthStage(false);
+    }
+  }
+
+  async function handleCropCycleEnd(status: CropCycleTerminalStatus) {
+    if (!cropCycle) {
+      return;
+    }
+
+    const statusLabel = status === "completed" ? "완료" : "취소";
+    if (!window.confirm(`이 CropCycle을 ${statusLabel} 처리할까요? 종료된 작기에는 새 작업 계획을 생성할 수 없습니다.`)) {
+      return;
+    }
+
+    setIsEndingCropCycle(true);
+    try {
+      const updated = await apiRequest<CropCycle>(`/api/crop-cycles/${cropCycle.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setCropCycle(updated);
+      setCropCycles((items) => items.map((item) => (item.id === updated.id ? updated : item)));
+      setMessage(`CropCycle을 ${statusLabel} 처리했습니다. 기존 일정과 이력은 보존됩니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "CropCycle 상태 저장에 실패했습니다.");
+    } finally {
+      setIsEndingCropCycle(false);
     }
   }
 
@@ -1000,8 +1029,31 @@ export default function HomePage() {
         <section className="card stack" aria-labelledby="plan-heading">
           <h2 id="plan-heading">3. Plan · 일정 · Today · 이력</h2>
           <p className="muted">
-            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
+            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
           </p>
+          <section className="crop-cycle-lifecycle-entry stack" aria-labelledby="crop-cycle-status-heading">
+            <h3 id="crop-cycle-status-heading">작기 상태</h3>
+            {cropCycle.status === "active" ? (
+              <>
+                <p className="field-hint">
+                  작기가 끝났다면 완료 처리하세요. 중단했다면 취소 처리할 수 있습니다. 두 상태 모두 기존 일정과 이력은 유지됩니다.
+                </p>
+                <div className="button-row">
+                  <button disabled={isEndingCropCycle} onClick={() => void handleCropCycleEnd("completed")} type="button">
+                    작기 완료
+                  </button>
+                  <button className="danger" disabled={isEndingCropCycle} onClick={() => void handleCropCycleEnd("cancelled")} type="button">
+                    작기 취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="field-hint">
+                이 작기는 {cropCycleStatusLabel(cropCycle.status)} 상태입니다.
+                {cropCycle.endedAt ? ` 종료 시각: ${displayDate(cropCycle.endedAt)}.` : ""} 기존 기록은 조회할 수 있지만 새 작업 계획은 생성할 수 없습니다.
+              </p>
+            )}
+          </section>
           <section className="growth-stage-entry stack" aria-labelledby="growth-stage-heading">
             <h3 id="growth-stage-heading">현재 생육 단계</h3>
             <p className="field-hint">
@@ -1026,7 +1078,7 @@ export default function HomePage() {
             </form>
           </section>
           <div className="button-row">
-            <button disabled={isSubmitting} onClick={handlePlanGeneration} type="button">
+            <button disabled={isSubmitting || cropCycle.status !== "active"} onClick={handlePlanGeneration} type="button">
               Draft TaskTemplate 적용
             </button>
             <button className="secondary" disabled={isSubmitting} onClick={handleRefresh} type="button">
