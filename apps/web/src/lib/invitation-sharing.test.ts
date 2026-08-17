@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   copyFarmInvitationLink,
+  createFarmInvitationEmailComposeUrl,
   createFarmInvitationShareData,
   shareFarmInvitationLink,
 } from "@/lib/invitation-sharing";
@@ -15,6 +16,21 @@ describe("Farm invitation sharing", () => {
       text: "Farm 참여 초대 링크입니다. 초대받은 이메일로 로그인한 뒤 열어 주세요.",
       url: inviteUrl,
     });
+  });
+
+  it("creates a mail draft addressed to the invite recipient without sending it", () => {
+    const mailtoUrl = createFarmInvitationEmailComposeUrl({
+      farmName: "Demo Farm",
+      inviteUrl,
+      recipientEmail: "farmer@example.com",
+    });
+    const [address, query] = mailtoUrl.split("?");
+    const parameters = new URLSearchParams(query);
+
+    expect(address).toBe("mailto:farmer%40example.com");
+    expect(parameters.get("subject")).toBe("[dreAmIng Smart Farm] Demo Farm 참여 초대");
+    expect(parameters.get("body")).toContain("farmer@example.com로 로그인해 주세요.");
+    expect(parameters.get("body")).toContain(inviteUrl);
   });
 
   it("uses the native share sheet when it is available", async () => {

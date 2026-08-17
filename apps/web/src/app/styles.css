@@ -247,6 +247,18 @@ p {
   gap: 0.5rem;
 }
 
+.invite-link-email {
+  align-items: center;
+  background: #e3ece5;
+  border-radius: 0.5rem;
+  color: #18332a;
+  display: inline-flex;
+  font-weight: 700;
+  min-height: auto;
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
 .member-row {
   align-items: center;
   background: #f7fbf8;

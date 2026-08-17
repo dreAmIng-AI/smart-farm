@@ -4,7 +4,11 @@ import type { FormEvent } from "react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
-import { copyFarmInvitationLink, shareFarmInvitationLink } from "@/lib/invitation-sharing";
+import {
+  copyFarmInvitationLink,
+  createFarmInvitationEmailComposeUrl,
+  shareFarmInvitationLink,
+} from "@/lib/invitation-sharing";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
@@ -280,6 +284,7 @@ export default function HomePage() {
   const [isSavingFarmCollaboration, setIsSavingFarmCollaboration] = useState(false);
   const [farmCollaborationFeedback, setFarmCollaborationFeedback] = useState<string | null>(null);
   const [latestInviteUrl, setLatestInviteUrl] = useState<string | null>(null);
+  const [latestInviteEmail, setLatestInviteEmail] = useState<string | null>(null);
   const [cropCycles, setCropCycles] = useState<CropCycle[]>([]);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
@@ -303,6 +308,14 @@ export default function HomePage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedFarmId = farm?.id;
+  const latestInviteEmailComposeUrl =
+    farm && latestInviteEmail && latestInviteUrl
+      ? createFarmInvitationEmailComposeUrl({
+          farmName: farm.name,
+          inviteUrl: latestInviteUrl,
+          recipientEmail: latestInviteEmail,
+        })
+      : null;
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -465,6 +478,7 @@ export default function HomePage() {
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
+      setLatestInviteEmail(null);
       setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
@@ -506,6 +520,7 @@ export default function HomePage() {
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
+      setLatestInviteEmail(null);
       setFarms((items) => [created, ...items.filter((item) => item.id !== created.id)]);
       setCropCycles([]);
       setCropCycle(null);
@@ -581,6 +596,7 @@ export default function HomePage() {
         body: JSON.stringify({ email: form.get("inviteEmail"), role: form.get("inviteRole") }),
       });
       setLatestInviteUrl(invitation.inviteUrl);
+      setLatestInviteEmail(invitation.email);
       await refreshFarmCollaboration();
       setFarmCollaborationFeedback(
         `${invitation.email}에게 보낼 초대 링크를 만들었습니다. 만료 전까지 링크를 직접 전달하세요.`,
@@ -646,6 +662,7 @@ export default function HomePage() {
       if (latestInviteUrl) {
         setLatestInviteUrl(null);
       }
+      setLatestInviteEmail(null);
       await refreshFarmCollaboration();
       setFarmCollaborationFeedback(`${invitation.email} 초대를 취소했습니다.`);
     } catch (error) {
@@ -826,6 +843,7 @@ export default function HomePage() {
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
+      setLatestInviteEmail(null);
       setCropCycles([]);
       clearCropCycleContext();
       setTodayTasks([]);
@@ -839,6 +857,7 @@ export default function HomePage() {
     setFarmCollaboration(null);
     setFarmCollaborationFeedback(null);
     setLatestInviteUrl(null);
+    setLatestInviteEmail(null);
     clearCropCycleContext();
     setTodayTasks([]);
     setHistory([]);
@@ -1289,7 +1308,7 @@ export default function HomePage() {
                     {latestInviteUrl ? (
                       <div className="invite-link stack">
                         <h3>초대 링크가 준비되었습니다</h3>
-                        <p className="field-hint">공유 버튼으로 전달하거나 링크를 복사해 팀원에게 보내세요.</p>
+                        <p className="field-hint">공유·복사하거나 이메일 앱에서 직접 보내세요. 자동 발송은 하지 않습니다.</p>
                         <label>
                           새 초대 링크
                           <input aria-label="새 초대 링크" readOnly value={latestInviteUrl} />
@@ -1301,6 +1320,11 @@ export default function HomePage() {
                           <button className="secondary compact" onClick={() => void handleInvitationLinkCopy()} type="button">
                             링크 복사
                           </button>
+                          {latestInviteEmailComposeUrl ? (
+                            <a className="invite-link-email" href={latestInviteEmailComposeUrl}>
+                              이메일 앱에서 보내기
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}
