@@ -90,7 +90,7 @@
 }
 ```
 
-`POST /api/farm-invitations/accept`는 로그인한 사용자가 링크의 UUID 토큰을 수락합니다. DB RPC가 Supabase Auth 이메일과 초대 이메일을 비교하고 FarmMembership 생성 및 초대 상태 변경을 원자적으로 수행합니다. 이메일 불일치, 만료, 취소, 중복 수락은 `FARM_INVITATION_ACCEPT_FAILED`(400)입니다.
+`POST /api/farm-invitations/accept`는 로그인한 사용자가 링크의 UUID 토큰을 수락합니다. 링크를 연 신규 사용자는 브라우저에서 Supabase Auth 계정을 직접 설정한 뒤 같은 endpoint를 호출하며, 기존 사용자는 로그인 후 바로 호출합니다. 비밀번호는 이 Core API에 전달하지 않습니다. DB RPC가 Supabase Auth 이메일과 초대 이메일을 비교하고 FarmMembership 생성 및 초대 상태 변경을 원자적으로 수행합니다. 이메일 불일치, 만료, 취소, 중복 수락은 `FARM_INVITATION_ACCEPT_FAILED`(400)입니다.
 
 ```json
 {

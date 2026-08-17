@@ -10,7 +10,7 @@ import {
   createFarmInvitationEmailComposeUrl,
   shareFarmInvitationLink,
 } from "@/lib/invitation-sharing";
-import { removeFarmInvitationToken } from "@/lib/invitation-acceptance";
+import { parseInvitationAccountSetupInput, removeFarmInvitationToken } from "@/lib/invitation-acceptance";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
@@ -274,6 +274,7 @@ export default function HomePage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [email, setEmail] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [farmFeedback, setFarmFeedback] = useState<string | null>(null);
   const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
   const [issueDrafts, setIssueDrafts] = useState<Record<string, IssueDraft>>({});
@@ -328,6 +329,7 @@ export default function HomePage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (isMounted) {
         setUserEmail(user?.email ?? null);
+        setInvitationToken(new URLSearchParams(window.location.search).get("invite"));
         setIsAuthLoading(false);
       }
     });
@@ -384,8 +386,7 @@ export default function HomePage() {
       return;
     }
 
-    const token = new URLSearchParams(window.location.search).get("invite");
-    if (!token) {
+    if (!invitationToken) {
       return;
     }
 
@@ -396,7 +397,7 @@ export default function HomePage() {
       try {
         accepted = await apiRequest<{ farmId: string; role: Exclude<FarmRole, "owner"> }>(
           "/api/farm-invitations/accept",
-          { method: "POST", body: JSON.stringify({ token }) },
+          { method: "POST", body: JSON.stringify({ token: invitationToken }) },
         );
       } catch (error) {
         invitationAcceptanceAttempted.current = false;
@@ -406,6 +407,7 @@ export default function HomePage() {
       }
 
       window.history.replaceState({}, "", removeFarmInvitationToken(window.location.href));
+      setInvitationToken(null);
 
       const requestVersion = ++farmListRequestVersion.current;
       try {
@@ -439,7 +441,7 @@ export default function HomePage() {
     }
 
     void acceptInvitation();
-  }, [userEmail]);
+  }, [invitationToken, userEmail]);
 
   useEffect(() => {
     if (!selectedFarmId || !userEmail) {
@@ -499,6 +501,44 @@ export default function HomePage() {
       setMessage("로그인되었습니다. Farm 생성부터 시작하세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그인에 실패했습니다.");
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }
+
+  async function handleInvitationAccountSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const parsed = parseInvitationAccountSetupInput({
+      email: form.get("inviteAccountEmail"),
+      password: form.get("inviteAccountPassword"),
+      passwordConfirmation: form.get("inviteAccountPasswordConfirmation"),
+    });
+
+    if (!parsed.ok) {
+      setMessage(parsed.error);
+      return;
+    }
+
+    setIsAuthenticating(true);
+    setMessage("");
+    try {
+      const { data, error } = await createBrowserSupabaseClient().auth.signUp({
+        email: parsed.data.email,
+        password: parsed.data.password,
+      });
+      if (error) {
+        throw error;
+      }
+
+      setEmail(parsed.data.email);
+      setMessage(
+        data.session
+          ? "계정을 설정했습니다. Farm 초대를 수락하는 중입니다."
+          : "계정 설정 요청을 받았습니다. 이메일 인증이 켜져 있다면 인증을 완료한 뒤 이 초대 링크를 다시 열어 주세요. 이미 계정이 있다면 아래 로그인으로 진행하세요.",
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "계정을 설정하지 못했습니다.");
     } finally {
       setIsAuthenticating(false);
     }
@@ -1207,10 +1247,78 @@ export default function HomePage() {
 
       {isAuthLoading ? <p className="status">인증 상태를 확인하고 있습니다.</p> : null}
 
-      {!isAuthLoading && !userEmail ? (
+      {!isAuthLoading && !userEmail && invitationToken ? (
+        <section className="card stack" aria-labelledby="invitation-account-heading">
+          <h2 id="invitation-account-heading">Farm 초대 수락</h2>
+          <p className="muted">처음 참여한다면 이 화면에서 초대받은 이메일과 본인 비밀번호로 계정을 설정하세요.</p>
+          <p className="field-hint">관리자에게 비밀번호를 받거나 전달할 필요가 없습니다. 초대받은 이메일과 정확히 같아야 합니다.</p>
+          <form className="stack" onSubmit={handleInvitationAccountSetup}>
+            <label>
+              초대받은 이메일
+              <input
+                autoComplete="email"
+                name="inviteAccountEmail"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+            </label>
+            <label>
+              비밀번호
+              <input
+                autoComplete="new-password"
+                minLength={8}
+                name="inviteAccountPassword"
+                required
+                type="password"
+              />
+            </label>
+            <label>
+              비밀번호 확인
+              <input
+                autoComplete="new-password"
+                minLength={8}
+                name="inviteAccountPasswordConfirmation"
+                required
+                type="password"
+              />
+            </label>
+            <button disabled={isAuthenticating} type="submit">
+              {isAuthenticating ? "계정 설정 중..." : "계정 설정 후 Farm 참여"}
+            </button>
+          </form>
+          <details className="stack">
+            <summary>이미 계정이 있나요?</summary>
+            <p className="field-hint">초대받은 동일 이메일로 로그인하면 Farm 초대가 자동 수락됩니다.</p>
+            <form className="stack" onSubmit={handleSignIn}>
+              <label>
+                이메일
+                <input
+                  autoComplete="email"
+                  name="email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                  type="email"
+                  value={email}
+                />
+              </label>
+              <label>
+                비밀번호
+                <input autoComplete="current-password" name="password" required type="password" />
+              </label>
+              <button className="secondary" disabled={isAuthenticating} type="submit">
+                이메일로 로그인
+              </button>
+            </form>
+          </details>
+        </section>
+      ) : null}
+
+      {!isAuthLoading && !userEmail && !invitationToken ? (
         <section className="card stack" aria-labelledby="sign-in-heading">
           <h2 id="sign-in-heading">로그인</h2>
-          <p className="muted">Supabase에서 생성한 테스트 계정으로 로그인하세요.</p>
+          <p className="muted">등록한 이메일과 비밀번호로 로그인하세요.</p>
           <form className="stack" onSubmit={handleSignIn}>
             <label>
               이메일
