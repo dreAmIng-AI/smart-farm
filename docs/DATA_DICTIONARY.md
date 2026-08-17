@@ -67,7 +67,7 @@ TaskTemplate → FarmTask
 | accepted_at / revoked_at | timestamptz | N | 수락·취소 시각 |
 | created_at | timestamptz | Y | 생성 시각 |
 
-`202608140002_core_v01_farm_memberships.sql`은 `farm_invitations`와 role-checked security-definer RPC를 추가합니다. `202608170001_fix_farm_invitation_email_validation.sql`은 같은 RPC의 PostgreSQL 이메일 형식 검증을 교정하고, `202608170002_fix_farm_invitation_email_ambiguity.sql`은 대기 초대 갱신의 모호한 `email` 컬럼 참조를 교정합니다. 대기 중인 초대는 Farm과 이메일 조합당 하나이며, 새 초대를 만들면 같은 대상의 이전 대기 초대는 취소됩니다. 이메일은 동일 이메일 수락 확인과 관리 UI를 위해 초대 테이블에만 최소 보관하고, 토큰 원문은 저장하지 않습니다.
+`202608140002_core_v01_farm_memberships.sql`은 `farm_invitations`와 role-checked security-definer RPC를 추가합니다. `202608170001_fix_farm_invitation_email_validation.sql`은 같은 RPC의 PostgreSQL 이메일 형식 검증을 교정하고, `202608170002_fix_farm_invitation_email_ambiguity.sql`은 대기 초대 갱신의 모호한 `email` 컬럼 참조를 교정합니다. `202608170003_fix_farm_invitation_digest_schema.sql`은 보안상 제한된 `search_path`에서도 Supabase `pgcrypto` 해시 함수를 명시적으로 호출하게 합니다. 대기 중인 초대는 Farm과 이메일 조합당 하나이며, 새 초대를 만들면 같은 대상의 이전 대기 초대는 취소됩니다. 이메일은 동일 이메일 수락 확인과 관리 UI를 위해 초대 테이블에만 최소 보관하고, 토큰 원문은 저장하지 않습니다.
 
 ### crop_cycles
 
