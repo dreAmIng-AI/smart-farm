@@ -10,6 +10,7 @@ import {
   createFarmInvitationEmailComposeUrl,
   shareFarmInvitationLink,
 } from "@/lib/invitation-sharing";
+import { removeFarmInvitationToken } from "@/lib/invitation-acceptance";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
@@ -302,6 +303,8 @@ export default function HomePage() {
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const invitationAcceptanceAttempted = useRef(false);
+  const farmListRequestVersion = useRef(0);
+  const restoreFarmContextRef = useRef<((selectedFarm: Farm) => Promise<CropCycle[]>) | null>(null);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [isRestoringContext, setIsRestoringContext] = useState(false);
   const [message, setMessage] = useState(
@@ -352,9 +355,10 @@ export default function HomePage() {
     let isMounted = true;
 
     async function loadFarms() {
+      const requestVersion = ++farmListRequestVersion.current;
       try {
         const result = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
-        if (isMounted) {
+        if (isMounted && requestVersion === farmListRequestVersion.current) {
           setFarms(result.items);
         }
       } catch (error) {
@@ -372,6 +376,10 @@ export default function HomePage() {
   }, [userEmail]);
 
   useEffect(() => {
+    restoreFarmContextRef.current = restoreFarmContext;
+  });
+
+  useEffect(() => {
     if (!userEmail || invitationAcceptanceAttempted.current) {
       return;
     }
@@ -384,20 +392,49 @@ export default function HomePage() {
     invitationAcceptanceAttempted.current = true;
 
     async function acceptInvitation() {
+      let accepted: { farmId: string; role: Exclude<FarmRole, "owner"> };
       try {
-        const accepted = await apiRequest<{ farmId: string; role: Exclude<FarmRole, "owner"> }>(
+        accepted = await apiRequest<{ farmId: string; role: Exclude<FarmRole, "owner"> }>(
           "/api/farm-invitations/accept",
           { method: "POST", body: JSON.stringify({ token }) },
         );
-        const farmsResult = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
-        setFarms(farmsResult.items);
-        setMessage(`Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 Farm을 선택해 시작하세요.`);
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Farm 초대를 수락하지 못했습니다.");
-      } finally {
-        const nextUrl = new URL(window.location.href);
-        nextUrl.searchParams.delete("invite");
-        window.history.replaceState({}, "", nextUrl);
+        invitationAcceptanceAttempted.current = false;
+        const errorMessage = error instanceof Error ? error.message : "Farm 초대를 수락하지 못했습니다.";
+        setMessage(`${errorMessage} 초대받은 이메일로 다시 로그인한 뒤 이 링크를 다시 열어 주세요.`);
+        return;
+      }
+
+      window.history.replaceState({}, "", removeFarmInvitationToken(window.location.href));
+
+      const requestVersion = ++farmListRequestVersion.current;
+      try {
+        const farmsResult = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
+        if (requestVersion !== farmListRequestVersion.current) {
+          return;
+        }
+
+        setFarms(farmsResult.items);
+        const acceptedFarm = farmsResult.items.find((item) => item.id === accepted.farmId);
+        if (!acceptedFarm) {
+          setMessage(`Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 Farm 목록에서 선택해 시작하세요.`);
+          return;
+        }
+
+        const restoreFarmContext = restoreFarmContextRef.current;
+        if (!restoreFarmContext) {
+          throw new Error("Farm context could not be restored.");
+        }
+
+        const cropCycleItems = await restoreFarmContext(acceptedFarm);
+        setMessage(
+          `Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 ${acceptedFarm.name}을 열었습니다. ${
+            cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."
+          }`,
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Farm 정보를 불러오지 못했습니다.";
+        setMessage(`Farm 초대는 수락했습니다. ${errorMessage} 새로고침한 뒤 Farm을 선택해 주세요.`);
       }
     }
 
@@ -868,6 +905,26 @@ export default function HomePage() {
     setAttachmentFile(null);
   }
 
+  async function restoreFarmContext(selectedFarm: Farm): Promise<CropCycle[]> {
+    setIsRestoringContext(true);
+    setFarm(selectedFarm);
+    setFarmFeedback(null);
+    setFarmCollaboration(null);
+    setFarmCollaborationFeedback(null);
+    setLatestInviteUrl(null);
+    setLatestInviteEmail(null);
+    clearCropCycleContext();
+    setTodayTasks([]);
+    setHistory([]);
+    try {
+      const cropCycleItems = await loadCropCycles(selectedFarm.id);
+      await Promise.all([loadTodayTasks(selectedFarm.id), loadHistory(selectedFarm.id)]);
+      return cropCycleItems;
+    } finally {
+      setIsRestoringContext(false);
+    }
+  }
+
   async function handleSavedFarmSelect(farmId: string) {
     const selectedFarm = farms.find((item) => item.id === farmId);
     if (!selectedFarm) {
@@ -883,26 +940,13 @@ export default function HomePage() {
       return;
     }
 
-    setIsRestoringContext(true);
-    setFarm(selectedFarm);
-    setFarmFeedback(null);
-    setFarmCollaboration(null);
-    setFarmCollaborationFeedback(null);
-    setLatestInviteUrl(null);
-    setLatestInviteEmail(null);
-    clearCropCycleContext();
-    setTodayTasks([]);
-    setHistory([]);
     try {
-      const cropCycleItems = await loadCropCycles(selectedFarm.id);
-      await Promise.all([loadTodayTasks(selectedFarm.id), loadHistory(selectedFarm.id)]);
+      const cropCycleItems = await restoreFarmContext(selectedFarm);
       setMessage(
         `${selectedFarm.name}을 열었습니다. ${cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."}`,
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "저장된 Farm 정보를 불러오지 못했습니다.");
-    } finally {
-      setIsRestoringContext(false);
     }
   }
 
