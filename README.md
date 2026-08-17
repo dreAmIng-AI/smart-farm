@@ -28,8 +28,9 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 3. [개발·협업 규칙](AGENTS.md)
 4. 구현 계약: [도메인](docs/DOMAIN_MODEL.md), [아키텍처](docs/ARCHITECTURE.md), [데이터](docs/DATA_DICTIONARY.md), [API](docs/API_CONTRACT.md)
 5. 작업을 시작할 때: [Task 템플릿](project/tasks/TASK_TEMPLATE.md)
+6. Core v0.1을 사용자와 확인할 때: [사용자 검증 가이드](project/USER_VALIDATION_GUIDE.md)
 
-위 다섯 단계가 현재 실행 기준의 Single Source of Truth입니다. 과거 계획과 합의는 삭제하지 않고 상태를 표시해 참고 자료로 보존합니다.
+위 문서가 현재 실행 기준의 Single Source of Truth입니다. 과거 계획과 합의는 삭제하지 않고 상태를 표시해 참고 자료로 보존합니다.
 
 ## Core v0.1에서 만드는 것
 
