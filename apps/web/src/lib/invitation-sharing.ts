@@ -7,6 +7,9 @@ export type InvitationLinkNavigator = {
 
 export type InvitationShareResult = "shared" | "copied" | "cancelled" | "copy_unavailable";
 
+export type FarmInvitationActorRole = "owner" | "admin" | "farmer";
+export type FarmInvitationRole = Exclude<FarmInvitationActorRole, "owner">;
+
 type FarmInvitationEmailComposeInput = {
   farmName: string;
   inviteUrl: string;
@@ -19,6 +22,13 @@ export function createFarmInvitationShareData(inviteUrl: string): ShareData {
     text: "Farm 참여 초대 링크입니다. 초대받은 이메일로 로그인한 뒤 열어 주세요.",
     url: inviteUrl,
   };
+}
+
+export function canRegenerateFarmInvitation(
+  actorRole: FarmInvitationActorRole,
+  invitationRole: FarmInvitationRole,
+): boolean {
+  return actorRole === "owner" || (actorRole === "admin" && invitationRole === "farmer");
 }
 
 export function createFarmInvitationEmailComposeUrl({

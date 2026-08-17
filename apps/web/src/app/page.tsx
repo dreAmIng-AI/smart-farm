@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import {
+  canRegenerateFarmInvitation,
   copyFarmInvitationLink,
   createFarmInvitationEmailComposeUrl,
   shareFarmInvitationLink,
@@ -668,6 +669,37 @@ export default function HomePage() {
     } catch (error) {
       setFarmCollaborationFeedback(
         error instanceof Error ? error.message : "초대를 취소하지 못했습니다.",
+      );
+    } finally {
+      setIsSavingFarmCollaboration(false);
+    }
+  }
+
+  async function handleFarmInvitationRegenerate(invitation: FarmInvitation) {
+    if (
+      !farm ||
+      !window.confirm(
+        `${invitation.email}에게 보낼 새 초대 링크를 만들까요? 이전 링크는 즉시 사용할 수 없게 됩니다.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsSavingFarmCollaboration(true);
+    try {
+      const regeneratedInvitation = await apiRequest<FarmInvitationResponse>(`/api/farms/${farm.id}/invitations`, {
+        method: "POST",
+        body: JSON.stringify({ email: invitation.email, role: invitation.role }),
+      });
+      setLatestInviteUrl(regeneratedInvitation.inviteUrl);
+      setLatestInviteEmail(regeneratedInvitation.email);
+      await refreshFarmCollaboration();
+      setFarmCollaborationFeedback(
+        `${regeneratedInvitation.email}의 새 초대 링크를 만들었습니다. 이전 링크는 더 이상 사용할 수 없습니다.`,
+      );
+    } catch (error) {
+      setFarmCollaborationFeedback(
+        error instanceof Error ? error.message : "새 초대 링크를 만들지 못했습니다.",
       );
     } finally {
       setIsSavingFarmCollaboration(false);
@@ -1380,24 +1412,38 @@ export default function HomePage() {
                     <div className="member-list stack">
                       <h3>보낸 초대</h3>
                       {farmCollaboration.invitations.length === 0 ? <p className="field-hint">대기 중인 초대가 없습니다.</p> : null}
-                      {farmCollaboration.invitations.map((invitation) => (
-                        <div className="member-row" key={invitation.id}>
-                          <div>
-                            <strong>{invitation.email}</strong>
-                            <small>
-                              {farmRoleLabel(invitation.role)} · {displayDate(invitation.expiresAt)} 만료
-                            </small>
+                      {farmCollaboration.invitations.map((invitation) => {
+                        const canRegenerate = canRegenerateFarmInvitation(farmCollaboration.actorRole, invitation.role);
+
+                        return (
+                          <div className="member-row" key={invitation.id}>
+                            <div>
+                              <strong>{invitation.email}</strong>
+                              <small>
+                                {farmRoleLabel(invitation.role)} · {displayDate(invitation.expiresAt)} 만료
+                              </small>
+                            </div>
+                            {canRegenerate ? (
+                              <button
+                                className="secondary compact"
+                                disabled={isSavingFarmCollaboration}
+                                onClick={() => void handleFarmInvitationRegenerate(invitation)}
+                                type="button"
+                              >
+                                새 링크 만들기
+                              </button>
+                            ) : null}
+                            <button
+                              className="danger compact"
+                              disabled={isSavingFarmCollaboration}
+                              onClick={() => void handleFarmInvitationRevoke(invitation)}
+                              type="button"
+                            >
+                              초대 취소
+                            </button>
                           </div>
-                          <button
-                            className="danger compact"
-                            disabled={isSavingFarmCollaboration}
-                            onClick={() => void handleFarmInvitationRevoke(invitation)}
-                            type="button"
-                          >
-                            초대 취소
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}

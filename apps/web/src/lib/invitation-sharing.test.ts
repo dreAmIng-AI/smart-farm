@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  canRegenerateFarmInvitation,
   copyFarmInvitationLink,
   createFarmInvitationEmailComposeUrl,
   createFarmInvitationShareData,
@@ -10,6 +11,14 @@ import {
 const inviteUrl = "https://app.example.com/?invite=11111111-1111-4111-8111-111111111111";
 
 describe("Farm invitation sharing", () => {
+  it("allows only permitted roles to regenerate a pending invitation", () => {
+    expect(canRegenerateFarmInvitation("owner", "admin")).toBe(true);
+    expect(canRegenerateFarmInvitation("owner", "farmer")).toBe(true);
+    expect(canRegenerateFarmInvitation("admin", "farmer")).toBe(true);
+    expect(canRegenerateFarmInvitation("admin", "admin")).toBe(false);
+    expect(canRegenerateFarmInvitation("farmer", "farmer")).toBe(false);
+  });
+
   it("creates share data that instructs the invited user to sign in with the invited email", () => {
     expect(createFarmInvitationShareData(inviteUrl)).toEqual({
       title: "dreAmIng Smart Farm 초대",
