@@ -237,6 +237,16 @@ p {
   padding-top: 0.75rem;
 }
 
+.invite-link h3 {
+  margin: 0;
+}
+
+.invite-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .member-row {
   align-items: center;
   background: #f7fbf8;

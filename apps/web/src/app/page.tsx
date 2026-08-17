@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { copyFarmInvitationLink, shareFarmInvitationLink } from "@/lib/invitation-sharing";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
@@ -661,11 +662,27 @@ export default function HomePage() {
       return;
     }
 
-    try {
-      await navigator.clipboard.writeText(latestInviteUrl);
+    if (await copyFarmInvitationLink(navigator, latestInviteUrl)) {
       setFarmCollaborationFeedback("초대 링크를 클립보드에 복사했습니다.");
-    } catch {
+    } else {
       setFarmCollaborationFeedback("초대 링크를 직접 선택해 복사하세요.");
+    }
+  }
+
+  async function handleInvitationLinkShare() {
+    if (!latestInviteUrl) {
+      return;
+    }
+
+    const result = await shareFarmInvitationLink(navigator, latestInviteUrl);
+    if (result === "shared") {
+      setFarmCollaborationFeedback("초대 링크 공유를 완료했습니다.");
+    } else if (result === "cancelled") {
+      setFarmCollaborationFeedback("초대 링크 공유를 취소했습니다. 링크는 아래에서 계속 복사할 수 있습니다.");
+    } else if (result === "copied") {
+      setFarmCollaborationFeedback("공유 기능을 사용할 수 없어 초대 링크를 클립보드에 복사했습니다.");
+    } else {
+      setFarmCollaborationFeedback("공유 기능을 사용할 수 없습니다. 링크를 직접 선택해 복사하세요.");
     }
   }
 
@@ -1271,13 +1288,20 @@ export default function HomePage() {
 
                     {latestInviteUrl ? (
                       <div className="invite-link stack">
+                        <h3>초대 링크가 준비되었습니다</h3>
+                        <p className="field-hint">공유 버튼으로 전달하거나 링크를 복사해 팀원에게 보내세요.</p>
                         <label>
                           새 초대 링크
                           <input aria-label="새 초대 링크" readOnly value={latestInviteUrl} />
                         </label>
-                        <button className="secondary compact" onClick={() => void handleInvitationLinkCopy()} type="button">
-                          링크 복사
-                        </button>
+                        <div className="invite-link-actions">
+                          <button className="compact" onClick={() => void handleInvitationLinkShare()} type="button">
+                            링크 공유
+                          </button>
+                          <button className="secondary compact" onClick={() => void handleInvitationLinkCopy()} type="button">
+                            링크 복사
+                          </button>
+                        </div>
                       </div>
                     ) : null}
 
