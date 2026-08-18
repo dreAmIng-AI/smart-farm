@@ -173,6 +173,54 @@ p {
   padding-top: 0.75rem;
 }
 
+.task-detail {
+  background: #f3f6fe;
+  border: 1px solid #c5d3ee;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.task-detail-heading {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.task-detail-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.task-detail-list div,
+.task-detail-evidence {
+  background: #fff;
+  border: 1px solid #dbe6dc;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.6rem;
+}
+
+.task-detail-list dt {
+  color: #547064;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.task-detail-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.task-detail-evidence ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .issue-entry,
 .issue-follow-up,
 .issue-status-entry,

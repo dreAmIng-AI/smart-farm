@@ -39,6 +39,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 - CropCycle의 현재 생육 단계 생성·변경과 완료·취소 처리
 - Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
 - 전체 일정과 Today의 오늘·지연 작업 확인
+- FarmTask 상세에서 작업 이유, 예정 시각, 우선순위, 근거와 검증 상태 확인
 - 완료·문제 있음·확인하지 못함 결과를 ActionLog로 기록
 - IssueRecord와 Follow-up FarmTask 연결
 - IssueRecord 상태 변경 및 해결 시각 기록
