@@ -38,7 +38,7 @@ User와 Farm의 관계 및 접근 권한을 정의합니다. 기존 `owner`, `ad
 
 ### FarmInvitation
 
-FarmMembership를 만들기 전의 대기 중 초대입니다. 이메일, 초대 역할(admin 또는 farmer), 만료 시각과 상태를 보관하며, 초대 링크의 원문 토큰은 저장하지 않고 SHA-256 해시만 보관합니다. 같은 이메일로 로그인한 사용자만 수락할 수 있으며 수락은 FarmMembership 생성과 초대 상태 변경을 하나의 DB 트랜잭션으로 처리합니다.
+FarmMembership를 만들기 전의 대기 중 초대입니다. 이메일, 초대 역할(admin 또는 farmer), 만료 시각과 상태를 보관하며, 초대 링크의 원문 토큰은 저장하지 않고 SHA-256 해시만 보관합니다. 기존 사용자는 로그인하고 신규 사용자는 링크 안에서 본인 비밀번호로 Supabase Auth 계정을 설정한 뒤, 같은 이메일로만 수락할 수 있습니다. 수락은 FarmMembership 생성과 초대 상태 변경을 하나의 DB 트랜잭션으로 처리합니다. FarmInvitation이나 Core DB에는 비밀번호를 보관하지 않습니다.
 
 ### CropCycle
 
