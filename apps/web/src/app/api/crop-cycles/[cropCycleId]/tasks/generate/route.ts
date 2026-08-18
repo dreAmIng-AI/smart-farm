@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
+import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
 import { isUuid } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
@@ -27,7 +27,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
   const { data: cropCycle, error: cropCycleError } = await auth.supabase
     .from("crop_cycles")
-    .select("id, status")
+    .select("id, status, farm_id")
     .eq("id", cropCycleId)
     .maybeSingle();
 
@@ -60,6 +60,11 @@ export async function POST(_request: Request, context: RouteContext) {
       { error: { code: "CROP_CYCLE_NOT_ACTIVE", message: "Crop cycle must be active to generate tasks." } },
       { status: 409 },
     );
+  }
+
+  const authorization = await requireFarmManager(auth, cropCycle.farm_id);
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   const { data, error } = await auth.supabase.rpc("generate_planned_farm_tasks", {

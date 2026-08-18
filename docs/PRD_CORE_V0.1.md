@@ -35,7 +35,7 @@ Farm → CropCycle → 작업계획 → 전체 일정 → Today → 결과 기�
 
 | Step | User action | System result |
 |---:|---|---|
-| 1 | 농장 등록 | Farm 생성 |
+| 1 | owner의 농장 등록 또는 초대 Farm 선택 | Farm 생성 또는 공유 Farm 진입 |
 | 2 | 작기 등록 | CropCycle 생성 |
 | 3 | 작물·품종 선택 | 적용할 Crop Pack 데이터 결정 |
 | 4 | 계획 생성 | 예정 FarmTask 생성 |

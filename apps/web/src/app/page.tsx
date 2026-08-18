@@ -21,6 +21,13 @@ type Farm = {
   cultivationMethod: string | null;
 };
 
+type FarmListResponse = {
+  items: Farm[];
+  permissions: {
+    canCreateFarm: boolean;
+  };
+};
+
 type FarmRole = "owner" | "admin" | "farmer";
 
 type FarmMember = {
@@ -280,6 +287,7 @@ export default function HomePage() {
   const [issueDrafts, setIssueDrafts] = useState<Record<string, IssueDraft>>({});
   const [recordingTaskId, setRecordingTaskId] = useState<string | null>(null);
   const [farms, setFarms] = useState<Farm[]>([]);
+  const [canCreateFarm, setCanCreateFarm] = useState(false);
   const [farm, setFarm] = useState<Farm | null>(null);
   const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
   const [farmCollaboration, setFarmCollaboration] = useState<FarmCollaboration | null>(null);
@@ -313,6 +321,8 @@ export default function HomePage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedFarmId = farm?.id;
+  const canManageSelectedFarm =
+    farmCollaboration?.actorRole === "owner" || farmCollaboration?.actorRole === "admin";
   const latestInviteEmailComposeUrl =
     farm && latestInviteEmail && latestInviteUrl
       ? createFarmInvitationEmailComposeUrl({
@@ -359,9 +369,10 @@ export default function HomePage() {
     async function loadFarms() {
       const requestVersion = ++farmListRequestVersion.current;
       try {
-        const result = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
+        const result = await apiRequest<FarmListResponse>("/api/farms", { method: "GET" });
         if (isMounted && requestVersion === farmListRequestVersion.current) {
           setFarms(result.items);
+          setCanCreateFarm(result.permissions.canCreateFarm);
         }
       } catch (error) {
         if (isMounted) {
@@ -411,12 +422,13 @@ export default function HomePage() {
 
       const requestVersion = ++farmListRequestVersion.current;
       try {
-        const farmsResult = await apiRequest<{ items: Farm[] }>("/api/farms", { method: "GET" });
+        const farmsResult = await apiRequest<FarmListResponse>("/api/farms", { method: "GET" });
         if (requestVersion !== farmListRequestVersion.current) {
           return;
         }
 
         setFarms(farmsResult.items);
+        setCanCreateFarm(farmsResult.permissions.canCreateFarm);
         const acceptedFarm = farmsResult.items.find((item) => item.id === accepted.farmId);
         if (!acceptedFarm) {
           setMessage(`Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 Farm 목록에서 선택해 시작하세요.`);
@@ -552,6 +564,7 @@ export default function HomePage() {
         throw error;
       }
       setFarms([]);
+      setCanCreateFarm(false);
       setFarm(null);
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
@@ -1398,8 +1411,9 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {userEmail ? <section className="card stack" aria-labelledby="farm-heading">
-        <h2 id="farm-heading">1. Farm 생성</h2>
+      {userEmail && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
+        <h2 id="farm-heading">{canCreateFarm ? "1. Farm 생성" : "Farm 정보"}</h2>
+        {canCreateFarm ? <>
         <form className="stack" onSubmit={handleFarmCreate}>
           <label>
             농장명
@@ -1429,8 +1443,10 @@ export default function HomePage() {
             {farmFeedback}
           </p>
         ) : null}
+        </> : null}
         {farm ? (
           <>
+          {canManageSelectedFarm ? (
           <details className="farm-settings" open>
             <summary>현재 Farm 기본정보 수정</summary>
             <p className="field-hint">Farm 기본정보만 변경합니다. 기존 CropCycle, FarmTask, 결과와 이력은 바꾸지 않습니다.</p>
@@ -1459,6 +1475,9 @@ export default function HomePage() {
               </button>
             </form>
           </details>
+          ) : (
+            <p className="field-hint">작업자는 공유된 Farm 정보를 조회하고 Today 작업 결과를 기록할 수 있습니다. Farm 기본정보와 작업 계획은 owner 또는 admin이 관리합니다.</p>
+          )}
           <details className="farm-collaboration" open>
             <summary>Farm 구성원과 초대 관리</summary>
             <p className="field-hint">
@@ -1607,7 +1626,7 @@ export default function HomePage() {
         ) : null}
       </section> : null}
 
-      {userEmail && farm ? (
+      {userEmail && farm && canManageSelectedFarm ? (
         <section className="card stack" aria-labelledby="cycle-heading">
           <h2 id="cycle-heading">2. CropCycle 생성</h2>
           <p className="muted">현재 Farm: {farm.name}</p>
@@ -1644,6 +1663,9 @@ export default function HomePage() {
           <p className="muted">
             {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
           </p>
+          {!canManageSelectedFarm ? (
+            <p className="field-hint">작업자는 일정과 Today를 확인하고 결과 또는 관찰한 문제를 기록합니다. 작기·생육 단계·계획 변경은 owner 또는 admin이 처리합니다.</p>
+          ) : null}
           <section className="crop-cycle-lifecycle-entry stack" aria-labelledby="crop-cycle-status-heading">
             <h3 id="crop-cycle-status-heading">작기 상태</h3>
             {cropCycle.status === "active" ? (
@@ -1651,14 +1673,14 @@ export default function HomePage() {
                 <p className="field-hint">
                   작기가 끝났다면 완료 처리하세요. 중단했다면 취소 처리할 수 있습니다. 두 상태 모두 기존 일정과 이력은 유지됩니다.
                 </p>
-                <div className="button-row">
+                {canManageSelectedFarm ? <div className="button-row">
                   <button disabled={isEndingCropCycle} onClick={() => void handleCropCycleEnd("completed")} type="button">
                     작기 완료
                   </button>
                   <button className="danger" disabled={isEndingCropCycle} onClick={() => void handleCropCycleEnd("cancelled")} type="button">
                     작기 취소
                   </button>
-                </div>
+                </div> : null}
               </>
             ) : (
               <p className="field-hint">
@@ -1672,7 +1694,7 @@ export default function HomePage() {
             <p className="field-hint">
               Crop Pack의 단계 용어를 직접 입력합니다. 저장해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다.
             </p>
-            <form className="stack" onSubmit={handleGrowthStageUpdate}>
+            {canManageSelectedFarm ? <form className="stack" onSubmit={handleGrowthStageUpdate}>
               <label>
                 생육 단계 (선택 사항)
                 <input
@@ -1688,12 +1710,12 @@ export default function HomePage() {
                   {isUpdatingGrowthStage ? "저장 중..." : "생육 단계 저장"}
                 </button>
               </div>
-            </form>
+            </form> : null}
           </section>
           <div className="button-row">
-            <button disabled={isSubmitting || cropCycle.status !== "active"} onClick={handlePlanGeneration} type="button">
+            {canManageSelectedFarm ? <button disabled={isSubmitting || cropCycle.status !== "active"} onClick={handlePlanGeneration} type="button">
               Draft TaskTemplate 적용
-            </button>
+            </button> : null}
             <button className="secondary" disabled={isSubmitting} onClick={handleRefresh} type="button">
               일정·Today·이력 새로고침
             </button>
@@ -1825,7 +1847,7 @@ export default function HomePage() {
             )}
           </div>
 
-          {selectedIssue ? (
+          {canManageSelectedFarm && selectedIssue ? (
             <section className="issue-follow-up stack" aria-labelledby="follow-up-heading">
               <h3 id="follow-up-heading">문제 재확인 작업</h3>
               <p className="muted">
@@ -1931,7 +1953,7 @@ export default function HomePage() {
                         </small>
                         {item.expertReviewRequired ? <small>전문가 확인 필요</small> : null}
                         {item.attachments.length > 0 ? <AttachmentList attachments={item.attachments} /> : null}
-                        <div className="issue-status-entry">
+                        {canManageSelectedFarm ? <div className="issue-status-entry">
                           <label>
                             문제 상태
                             <select
@@ -1970,8 +1992,8 @@ export default function HomePage() {
                           <small className="field-hint">
                             해결됨으로 바꾸면 해결 시각을 기록합니다. 다른 상태로 되돌리면 해결 시각은 비워집니다.
                           </small>
-                        </div>
-                        {item.status === "open" || item.status === "needs_review" ? (
+                        </div> : null}
+                        {canManageSelectedFarm && (item.status === "open" || item.status === "needs_review") ? (
                           <button
                             className="secondary compact"
                             onClick={() =>

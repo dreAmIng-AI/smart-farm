@@ -2,7 +2,7 @@
 
 **Status: CURRENT IMPLEMENTATION CONTRACT**
 
-**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
+**Note: 이 문서는 Core v0.1의 현재 구현 계약입니다. migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
 
 ## 1. 공통 규칙
 
@@ -38,7 +38,16 @@ TaskTemplate → FarmTask
 | cultivation_method | text | N | 재배방식 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
 
-초기 foundation migration은 FarmMembership 기반 SELECT·UPDATE RLS와 `updated_at` trigger를 이미 제공합니다. `GET /api/farms`, `GET/PATCH /api/farms/{farmId}`와 `GET /api/farms/{farmId}/crop-cycles`는 이 기존 계약을 재사용하며, Farm 목록·작기 선택과 기본정보 수정에 필요한 새 DB migration은 없습니다. 수정 대상은 `name`, `region_code`, `cultivation_environment`, `cultivation_method`이며 하위 CropCycle과 FarmTask를 변경하지 않습니다.
+`202608180001_farm_owner_creation_policy.sql`은 Farm 생성 INSERT를 owner creation permission으로, Farm 기본정보 UPDATE를 owner/admin으로 제한합니다. `GET /api/farms`, `GET/PATCH /api/farms/{farmId}`와 `GET /api/farms/{farmId}/crop-cycles`는 이 계약을 재사용합니다. 수정 대상은 `name`, `region_code`, `cultivation_environment`, `cultivation_method`이며 하위 CropCycle과 FarmTask를 변경하지 않습니다.
+
+### farm_creator_permissions
+
+| Field | Type | Required | Meaning |
+|---|---|---:|---|
+| user_id | uuid PK | Y | 새 Farm을 만들 수 있는 Supabase Auth 사용자 |
+| granted_at | timestamptz | Y | 권한 부여 시각 |
+
+이 테이블은 전역 owner creation entitlement만 표현하며 FarmMembership나 일반 사용자 프로필을 대체하지 않습니다. 사용자 직접 조회·변경 권한은 부여하지 않고, RLS의 `can_create_farms()` security-definer 함수만 읽습니다. migration은 기존 FarmMembership `owner`를 seed하고, 초대로 생긴 admin/farmer는 자동으로 추가하지 않습니다.
 
 ### farm_memberships
 
@@ -50,7 +59,7 @@ TaskTemplate → FarmTask
 | role | text | Y | owner, farmer, admin |
 | created_at | timestamptz | Y | 생성 시각 |
 
-`owner`, `admin`, `farmer`는 기존 값과 제약을 유지합니다. 이 Slice는 Farm·작기·작업 기록의 기존 FarmMembership RLS를 변경하지 않습니다. 구성원 관리 권한만 owner와 admin에 별도 RPC로 제한합니다.
+`owner`, `admin`, `farmer`는 기존 값과 제약을 유지합니다. owner/admin은 Farm·CropCycle·FarmTask 계획과 Issue 상태를 관리하고, farmer는 읽기와 ActionLog·IssueRecord·Attachment 기록만 수행합니다. 구성원 관리 권한은 owner와 admin에 별도 RPC로 제한합니다.
 
 ### farm_invitations
 
@@ -151,7 +160,7 @@ TaskTemplate → FarmTask
 | expert_review_required | boolean | Y | 전문가 확인 필요 여부 |
 | created_at / resolved_at | timestamptz | Y/N | 생성·해결 시각 |
 
-`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 문제 기록 RPC를 구현합니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다. `202608130001_core_v01_issue_status.sql`은 FarmMembership 기반 UPDATE RLS와 `status`, `resolved_at` 두 컬럼의 UPDATE 권한만 추가합니다. `resolved`에서만 `resolved_at`을 기록하며, 이 migration은 관찰 내용과 심각도를 변경할 권한을 부여하지 않습니다.
+`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 문제 기록 RPC를 구현합니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다. `202608180001_farm_owner_creation_policy.sql`은 `status`, `resolved_at`의 UPDATE를 owner/admin으로 제한합니다. `resolved`에서만 `resolved_at`을 기록하며, 이 migration은 관찰 내용과 심각도를 변경할 권한을 부여하지 않습니다.
 
 ### attachments
 

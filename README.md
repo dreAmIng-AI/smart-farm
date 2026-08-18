@@ -34,7 +34,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 
 ## Core v0.1에서 만드는 것
 
-- Farm 생성·목록 선택·기본정보 수정과 CropCycle 생성·선택
+- owner의 Farm 생성, 공유 Farm 목록 선택, owner/admin의 기본정보 수정과 CropCycle 생성·선택
 - Farm 구성원 초대 링크 생성·수락과 owner/admin/farmer 역할 관리
 - CropCycle의 현재 생육 단계 생성·변경과 완료·취소 처리
 - Crop Pack의 TaskTemplate으로 작기 전체 예정 FarmTask 생성
@@ -83,7 +83,7 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 
 ## Farm 협업
 
-Farm owner는 admin과 farmer를 초대하고, owner 역할을 제외한 구성원 역할을 변경하거나 제거할 수 있습니다. Farm admin은 farmer만 초대·제거할 수 있으며 farmer는 구성원 관리를 할 수 없습니다. 자동 이메일은 보내지 않습니다. 생성된 링크를 직접 전달하면, 기존 사용자는 동일한 이메일로 로그인하고 신규 사용자는 링크 안에서 본인 비밀번호로 계정을 설정해 7일 안에 수락할 수 있습니다. 관리자는 구성원의 비밀번호를 보거나 저장하지 않습니다. Supabase Email confirmation을 켠 환경에서는 인증을 완료한 뒤 같은 초대 링크를 다시 열어 수락합니다. 초대 토큰 원문은 저장하지 않으므로, 분실한 링크는 권한이 있는 사용자가 새로 발급하며 이때 이전 링크는 즉시 무효화됩니다.
+Farm owner만 새 Farm을 만들 수 있습니다. owner는 admin과 farmer를 초대하고, owner 역할을 제외한 구성원 역할을 변경하거나 제거할 수 있습니다. Farm admin은 배정된 Farm의 기본정보·작기·일정을 관리하고 farmer만 초대·제거할 수 있습니다. farmer는 초대받은 Farm의 일정과 Today를 보고 작업 결과·관찰한 문제·허용된 사진을 기록하지만 Farm 생성, 작기·일정·문제 상태 변경, 구성원 관리는 할 수 없습니다. 자동 이메일은 보내지 않습니다. 생성된 링크를 직접 전달하면, 기존 사용자는 동일한 이메일로 로그인하고 신규 사용자는 링크 안에서 본인 비밀번호로 계정을 설정해 7일 안에 수락할 수 있습니다. 관리자는 구성원의 비밀번호를 보거나 저장하지 않습니다. Supabase Email confirmation을 켠 환경에서는 인증을 완료한 뒤 같은 초대 링크를 다시 열어 수락합니다. 초대 토큰 원문은 저장하지 않으므로, 분실한 링크는 권한이 있는 사용자가 새로 발급하며 이때 이전 링크는 즉시 무효화됩니다.
 
 ## 현재 Vertical Slice 실행
 
@@ -91,4 +91,4 @@ Farm owner는 admin과 farmer를 초대하고, owner 역할을 제외한 구성�
 2. `supabase/migrations/`의 migration을 파일명 순서대로 대상 Supabase 프로젝트에 적용합니다.
 3. `pnpm dev`를 실행하고 `http://localhost:3000`에서 등록한 이메일로 로그인합니다. 신규 팀원은 받은 초대 링크에서 계정을 직접 설정할 수 있습니다.
 
-포함 흐름은 `로그인 → Farm 생성·선택 → CropCycle 생성·선택·현재 생육 단계 변경·종료 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 결과 기록 → IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → 이력`입니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료된 작기는 새 작업 계획을 만들 수 없지만 기존 일정과 이력은 계속 조회할 수 있습니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.
+포함 흐름은 `로그인 → owner의 Farm 생성 또는 공유 Farm 선택 → owner/admin의 CropCycle 생성·선택·현재 생육 단계 변경·종료 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정 → Today → 모든 구성원의 결과 기록 → IssueRecord → 선택적 사진 첨부 → owner/admin의 Follow-up FarmTask → 이력`입니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료된 작기는 새 작업 계획을 만들 수 없지만 기존 일정과 이력은 계속 조회할 수 있습니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Weather/AI/Disease/Sensor/Market 기능은 이후 Slice에 포함합니다.

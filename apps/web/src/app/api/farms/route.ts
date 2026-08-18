@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
+import { getFarmCreationPermission, requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 import { parseFarmInput } from "@/lib/api/validation";
 
 type FarmRow = {
@@ -17,6 +17,11 @@ export async function GET() {
   const auth = await requireAuthenticatedSupabaseUser();
   if (!auth.ok) {
     return auth.response;
+  }
+
+  const permission = await getFarmCreationPermission(auth);
+  if (!permission.ok) {
+    return permission.response;
   }
 
   const { data, error } = await auth.supabase
@@ -39,13 +44,34 @@ export async function GET() {
     cultivationMethod: farm.cultivation_method,
   }));
 
-  return NextResponse.json({ items, meta: { count: items.length } });
+  return NextResponse.json({
+    items,
+    meta: { count: items.length },
+    permissions: { canCreateFarm: permission.canCreateFarm },
+  });
 }
 
 export async function POST(request: Request) {
   const auth = await requireAuthenticatedSupabaseUser();
   if (!auth.ok) {
     return auth.response;
+  }
+
+  const permission = await getFarmCreationPermission(auth);
+  if (!permission.ok) {
+    return permission.response;
+  }
+
+  if (!permission.canCreateFarm) {
+    return NextResponse.json(
+      {
+        error: {
+          code: "FARM_CREATION_FORBIDDEN",
+          message: "Only Farm owners can create a new Farm.",
+        },
+      },
+      { status: 403 },
+    );
   }
 
   const payload: unknown = await request.json().catch(() => null);
