@@ -84,6 +84,18 @@ type FarmTask = {
   scheduleState?: "overdue" | "today";
 };
 
+type TaskDetail = FarmTask & {
+  farmId: string;
+  cropCycleId: string;
+  taskTemplateId: string | null;
+  taskType: string;
+  dueAt: string | null;
+  evidence: unknown[];
+  resultRequired: boolean;
+  completedAt: string | null;
+  createdAt: string;
+};
+
 type TaskResultAction = "completed" | "not_checked" | "issue_reported";
 type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
 type CropCycleTerminalStatus = Exclude<CropCycle["status"], "active">;
@@ -195,6 +207,32 @@ function taskStatusLabel(status: string) {
   return labels[status] ?? status;
 }
 
+function taskSourceLabel(sourceType: string) {
+  const labels: Record<string, string> = {
+    issue_followup: "문제 재확인",
+    manual: "직접 등록",
+    template: "Crop Pack 템플릿",
+  };
+
+  return labels[sourceType] ?? sourceType;
+}
+
+function evidenceLabel(evidence: unknown) {
+  if (typeof evidence === "string") {
+    return evidence;
+  }
+
+  if (evidence === null) {
+    return "근거 정보";
+  }
+
+  try {
+    return JSON.stringify(evidence) ?? "근거 정보";
+  } catch {
+    return "근거 정보";
+  }
+}
+
 function cropCycleStatusLabel(status: CropCycle["status"]) {
   const labels: Record<CropCycle["status"], string> = {
     active: "진행 중",
@@ -303,6 +341,8 @@ export default function HomePage() {
   const [isEndingCropCycle, setIsEndingCropCycle] = useState(false);
   const [schedule, setSchedule] = useState<FarmTask[]>([]);
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
+  const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
+  const [loadingTaskDetailId, setLoadingTaskDetailId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueStatusDrafts, setIssueStatusDrafts] = useState<Record<string, IssueStatus>>({});
@@ -575,6 +615,8 @@ export default function HomePage() {
       setGrowthStageDraft("");
       setSchedule([]);
       setTodayTasks([]);
+      setTaskDetail(null);
+      setLoadingTaskDetailId(null);
       setFarmFeedback(null);
       setActionNotes({});
       setIssueDrafts({});
@@ -618,6 +660,8 @@ export default function HomePage() {
       setGrowthStageDraft("");
       setSchedule([]);
       setTodayTasks([]);
+      setTaskDetail(null);
+      setLoadingTaskDetailId(null);
       setHistory([]);
       setSelectedIssue(null);
       setIssueStatusDrafts({});
@@ -848,6 +892,8 @@ export default function HomePage() {
       setGrowthStageDraft(created.growthStage ?? "");
       setSchedule([]);
       setTodayTasks([]);
+      setTaskDetail(null);
+      setLoadingTaskDetailId(null);
       setHistory([]);
       setSelectedIssue(null);
       setIssueStatusDrafts({});
@@ -930,6 +976,18 @@ export default function HomePage() {
     setTodayTasks(result.items);
   }
 
+  async function loadTaskDetail(taskId: string) {
+    setLoadingTaskDetailId(taskId);
+    try {
+      const detail = await apiRequest<TaskDetail>(`/api/tasks/${taskId}`, { method: "GET" });
+      setTaskDetail(detail);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "작업 상세를 불러오지 못했습니다.");
+    } finally {
+      setLoadingTaskDetailId(null);
+    }
+  }
+
   async function loadHistory(farmId: string) {
     const result = await apiRequest<{ items: HistoryItem[] }>(`/api/farms/${farmId}/history`, {
       method: "GET",
@@ -949,6 +1007,8 @@ export default function HomePage() {
     setCropCycle(null);
     setGrowthStageDraft("");
     setSchedule([]);
+    setTaskDetail(null);
+    setLoadingTaskDetailId(null);
     setActionNotes({});
     setIssueDrafts({});
     setRecordingTaskId(null);
@@ -1014,6 +1074,8 @@ export default function HomePage() {
     setCropCycle(selectedCropCycle);
     setGrowthStageDraft(selectedCropCycle.growthStage ?? "");
     setSchedule([]);
+    setTaskDetail(null);
+    setLoadingTaskDetailId(null);
     setSelectedIssue(null);
     setIssueStatusDrafts({});
     setAttachmentTarget(null);
@@ -1148,6 +1210,7 @@ export default function HomePage() {
         }),
       });
       await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
+      setTaskDetail(null);
       setActionNotes((notes) => {
         const nextNotes = { ...notes };
         delete nextNotes[taskId];
@@ -1734,6 +1797,14 @@ export default function HomePage() {
                       상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
                     </small>
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
+                    <button
+                      className="compact secondary"
+                      disabled={loadingTaskDetailId !== null}
+                      onClick={() => void loadTaskDetail(task.id)}
+                      type="button"
+                    >
+                      {loadingTaskDetailId === task.id ? "상세 불러오는 중..." : "작업 상세"}
+                    </button>
                   </li>
                 ))}
               </ol>
@@ -1755,6 +1826,14 @@ export default function HomePage() {
                     <small>{task.reason}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
+                    <button
+                      className="compact secondary"
+                      disabled={loadingTaskDetailId !== null}
+                      onClick={() => void loadTaskDetail(task.id)}
+                      type="button"
+                    >
+                      {loadingTaskDetailId === task.id ? "상세 불러오는 중..." : "작업 상세"}
+                    </button>
                     <div className="result-entry">
                       <label>
                         기록 메모 (선택 사항)
@@ -1846,6 +1925,62 @@ export default function HomePage() {
               <p className="muted">오늘 또는 지연된 작업이 없습니다.</p>
             )}
           </div>
+
+          {taskDetail ? (
+            <section className="task-detail stack" aria-labelledby="task-detail-heading">
+              <div className="task-detail-heading">
+                <div>
+                  <h3 id="task-detail-heading">작업 상세</h3>
+                  <p className="field-hint">선택한 작업의 계획 근거와 실행 정보를 확인합니다.</p>
+                </div>
+                <button className="compact secondary" onClick={() => setTaskDetail(null)} type="button">
+                  닫기
+                </button>
+              </div>
+              <strong>{taskDetail.title}</strong>
+              <dl className="task-detail-list">
+                <div>
+                  <dt>작업 이유</dt>
+                  <dd>{taskDetail.reason}</dd>
+                </div>
+                <div>
+                  <dt>예정 시각</dt>
+                  <dd>{displayDate(taskDetail.scheduledFor)}</dd>
+                </div>
+                <div>
+                  <dt>기한</dt>
+                  <dd>{taskDetail.dueAt ? displayDate(taskDetail.dueAt) : "별도 기한 없음"}</dd>
+                </div>
+                <div>
+                  <dt>우선순위 · 상태</dt>
+                  <dd>{taskDetail.priority} · {taskStatusLabel(taskDetail.status)}</dd>
+                </div>
+                <div>
+                  <dt>작업 출처 · 결과 기록</dt>
+                  <dd>{taskSourceLabel(taskDetail.sourceType)} · {taskDetail.resultRequired ? "필요" : "선택"}</dd>
+                </div>
+                <div>
+                  <dt>검증 상태</dt>
+                  <dd>{taskDetail.verificationStatus}</dd>
+                </div>
+              </dl>
+              <div className="task-detail-evidence">
+                <strong>근거</strong>
+                {taskDetail.evidence.length > 0 ? (
+                  <ul>
+                    {taskDetail.evidence.map((evidence, index) => (
+                      <li key={`${taskDetail.id}-evidence-${index}`}>{evidenceLabel(evidence)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="field-hint">등록된 근거가 없습니다.</p>
+                )}
+              </div>
+              {taskDetail.verificationStatus === "draft" ? (
+                <p className="field-hint">이 작업은 개발·검증용 Draft 데이터이며 실제 농업 처방이 아닙니다.</p>
+              ) : null}
+            </section>
+          ) : null}
 
           {canManageSelectedFarm && selectedIssue ? (
             <section className="issue-follow-up stack" aria-labelledby="follow-up-heading">

@@ -187,6 +187,26 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 `scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다.
 
+### FarmTask 상세
+
+`GET /api/tasks/{taskId}`는 RLS로 접근 가능한 단일 FarmTask의 실행 문맥을 반환합니다. `reason`, `scheduledFor`, `dueAt`, `priority`, `evidence`, `verificationStatus`, `sourceType`, `resultRequired`, `status`와 생성·완료 시각을 포함합니다. 이 조회는 FarmTask, TaskTemplate 또는 일정 데이터를 수정하지 않습니다. 유효하지 않은 ID는 `VALIDATION_ERROR`(400), 접근할 수 없거나 없는 작업은 `TASK_NOT_FOUND`(404)입니다.
+
+```json
+{
+  "id": "uuid",
+  "title": "작업 확인",
+  "reason": "적용된 Crop Pack 작업 기준",
+  "scheduledFor": "2026-09-10T00:00:00Z",
+  "dueAt": null,
+  "priority": "medium",
+  "evidence": [],
+  "verificationStatus": "draft",
+  "sourceType": "template",
+  "status": "pending",
+  "resultRequired": true
+}
+```
+
 ### 결과·문제 기록
 
 `POST /api/tasks/{taskId}/action-logs`는 `completed`, `not_checked`, `issue_reported`를 기록합니다. 완료는 FarmTask 상태를 `completed`로 바꾸며 미확인은 상태를 유지합니다. 문제 기록은 FarmTask 상태를 `issue_reported`로 바꾸고, 연결된 ActionLog와 IssueRecord를 하나의 RPC에서 생성합니다.
