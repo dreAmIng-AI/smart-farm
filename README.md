@@ -77,6 +77,7 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 - Next.js + TypeScript
 - Supabase PostgreSQL, Auth, Storage
 - Vercel, 기존 Monorepo 방향 유지
+- GitHub Actions는 모든 PR과 `main` 병합에서 `lint`, `typecheck`, `test`, `build`를 실행합니다.
 - DB는 `snake_case`, TypeScript/API는 `camelCase`
 - DB 시간은 UTC, UI 표시는 Asia/Seoul
 - RLS 적용, Secret의 클라이언트 노출 금지
