@@ -4,7 +4,8 @@ import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
 import { PATCH } from "./route";
 
-vi.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", async (importOriginal) => ({
+  ...(await importOriginal()),
   requireAuthenticatedSupabaseUser: vi.fn(),
 }));
 
@@ -20,10 +21,12 @@ describe("PATCH /api/crop-cycles/:cropCycleId", () => {
   const updateEq = vi.fn(() => ({ select: updateSelect }));
   const update = vi.fn(() => ({ eq: updateEq }));
   const from = vi.fn();
+  const rpc = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    maybeSingle.mockResolvedValue({ data: { id: cropCycleId }, error: null });
+    rpc.mockResolvedValue({ data: true, error: null });
+    maybeSingle.mockResolvedValue({ data: { id: cropCycleId, farm_id: "22222222-2222-4222-8222-222222222222" }, error: null });
     updateSingle.mockResolvedValue({
       data: {
         id: cropCycleId,
@@ -40,7 +43,7 @@ describe("PATCH /api/crop-cycles/:cropCycleId", () => {
     from.mockImplementationOnce(() => ({ select: lookupSelect })).mockImplementationOnce(() => ({ update }));
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
-      supabase: { from },
+      supabase: { from, rpc },
       userId: "test-user-id",
     } as never);
   });

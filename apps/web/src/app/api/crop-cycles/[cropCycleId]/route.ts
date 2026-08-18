@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
+import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
 import { isUuid, parseCropCycleGrowthStageInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
@@ -30,7 +30,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: lookupError } = await auth.supabase
     .from("crop_cycles")
-    .select("id")
+    .select("id, farm_id")
     .eq("id", cropCycleId)
     .maybeSingle();
 
@@ -46,6 +46,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       { error: { code: "CROP_CYCLE_NOT_FOUND", message: "Crop cycle not found or not accessible." } },
       { status: 404 },
     );
+  }
+
+  const authorization = await requireFarmManager(auth, existing.farm_id);
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   const { data, error } = await auth.supabase

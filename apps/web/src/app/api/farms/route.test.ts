@@ -4,7 +4,8 @@ import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
 import { GET, POST } from "./route";
 
-vi.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", async (importOriginal) => ({
+  ...(await importOriginal()),
   requireAuthenticatedSupabaseUser: vi.fn(),
 }));
 
@@ -15,9 +16,11 @@ describe("POST /api/farms", () => {
   const order = vi.fn();
   const select = vi.fn(() => ({ order }));
   const from = vi.fn(() => ({ insert, select }));
+  const rpc = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    rpc.mockResolvedValue({ data: true, error: null });
     insert.mockResolvedValue({ error: null });
     order.mockResolvedValue({
       data: [
@@ -33,7 +36,7 @@ describe("POST /api/farms", () => {
     });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
-      supabase: { from },
+      supabase: { from, rpc },
       userId: "test-user-id",
     } as never);
   });
@@ -85,6 +88,26 @@ describe("POST /api/farms", () => {
         },
       ],
       meta: { count: 1 },
+      permissions: { canCreateFarm: true },
     });
+  });
+
+  it("does not create a Farm for an invited member without owner permission", async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    const response = await POST(
+      new Request("http://localhost/api/farms", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Other Farm",
+          regionCode: "KR-DEMO",
+          cultivationEnvironment: "facility",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(insert).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "FARM_CREATION_FORBIDDEN" } });
   });
 });

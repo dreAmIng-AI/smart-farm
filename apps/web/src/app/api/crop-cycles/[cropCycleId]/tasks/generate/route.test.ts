@@ -4,7 +4,8 @@ import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
 import { POST } from "./route";
 
-vi.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", async (importOriginal) => ({
+  ...(await importOriginal()),
   requireAuthenticatedSupabaseUser: vi.fn(),
 }));
 
@@ -20,8 +21,17 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks/generate", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    maybeSingle.mockResolvedValue({ data: { id: cropCycleId, status: "active" }, error: null });
-    rpc.mockResolvedValue({ data: [{ generated_count: 2, task_ids: ["task-1", "task-2"] }], error: null });
+    maybeSingle.mockResolvedValue({
+      data: { id: cropCycleId, status: "active", farm_id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
+    rpc.mockImplementation((functionName: string) => {
+      if (functionName === "has_farm_role") {
+        return Promise.resolve({ data: true, error: null });
+      }
+
+      return Promise.resolve({ data: [{ generated_count: 2, task_ids: ["task-1", "task-2"] }], error: null });
+    });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
       supabase: { from, rpc },
@@ -40,7 +50,10 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks/generate", () => {
   });
 
   it("rejects task generation for an ended CropCycle before calling the RPC", async () => {
-    maybeSingle.mockResolvedValue({ data: { id: cropCycleId, status: "completed" }, error: null });
+    maybeSingle.mockResolvedValue({
+      data: { id: cropCycleId, status: "completed", farm_id: "22222222-2222-4222-8222-222222222222" },
+      error: null,
+    });
 
     const response = await POST(
       new Request(`http://localhost/api/crop-cycles/${cropCycleId}/tasks/generate`, { method: "POST" }),

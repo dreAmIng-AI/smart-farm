@@ -58,6 +58,22 @@
 | `POST /api/issues/{issueId}/follow-up-tasks` | IssueRecord 기반 후속 작업 생성 |
 | `GET /api/farms/{farmId}/history` | 작업·문제·후속 관계 이력 조회 |
 
+## 2.1 Farm owner and manager authorization
+
+`GET /api/farms` returns the authenticated user's visible Farms plus `permissions.canCreateFarm`. Only a user with this flag may call `POST /api/farms`; an invited `admin` or `farmer` receives `FARM_CREATION_FORBIDDEN` (403).
+
+```json
+{
+  "items": [],
+  "meta": { "count": 0 },
+  "permissions": { "canCreateFarm": false }
+}
+```
+
+`PATCH /api/farms/{farmId}`, CropCycle creation/growth-stage/end, and planned FarmTask generation require the selected Farm role to be `owner` or `admin`. A visible Farm for which the actor is a `farmer` returns `FARM_MANAGEMENT_FORBIDDEN` (403) for application-checked Farm management routes; RLS is the final protection for every mutation. `PATCH /api/issues/{issueId}` and `POST /api/issues/{issueId}/follow-up-tasks` are also limited to owner/admin by RLS and role-checked RPC.
+
+Every Farm member may call the result/observed-issue and attachment APIs for the shared Farm. Result and issue RPCs explicitly verify the caller's FarmMembership before they change a FarmTask, so a farmer does not receive general FarmTask planning update access.
+
 ## 3. 주요 입력 예시
 
 ### Farm 조회·기본정보 수정
@@ -258,6 +274,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 ## 5. 오류 코드
 
 - `UNAUTHORIZED`, `SUPABASE_NOT_CONFIGURED`, `FARM_ACCESS_DENIED`, `FARM_NOT_FOUND`
+- `FARM_CREATION_FORBIDDEN`, `FARM_CREATION_PERMISSION_LOOKUP_FAILED`, `FARM_MANAGEMENT_FORBIDDEN`, `FARM_PERMISSION_LOOKUP_FAILED`
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`, `FARM_UPDATE_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_ALREADY_ENDED`, `CROP_CYCLE_NOT_ACTIVE`
 - `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`

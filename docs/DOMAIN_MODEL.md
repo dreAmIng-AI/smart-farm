@@ -30,11 +30,15 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### Farm
 
-사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있고, 이름, 지역 코드, 재배 환경, 재배 방식을 수정할 수 있습니다. 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다.
+사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다.
+
+### FarmCreatorPermission
+
+새 Farm을 만들 수 있는 전역 owner 권한입니다. 이 관계는 FarmMembership를 대체하거나 일반적인 사용자 역할 체계가 아닙니다. 기존 Farm owner는 migration에서 이 권한을 받고, 초대 수락으로 생성되는 admin/farmer는 받지 않습니다.
 
 ### FarmMembership
 
-User와 Farm의 관계 및 접근 권한을 정의합니다. 기존 `owner`, `admin`, `farmer` 이름은 유지합니다. 이 Slice에서는 기존 Farm 운영 데이터 RLS를 바꾸지 않고 구성원 관리 권한만 구분합니다. owner는 admin·farmer 초대, 역할 변경, 제거를 할 수 있고 admin은 farmer 초대·제거만 할 수 있습니다. farmer는 구성원 관리를 할 수 없습니다.
+User와 Farm의 관계 및 접근 권한을 정의합니다. 기존 `owner`, `admin`, `farmer` 이름은 유지합니다. owner와 admin은 배정된 Farm의 기본정보·CropCycle·계획·Issue 상태·Follow-up을 관리하며 owner는 admin·farmer 초대, 역할 변경, 제거를 할 수 있고 admin은 farmer 초대·제거만 할 수 있습니다. farmer는 공유 Farm을 읽고 Today 결과·관찰 문제·Attachment를 기록할 수 있지만 Farm 생성, 일정 변경, 구성원 관리는 할 수 없습니다.
 
 ### FarmInvitation
 
@@ -93,6 +97,7 @@ CropCycle + TaskTemplate → Scheduled FarmTask[]
 ## 6. 관계
 
 ```text
+User 1 ─ 0..1 FarmCreatorPermission  grants new Farm creation
 User N ─ N Farm                     through FarmMembership
 Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
@@ -142,6 +147,7 @@ pending → cancelled
 6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.
 7. 검증되지 않은 농업 데이터는 `draft`로 표시하고, 실제 처방이나 자동 제어로 사용하지 않습니다.
 8. FarmInvitation은 7일 뒤 만료되며, owner는 admin·farmer를, admin은 farmer만 초대할 수 있습니다. 역할 변경은 owner만 할 수 있고 owner 역할 이전·제거는 이 Slice 범위 밖입니다.
+9. 새 Farm 생성은 FarmCreatorPermission이 있는 owner만 가능하며, admin/farmer는 배정된 Farm에서만 역할 범위에 맞는 작업을 수행합니다.
 
 ## 8. 검증 상태
 

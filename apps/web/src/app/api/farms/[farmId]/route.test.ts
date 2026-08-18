@@ -4,7 +4,8 @@ import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
 import { GET, PATCH } from "./route";
 
-vi.mock("@/lib/api/auth", () => ({
+vi.mock("@/lib/api/auth", async (importOriginal) => ({
+  ...(await importOriginal()),
   requireAuthenticatedSupabaseUser: vi.fn(),
 }));
 
@@ -27,15 +28,17 @@ describe("GET/PATCH /api/farms/:farmId", () => {
   const updateEq = vi.fn(() => ({ select: updateSelect }));
   const update = vi.fn(() => ({ eq: updateEq }));
   const from = vi.fn();
+  const rpc = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    rpc.mockResolvedValue({ data: true, error: null });
     maybeSingle.mockResolvedValue({ data: farmRow, error: null });
     updateSingle.mockResolvedValue({ data: farmRow, error: null });
     from.mockImplementation(() => ({ select: lookupSelect, update }));
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
-      supabase: { from },
+      supabase: { from, rpc },
       userId: "test-user-id",
     } as never);
   });
@@ -98,5 +101,26 @@ describe("GET/PATCH /api/farms/:farmId", () => {
     expect(response.status).toBe(404);
     expect(update).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toMatchObject({ error: { code: "FARM_NOT_FOUND" } });
+  });
+
+  it("does not update a Farm for a farmer role", async () => {
+    rpc.mockResolvedValue({ data: false, error: null });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/farms/${farmId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "Updated Farm",
+          regionCode: "KR-NEW",
+          cultivationEnvironment: "open_field",
+          cultivationMethod: "soil_cultivation",
+        }),
+      }),
+      { params: Promise.resolve({ farmId }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(update).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "FARM_MANAGEMENT_FORBIDDEN" } });
   });
 });

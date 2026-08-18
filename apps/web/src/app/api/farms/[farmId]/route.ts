@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
+import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
 import { isUuid, parseFarmInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ farmId: string }> };
@@ -101,6 +101,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       { error: { code: "FARM_NOT_FOUND", message: "Farm not found or not accessible." } },
       { status: 404 },
     );
+  }
+
+  const authorization = await requireFarmManager(auth, farmId);
+  if (!authorization.ok) {
+    return authorization.response;
   }
 
   const { data, error } = await auth.supabase
