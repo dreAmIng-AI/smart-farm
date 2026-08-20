@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import {
   canRegenerateFarmInvitation,
   copyFarmInvitationLink,
@@ -147,6 +148,7 @@ type HistoryItem =
       kind: "issue";
       occurredAt: string;
       issueId: string;
+      farmTaskId: string;
       taskTitle: string;
       observedSymptom: string;
       severity: string;
@@ -1307,6 +1309,18 @@ export default function HomePage() {
   }
 
   const transplantDate = seoulDateInputValue();
+  const selectedCropCycleTaskIds = new Set(schedule.map((task) => task.id));
+  const dashboardIssues = history.flatMap((item) =>
+    item.kind === "issue" && selectedCropCycleTaskIds.has(item.farmTaskId)
+      ? [
+          {
+            id: item.issueId,
+            severity: item.severity,
+            status: item.status,
+          },
+        ]
+      : [],
+  );
 
   return (
     <main className="page-shell">
@@ -1472,6 +1486,16 @@ export default function HomePage() {
           ) : null}
           {isRestoringContext ? <small className="field-hint">저장된 데이터를 불러오는 중입니다.</small> : null}
         </section>
+      ) : null}
+
+      {userEmail && farm ? (
+        <OperationsDashboard
+          cropCycle={cropCycle}
+          farm={farm}
+          issues={dashboardIssues}
+          schedule={schedule}
+          todayTasks={todayTasks}
+        />
       ) : null}
 
       {userEmail && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
