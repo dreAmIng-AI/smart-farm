@@ -53,7 +53,7 @@ Farm → CropCycle → 작업계획 → 전체 일정 → Today → 결과 기�
 | FR-01 | 로그인 사용자가 Farm을 생성, 조회, 수정할 수 있다. |
 | FR-02 | Farm에 CropCycle을 생성할 수 있다. 작물, 품종, 정식일을 기록한다. |
 | FR-03 | Crop Pack의 TaskTemplate을 적용해 작기 전체의 예정 FarmTask를 생성할 수 있다. |
-| FR-04 | 작기 전체 일정에서 예정·완료·문제·후속 작업을 확인할 수 있다. |
+| FR-04 | 작기 전체 일정에서 예정·완료·문제·후속·취소 작업을 확인할 수 있고, owner/admin은 예정 작업을 취소할 수 있다. |
 | FR-05 | Today에서 오늘 예정 및 지연된 FarmTask를 확인할 수 있다. |
 | FR-06 | FarmTask 상세에서 작업 이유, 시기, 우선순위, 근거, 검증 상태를 확인할 수 있다. |
 | FR-07 | 작업 시작, 완료, 문제 있음, 확인하지 못함을 ActionLog로 기록할 수 있다. |
@@ -110,6 +110,7 @@ v0.1의 `source_type`은 `template`, `manual`, `issue_followup`을 우선 사용
 | AC-03 | 유효한 CropCycle과 Crop Pack Fixture로 초기 계획 생성 시 예정 FarmTask가 생성된다. |
 | AC-04 | 작기의 FarmTask를 예정·완료·문제·후속 상태로 구분해 확인할 수 있다. |
 | AC-05 | Today에서 오늘 예정 또는 지연된 FarmTask를 확인할 수 있다. |
+| AC-05a | owner/admin이 예정 FarmTask를 취소하면 전체 일정에는 취소 상태로 보존되고 Today에서는 제외된다. |
 | AC-06 | 작업 시작 또는 완료를 기록하면 ActionLog가 생성되고 FarmTask 상태가 갱신된다. |
 | AC-07 | 문제 결과를 기록하면 ActionLog와 IssueRecord가 연결되어 저장된다. |
 | AC-08 | IssueRecord에서 새 Follow-up FarmTask를 만들고 원본 문제를 추적할 수 있다. |

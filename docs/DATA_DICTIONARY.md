@@ -134,6 +134,8 @@ TaskTemplate → FarmTask
 
 `source_type = manual`은 owner/admin이 진행 중인 CropCycle에 직접 추가한 작업이다. `task_template_id`와 `parent_issue_id`는 null이며, Core는 Crop별 처방을 만들지 않기 위해 `task_type = manual`, `evidence = []`, `verification_status = draft`로 저장한다. 생성은 기존 Farm membership 기반 manager RLS와 `POST /api/crop-cycles/{cropCycleId}/tasks`의 active CropCycle 확인을 모두 통과해야 한다.
 
+`pending → cancelled`는 기존 `farm_tasks.status`를 재사용하는 owner/admin 전용 상태 전환이다. 취소는 FarmTask를 삭제하거나 ActionLog를 만들지 않으며, 취소된 작업은 전체 일정에는 보존되고 Today 조회에서는 제외된다.
+
 ### action_logs
 
 | Field | Type | Required | Meaning |

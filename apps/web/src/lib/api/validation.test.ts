@@ -6,6 +6,7 @@ import {
   parseCropCycleGrowthStageInput,
   parseCropCycleInput,
   parseCropCycleStatusInput,
+  parseFarmTaskStatusInput,
   parseFarmInvitationAcceptanceInput,
   parseFarmInvitationInput,
   parseFarmMemberRoleInput,
@@ -140,6 +141,22 @@ describe("CropCycle terminal status input", () => {
     expect(parseCropCycleStatusInput({ status: "active" })).toMatchObject({
       ok: false,
       error: "status must be completed or cancelled.",
+    });
+  });
+});
+
+describe("FarmTask cancellation input", () => {
+  it("accepts cancellation as the only supported FarmTask status update", () => {
+    expect(parseFarmTaskStatusInput({ status: "cancelled" })).toEqual({
+      ok: true,
+      data: { status: "cancelled" },
+    });
+  });
+
+  it("rejects a non-cancellation task status update", () => {
+    expect(parseFarmTaskStatusInput({ status: "completed" })).toMatchObject({
+      ok: false,
+      error: "status must be cancelled.",
     });
   });
 });

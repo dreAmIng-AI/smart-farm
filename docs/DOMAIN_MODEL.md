@@ -143,6 +143,7 @@ pending → cancelled
 2. TaskTemplate은 기준, FarmTask는 실제 작기 작업입니다.
 3. FarmTask의 결과는 ActionLog로 남기고 현재 상태는 FarmTask가 보유합니다.
    `started` ActionLog는 `pending` FarmTask를 한 번만 `in_progress`로 전환하며, 시작 뒤에도 완료·미확인·문제 기록의 기존 흐름을 사용합니다.
+   `cancelled`는 owner/admin이 아직 시작하지 않은 `pending` 작업만 전환할 수 있으며, 기존 실행 기록을 새로 만들거나 삭제하지 않습니다.
 4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.
 5. Attachment는 ActionLog 또는 IssueRecord에 연결합니다.
 6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.

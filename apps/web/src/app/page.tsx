@@ -360,6 +360,7 @@ export default function HomePage() {
   const [todayTasks, setTodayTasks] = useState<FarmTask[]>([]);
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
   const [loadingTaskDetailId, setLoadingTaskDetailId] = useState<string | null>(null);
+  const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueStatusDrafts, setIssueStatusDrafts] = useState<Record<string, IssueStatus>>({});
@@ -1300,6 +1301,33 @@ export default function HomePage() {
     }
   }
 
+  async function handleTaskCancellation(task: TaskDetail) {
+    if (!farm || !cropCycle) {
+      return;
+    }
+
+    if (!window.confirm(`“${task.title}” 작업을 취소할까요? 취소된 작업은 일정에 보존되지만 Today에서는 제외됩니다.`)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setCancellingTaskId(task.id);
+    try {
+      const cancelled = await apiRequest<TaskDetail>(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
+      setTaskDetail(cancelled);
+      setMessage(`“${task.title}” 작업을 취소했습니다. 취소된 작업은 전체 일정에서 확인할 수 있습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "작업 취소에 실패했습니다.");
+    } finally {
+      setCancellingTaskId(null);
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleAttachmentUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!attachmentTarget || !attachmentFile || !farm) {
@@ -1384,7 +1412,7 @@ export default function HomePage() {
         <p className="eyebrow">dreAmIng Smart Farm · Core v0.1</p>
         <h1>Core v0.1 Work Cycle</h1>
         <p>
-          Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정과 Today → 결과 기록
+          Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정과 Today → 작업 시작·결과 기록
         </p>
         <p className="draft-notice">
           현재 Template은 개발 Fixture이며 검증 상태가 <strong>draft</strong>입니다. 실제 농업 처방이 아닙니다.
@@ -2131,6 +2159,18 @@ export default function HomePage() {
               </div>
               {taskDetail.verificationStatus === "draft" ? (
                 <p className="field-hint">이 작업은 개발·검증용 Draft 데이터이며 실제 농업 처방이 아닙니다.</p>
+              ) : null}
+              {canManageSelectedFarm && taskDetail.status === "pending" ? (
+                <div className="button-row">
+                  <button
+                    className="danger"
+                    disabled={isSubmitting}
+                    onClick={() => void handleTaskCancellation(taskDetail)}
+                    type="button"
+                  >
+                    {cancellingTaskId === taskDetail.id ? "취소 중..." : "이 예정 작업 취소"}
+                  </button>
+                </div>
               ) : null}
             </section>
           ) : null}

@@ -242,6 +242,18 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 `performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. `started`는 이미 진행 중이거나 종료된 작업에 다시 기록할 수 없고 `INVALID_STATUS_TRANSITION`(409)을 반환합니다. `issue_reported`에는 `issue`가 필수이고, `observedSymptom`은 관찰 사실입니다. 문제 기록은 확정 진단을 의미하지 않습니다.
 
+### FarmTask 취소
+
+`PATCH /api/tasks/{taskId}`는 owner/admin이 접근 가능한 `pending` FarmTask만 `cancelled`로 전환합니다. 취소는 기존 `farm_tasks` manager UPDATE RLS와 Route Handler의 role 확인을 함께 거치며, 작업을 삭제하거나 ActionLog를 생성하지 않습니다.
+
+```json
+{
+  "status": "cancelled"
+}
+```
+
+작업자(farmer)는 `FARM_MANAGEMENT_FORBIDDEN`(403)을 받습니다. 시작됐거나 완료·문제·취소 상태인 작업은 `INVALID_STATUS_TRANSITION`(409)을 반환합니다. 성공한 취소 작업은 전체 일정에 `cancelled`로 남고 Today에서는 제외됩니다.
+
 ### Follow-up FarmTask 생성
 
 `POST /api/issues/{issueId}/follow-up-tasks`는 접근 가능한 미해결(`open`, `needs_review`) IssueRecord에서만 후속 FarmTask를 만듭니다. `scheduledFor`는 UI가 입력한 Asia/Seoul 날짜이며, 서버가 해당 날짜 자정의 UTC 시각으로 변환합니다.
