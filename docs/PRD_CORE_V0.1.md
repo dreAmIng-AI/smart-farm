@@ -61,6 +61,7 @@ Farm → CropCycle → 작업계획 → 전체 일정 → Today → 결과 기�
 | FR-09 | 해결되지 않은 IssueRecord에서 Follow-up FarmTask를 만들고 원본 문제를 추적할 수 있다. |
 | FR-10 | 작업 및 문제 이력을 발생순서와 후속 관계로 조회할 수 있다. |
 | FR-11 | 모든 Mock/Fixture/초기 TaskTemplate은 검증 상태를 표시한다. |
+| FR-12 | owner/admin은 같은 Farm 구성원에게 진행 전 또는 진행 중 FarmTask를 담당자로 배정하거나 해제할 수 있다. 담당자 배정은 작업 실행 권한을 제한하지 않는다. |
 
 ### P1 (Core v0.1 완료를 막지 않음)
 
@@ -72,8 +73,8 @@ Farm → CropCycle → 작업계획 → 전체 일정 → Today → 결과 기�
 
 | Screen | 표시·행동 |
 |---|---|
-| Today | 현재 Farm·CropCycle·생육단계, 오늘·지연·후속 작업, 결과 기록 진입 |
-| 일정 | 작기 전체 FarmTask를 모바일 Timeline/List로 표시 |
+| Today | 현재 Farm·CropCycle·생육단계, 오늘·지연·후속 작업, 담당자·결과 기록 진입 |
+| 일정 | 작기 전체 FarmTask와 담당자를 모바일 Timeline/List로 표시 |
 | 기록 | 작업 시작·완료·문제 있음·확인하지 못함, 선택적 짧은 메모와 사진 |
 | 이력 | 작업명, 수행 시각, 결과, 문제, 메모, 첨부, 후속 작업 |
 | 설정 | Farm, CropCycle, 작물, 품종, 정식일 관리 |
@@ -111,6 +112,7 @@ v0.1의 `source_type`은 `template`, `manual`, `issue_followup`을 우선 사용
 | AC-04 | 작기의 FarmTask를 예정·완료·문제·후속 상태로 구분해 확인할 수 있다. |
 | AC-05 | Today에서 오늘 예정 또는 지연된 FarmTask를 확인할 수 있다. |
 | AC-05a | owner/admin이 예정 FarmTask를 취소하면 전체 일정에는 취소 상태로 보존되고 Today에서는 제외된다. |
+| AC-05b | owner/admin이 같은 Farm 구성원에게 FarmTask를 배정하거나 해제하면 일정·Today·상세에 반영되며, 다른 구성원의 작업 기록 권한은 유지된다. |
 | AC-06 | 작업 시작 또는 완료를 기록하면 ActionLog가 생성되고 FarmTask 상태가 갱신된다. |
 | AC-07 | 문제 결과를 기록하면 ActionLog와 IssueRecord가 연결되어 저장된다. |
 | AC-08 | IssueRecord에서 새 Follow-up FarmTask를 만들고 원본 문제를 추적할 수 있다. |

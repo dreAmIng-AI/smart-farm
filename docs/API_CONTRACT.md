@@ -52,6 +52,7 @@
 | `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
 | `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
 | `GET /api/tasks/{taskId}` | 작업 상세와 근거·검증 상태 조회 |
+| `PATCH /api/tasks/{taskId}/assignee` | owner/admin의 FarmTask 담당자 배정·해제 |
 | `POST /api/tasks/{taskId}/action-logs` | 결과 기록, 필요 시 IssueRecord 생성 |
 | `POST /api/action-logs/{actionLogId}/attachments` | 결과 기록에 사진 첨부 |
 | `POST /api/issues/{issueId}/attachments` | 문제 기록에 사진 첨부 |
@@ -71,7 +72,7 @@
 }
 ```
 
-`PATCH /api/farms/{farmId}`, CropCycle creation/growth-stage/end, and planned FarmTask generation require the selected Farm role to be `owner` or `admin`. A visible Farm for which the actor is a `farmer` returns `FARM_MANAGEMENT_FORBIDDEN` (403) for application-checked Farm management routes; RLS is the final protection for every mutation. `PATCH /api/issues/{issueId}` and `POST /api/issues/{issueId}/follow-up-tasks` are also limited to owner/admin by RLS and role-checked RPC.
+`PATCH /api/farms/{farmId}`, CropCycle creation/growth-stage/end, planned FarmTask generation, FarmTask cancellation and FarmTask 담당자 배정 require the selected Farm role to be `owner` or `admin`. A visible Farm for which the actor is a `farmer` returns `FARM_MANAGEMENT_FORBIDDEN` (403) for application-checked Farm management routes; RLS is the final protection for every mutation. `PATCH /api/issues/{issueId}` and `POST /api/issues/{issueId}/follow-up-tasks` are also limited to owner/admin by RLS and role-checked RPC.
 
 Every Farm member may call the result/observed-issue and attachment APIs for the shared Farm. Result and issue RPCs explicitly verify the caller's FarmMembership before they change a FarmTask, so a farmer does not receive general FarmTask planning update access.
 
@@ -192,6 +193,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
       "priority": "medium",
       "verificationStatus": "draft",
       "sourceType": "template",
+      "assignedUserId": null,
       "status": "pending",
       "resultRequired": true,
       "scheduleState": "today"
@@ -205,7 +207,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 ### FarmTask 상세
 
-`GET /api/tasks/{taskId}`는 RLS로 접근 가능한 단일 FarmTask의 실행 문맥을 반환합니다. `reason`, `scheduledFor`, `dueAt`, `priority`, `evidence`, `verificationStatus`, `sourceType`, `resultRequired`, `status`와 생성·완료 시각을 포함합니다. 이 조회는 FarmTask, TaskTemplate 또는 일정 데이터를 수정하지 않습니다. 유효하지 않은 ID는 `VALIDATION_ERROR`(400), 접근할 수 없거나 없는 작업은 `TASK_NOT_FOUND`(404)입니다.
+`GET /api/tasks/{taskId}`는 RLS로 접근 가능한 단일 FarmTask의 실행 문맥을 반환합니다. `reason`, `scheduledFor`, `dueAt`, `priority`, `evidence`, `verificationStatus`, `sourceType`, `assignedUserId`, `resultRequired`, `status`와 생성·완료 시각을 포함합니다. 이 조회는 FarmTask, TaskTemplate 또는 일정 데이터를 수정하지 않습니다. 유효하지 않은 ID는 `VALIDATION_ERROR`(400), 접근할 수 없거나 없는 작업은 `TASK_NOT_FOUND`(404)입니다.
 
 ```json
 {
@@ -218,6 +220,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
   "evidence": [],
   "verificationStatus": "draft",
   "sourceType": "template",
+  "assignedUserId": null,
   "status": "pending",
   "resultRequired": true
 }
@@ -253,6 +256,27 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 ```
 
 작업자(farmer)는 `FARM_MANAGEMENT_FORBIDDEN`(403)을 받습니다. 시작됐거나 완료·문제·취소 상태인 작업은 `INVALID_STATUS_TRANSITION`(409)을 반환합니다. 성공한 취소 작업은 전체 일정에 `cancelled`로 남고 Today에서는 제외됩니다.
+
+### FarmTask 담당자 배정
+
+`PATCH /api/tasks/{taskId}/assignee`는 owner/admin이 같은 Farm의 구성원을 `pending` 또는 `in_progress` FarmTask에 배정하거나 해제합니다. 담당자는 일정·Today·상세에서의 조율 정보일 뿐, 담당자가 아닌 Farm 구성원의 작업 시작·완료·문제 기록 권한을 제한하지 않습니다.
+
+```json
+{
+  "assignedUserId": "uuid-or-null"
+}
+```
+
+`assignedUserId`는 같은 Farm의 현재 구성원 UUID여야 하며, `null`은 배정 해제입니다. DB trigger와 role-checked RPC가 같은 Farm 구성원 관계를 함께 검증합니다. farmer는 `FARM_MANAGEMENT_FORBIDDEN`(403), 완료·문제·취소 작업은 `INVALID_STATUS_TRANSITION`(409)을 받습니다.
+
+```json
+{
+  "task": {
+    "id": "uuid",
+    "assignedUserId": "uuid-or-null"
+  }
+}
+```
 
 ### Follow-up FarmTask 생성
 
@@ -326,7 +350,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`, `FARM_UPDATE_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_ALREADY_ENDED`, `CROP_CYCLE_NOT_ACTIVE`
 - `TASK_GENERATION_FAILED`, `MANUAL_TASK_CREATE_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
-- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
+- `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `TASK_ASSIGNMENT_UPDATE_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`

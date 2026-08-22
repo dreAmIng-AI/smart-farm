@@ -76,6 +76,7 @@ type CropCycle = {
 };
 
 type FarmTask = {
+  assignedUserId: string | null;
   id: string;
   parentIssueId?: string | null;
   title: string;
@@ -121,6 +122,13 @@ type TaskResultResponse = {
     id: string;
   };
   issue?: Omit<Issue, "taskTitle">;
+};
+
+type TaskAssignmentResponse = {
+  task: {
+    id: string;
+    assignedUserId: string | null;
+  };
 };
 
 type AttachmentTarget = {
@@ -336,6 +344,7 @@ export default function HomePage() {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [email, setEmail] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [farmFeedback, setFarmFeedback] = useState<string | null>(null);
   const [actionNotes, setActionNotes] = useState<Record<string, string>>({});
@@ -361,6 +370,7 @@ export default function HomePage() {
   const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null);
   const [loadingTaskDetailId, setLoadingTaskDetailId] = useState<string | null>(null);
   const [cancellingTaskId, setCancellingTaskId] = useState<string | null>(null);
+  const [updatingTaskAssigneeId, setUpdatingTaskAssigneeId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [issueStatusDrafts, setIssueStatusDrafts] = useState<Record<string, IssueStatus>>({});
@@ -398,6 +408,7 @@ export default function HomePage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (isMounted) {
         setUserEmail(user?.email ?? null);
+        setUserId(user?.id ?? null);
         setInvitationToken(new URLSearchParams(window.location.search).get("invite"));
         setIsAuthLoading(false);
       }
@@ -408,6 +419,7 @@ export default function HomePage() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (isMounted) {
         setUserEmail(session?.user.email ?? null);
+        setUserId(session?.user.id ?? null);
         setIsAuthLoading(false);
       }
     });
@@ -1328,6 +1340,57 @@ export default function HomePage() {
     }
   }
 
+  function taskAssigneeLabel(assignedUserId: string | null) {
+    if (!assignedUserId) {
+      return "미배정";
+    }
+
+    if (assignedUserId === userId) {
+      return "내 담당";
+    }
+
+    const member = farmCollaboration?.members.find((item) => item.userId === assignedUserId);
+    return member?.email ?? "팀원 배정됨";
+  }
+
+  async function handleTaskAssigneeUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!farm || !cropCycle || !taskDetail) {
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const selectedUserId = form.get("assignedUserId");
+    const assignedUserId = typeof selectedUserId === "string" && selectedUserId.length > 0 ? selectedUserId : null;
+    if (assignedUserId === taskDetail.assignedUserId) {
+      setMessage("담당자 변경 사항이 없습니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setUpdatingTaskAssigneeId(taskDetail.id);
+    try {
+      const updated = await apiRequest<TaskAssignmentResponse>(`/api/tasks/${taskDetail.id}/assignee`, {
+        method: "PATCH",
+        body: JSON.stringify({ assignedUserId }),
+      });
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id)]);
+      setTaskDetail((current) =>
+        current?.id === updated.task.id ? { ...current, assignedUserId: updated.task.assignedUserId } : current,
+      );
+      setMessage(
+        updated.task.assignedUserId
+          ? `“${taskDetail.title}” 작업의 담당자를 ${taskAssigneeLabel(updated.task.assignedUserId)}으로 지정했습니다.`
+          : `“${taskDetail.title}” 작업의 담당자 배정을 해제했습니다.`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "작업 담당자 저장에 실패했습니다.");
+    } finally {
+      setUpdatingTaskAssigneeId(null);
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleAttachmentUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!attachmentTarget || !attachmentFile || !farm) {
@@ -1965,6 +2028,7 @@ export default function HomePage() {
                     <small>
                       상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
                     </small>
+                    <small>담당 {taskAssigneeLabel(task.assignedUserId)}</small>
                     {task.sourceType === "manual" ? <small>직접 등록 작업</small> : null}
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
@@ -1995,6 +2059,7 @@ export default function HomePage() {
                     </span>
                     <small>{task.reason}</small>
                     <small>작업 상태 {taskStatusLabel(task.status)}</small>
+                    <small>담당 {taskAssigneeLabel(task.assignedUserId)}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
@@ -2137,6 +2202,10 @@ export default function HomePage() {
                   <dd>{taskDetail.priority} · {taskStatusLabel(taskDetail.status)}</dd>
                 </div>
                 <div>
+                  <dt>담당자</dt>
+                  <dd>{taskAssigneeLabel(taskDetail.assignedUserId)}</dd>
+                </div>
+                <div>
                   <dt>작업 출처 · 결과 기록</dt>
                   <dd>{taskSourceLabel(taskDetail.sourceType)} · {taskDetail.resultRequired ? "필요" : "선택"}</dd>
                 </div>
@@ -2159,6 +2228,31 @@ export default function HomePage() {
               </div>
               {taskDetail.verificationStatus === "draft" ? (
                 <p className="field-hint">이 작업은 개발·검증용 Draft 데이터이며 실제 농업 처방이 아닙니다.</p>
+              ) : null}
+              {canManageSelectedFarm && (taskDetail.status === "pending" || taskDetail.status === "in_progress") ? (
+                <form
+                  className="stack"
+                  key={`${taskDetail.id}:${taskDetail.assignedUserId ?? "unassigned"}`}
+                  onSubmit={handleTaskAssigneeUpdate}
+                >
+                  <label>
+                    담당자 배정
+                    <select defaultValue={taskDetail.assignedUserId ?? ""} name="assignedUserId">
+                      <option value="">미배정</option>
+                      {(farmCollaboration?.members ?? []).map((member) => (
+                        <option key={member.userId} value={member.userId}>
+                          {member.email} · {farmRoleLabel(member.role)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="field-hint">담당자는 작업 조율용 표시이며, 다른 Farm 구성원의 작업 기록을 제한하지 않습니다.</p>
+                  <div className="button-row">
+                    <button disabled={isSubmitting || farmCollaboration === null} type="submit">
+                      {updatingTaskAssigneeId === taskDetail.id ? "저장 중..." : "담당자 저장"}
+                    </button>
+                  </div>
+                </form>
               ) : null}
               {canManageSelectedFarm && taskDetail.status === "pending" ? (
                 <div className="button-row">

@@ -6,6 +6,7 @@ import { isUuid, parseFarmTaskStatusInput } from "@/lib/api/validation";
 type RouteContext = { params: Promise<{ taskId: string }> };
 
 type FarmTaskRow = {
+  assigned_user_id: string | null;
   id: string;
   farm_id: string;
   crop_cycle_id: string;
@@ -27,11 +28,12 @@ type FarmTaskRow = {
 };
 
 const taskSelect =
-  "id, farm_id, crop_cycle_id, task_template_id, parent_issue_id, title, task_type, reason, priority, scheduled_for, due_at, evidence, verification_status, source_type, status, result_required, completed_at, created_at";
+  "id, farm_id, crop_cycle_id, task_template_id, parent_issue_id, assigned_user_id, title, task_type, reason, priority, scheduled_for, due_at, evidence, verification_status, source_type, status, result_required, completed_at, created_at";
 
 function taskResponse(task: FarmTaskRow) {
   return {
     id: task.id,
+    assignedUserId: task.assigned_user_id,
     farmId: task.farm_id,
     cropCycleId: task.crop_cycle_id,
     taskTemplateId: task.task_template_id,

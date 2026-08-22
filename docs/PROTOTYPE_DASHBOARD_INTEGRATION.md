@@ -89,6 +89,17 @@
 
 새 테이블·역할·작물 규칙은 만들지 않으며, `202608220001_core_v01_task_start.sql`이 기존 결과 기록 RPC만 확장한다.
 
+## Sixth Integration: Team Task Assignment
+
+프로토타입의 팀 작업 조율 요구는 기존 `FarmMembership`와 `FarmTask`에 선택적 담당자 관계를 추가해 표현한다.
+
+- owner/admin만 같은 Farm 구성원을 pending 또는 진행 중 FarmTask의 담당자로 배정·해제한다.
+- 담당자는 일정, Today, 상세의 조율 정보이며 담당자가 아닌 구성원의 작업 시작·완료·문제 기록을 막지 않는다.
+- farmer는 자신의 담당 여부와 팀원 배정 여부를 볼 수 있지만, 구성원 이메일 전체를 새로 조회하지 않는다.
+- 담당 구성원이 Farm에서 제거되면 배정값만 해제하며 FarmTask와 실행 기록은 보존한다.
+
+`202608220002_core_v01_task_assignment.sql`은 `assigned_user_id`와 같은 Farm membership 무결성 trigger를 추가한다. 새 역할, 작업 배정 엔진, 자동 배정, 알림 또는 WBS는 만들지 않는다.
+
 ## Follow-up Candidates
 
 다음은 각각 독립 Issue/PR 및 사용자 검증이 필요한 후보이다.

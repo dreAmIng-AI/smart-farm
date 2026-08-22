@@ -28,6 +28,10 @@ export type FarmTaskStatusInput = {
   status: "cancelled";
 };
 
+export type FarmTaskAssigneeInput = {
+  assignedUserId: string | null;
+};
+
 export type FarmMemberRole = "admin" | "farmer";
 
 export type FarmInvitationInput = {
@@ -207,6 +211,26 @@ export function parseFarmTaskStatusInput(value: unknown): Parsed<FarmTaskStatusI
   }
 
   return { ok: true, data: { status: value.status } };
+}
+
+export function parseFarmTaskAssigneeInput(value: unknown): Parsed<FarmTaskAssigneeInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  if (!("assignedUserId" in value)) {
+    return { ok: false, error: "assignedUserId is required." };
+  }
+
+  if (value.assignedUserId === null) {
+    return { ok: true, data: { assignedUserId: null } };
+  }
+
+  if (typeof value.assignedUserId !== "string" || !isUuid(value.assignedUserId)) {
+    return { ok: false, error: "assignedUserId must be a UUID or null." };
+  }
+
+  return { ok: true, data: { assignedUserId: value.assignedUserId } };
 }
 
 function parseFarmMemberRole(value: unknown): Parsed<FarmMemberRole> {

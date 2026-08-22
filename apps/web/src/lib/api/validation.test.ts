@@ -10,6 +10,7 @@ import {
   parseFarmInvitationAcceptanceInput,
   parseFarmInvitationInput,
   parseFarmMemberRoleInput,
+  parseFarmTaskAssigneeInput,
   parseFarmInput,
   parseFollowUpTaskInput,
   parseIssueStatusInput,
@@ -157,6 +158,32 @@ describe("FarmTask cancellation input", () => {
     expect(parseFarmTaskStatusInput({ status: "completed" })).toMatchObject({
       ok: false,
       error: "status must be cancelled.",
+    });
+  });
+});
+
+describe("FarmTask assignee input", () => {
+  it("accepts a Farm member UUID or an explicit unassignment", () => {
+    expect(
+      parseFarmTaskAssigneeInput({ assignedUserId: "11111111-1111-4111-8111-111111111111" }),
+    ).toEqual({
+      ok: true,
+      data: { assignedUserId: "11111111-1111-4111-8111-111111111111" },
+    });
+    expect(parseFarmTaskAssigneeInput({ assignedUserId: null })).toEqual({
+      ok: true,
+      data: { assignedUserId: null },
+    });
+  });
+
+  it("rejects an omitted or malformed assignee", () => {
+    expect(parseFarmTaskAssigneeInput({})).toMatchObject({
+      ok: false,
+      error: "assignedUserId is required.",
+    });
+    expect(parseFarmTaskAssigneeInput({ assignedUserId: "not-a-uuid" })).toMatchObject({
+      ok: false,
+      error: "assignedUserId must be a UUID or null.",
     });
   });
 });

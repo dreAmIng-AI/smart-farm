@@ -43,6 +43,7 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
     insertedTaskSingle.mockResolvedValue({
       data: {
         id: taskId,
+        assigned_user_id: null,
         parent_issue_id: null,
         title: "Check ventilation",
         task_type: "manual",
@@ -87,7 +88,9 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
       source_type: "manual",
       verification_status: "draft",
     }));
-    await expect(response.json()).resolves.toMatchObject({ farmTask: { id: taskId, sourceType: "manual" } });
+    await expect(response.json()).resolves.toMatchObject({
+      farmTask: { id: taskId, assignedUserId: null, sourceType: "manual" },
+    });
   });
 
   it("rejects a closed CropCycle before creating a FarmTask", async () => {

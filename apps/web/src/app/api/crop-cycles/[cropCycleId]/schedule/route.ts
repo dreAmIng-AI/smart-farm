@@ -6,6 +6,7 @@ import { isUuid } from "@/lib/api/validation";
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
 
 type FarmTaskRow = {
+  assigned_user_id: string | null;
   id: string;
   parent_issue_id: string | null;
   title: string;
@@ -72,7 +73,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { data, error } = await auth.supabase
     .from("farm_tasks")
     .select(
-      "id, parent_issue_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
+      "id, parent_issue_id, assigned_user_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
     )
     .eq("crop_cycle_id", cropCycleId)
     .order("scheduled_for", { ascending: true });
@@ -88,6 +89,7 @@ export async function GET(_request: Request, context: RouteContext) {
   return NextResponse.json({
     items: rows.map((task) => ({
       id: task.id,
+      assignedUserId: task.assigned_user_id,
       parentIssueId: task.parent_issue_id,
       title: task.title,
       taskType: task.task_type,
