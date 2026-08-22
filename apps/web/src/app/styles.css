@@ -284,6 +284,143 @@ p {
   border-color: #a9cbb2;
 }
 
+.weekly-work-board {
+  background: linear-gradient(135deg, #f3f7ff 0%, #ffffff 62%);
+  border-color: #b8c9e9;
+}
+
+.weekly-work-heading-row,
+.weekly-work-controls,
+.weekly-work-day header {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.weekly-work-heading-row > div {
+  min-width: 0;
+}
+
+.weekly-work-count {
+  background: #dce8ff;
+  border-radius: 999px;
+  color: #214b8f;
+  flex: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.35rem 0.6rem;
+  white-space: nowrap;
+}
+
+.weekly-work-controls {
+  background: #ffffff;
+  border: 1px solid #d7e0f3;
+  border-radius: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem;
+}
+
+.weekly-work-controls strong {
+  font-size: 0.875rem;
+  margin-right: auto;
+}
+
+.weekly-work-days {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.weekly-work-day {
+  background: #ffffff;
+  border: 1px solid #dbe6dc;
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.weekly-work-day.is-today {
+  background: #f2f8ff;
+  border-color: #5c88c9;
+}
+
+.weekly-work-day header span {
+  color: #547064;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.weekly-work-day header strong {
+  margin-right: auto;
+}
+
+.weekly-work-day header small {
+  background: #20613f;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.4rem;
+}
+
+.weekly-work-day ol {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.weekly-work-task {
+  background: #f7faf8;
+  border: 1px solid #dbe6dc;
+  color: #18332a;
+  display: grid;
+  gap: 0.25rem;
+  min-height: auto;
+  padding: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+
+.weekly-work-task:hover {
+  background: #edf6ef;
+}
+
+.weekly-work-task:focus-visible {
+  outline: 3px solid #3d74c5;
+  outline-offset: 2px;
+}
+
+.weekly-work-task span,
+.weekly-work-task small {
+  color: #547064;
+  font-size: 0.8rem;
+}
+
+.weekly-work-task.status-completed {
+  border-left: 4px solid #4d9870;
+}
+
+.weekly-work-task.status-issue_reported {
+  border-left: 4px solid #b78012;
+}
+
+.weekly-work-task.status-cancelled {
+  border-left: 4px solid #9aa7a0;
+  opacity: 0.72;
+}
+
+.weekly-work-task.status-in_progress {
+  border-left: 4px solid #3568b2;
+}
+
+.weekly-work-task.status-pending {
+  border-left: 4px solid #8a5a00;
+}
+
 .work-cycle-guidance {
   background: linear-gradient(135deg, #e9f6ed 0%, #ffffff 62%);
   border-color: #8dcaa0;
@@ -601,5 +738,15 @@ p {
 
   .dashboard-links {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .weekly-work-days {
+    grid-template-columns: repeat(7, minmax(9rem, 1fr));
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .weekly-work-day {
+    min-height: 13rem;
   }
 }

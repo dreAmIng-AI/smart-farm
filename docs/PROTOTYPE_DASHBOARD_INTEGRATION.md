@@ -25,7 +25,7 @@
 | Prototype capability | Smart Farm reuse | Decision |
 | --- | --- | --- |
 | Farm overview | `Farm` + 선택된 `CropCycle` | 운영 현황 요약으로 도입 |
-| Today/weekly work | `FarmTask` 일정 + Today 조회 | 기존 API와 화면을 재사용 |
+| Today/weekly work | `FarmTask` 일정 + Today 조회 | 주간 작업 운영 보기로 도입 |
 | Work completion and notes | `ActionLog` | 기존 결과 기록을 재사용 |
 | Issue and follow-up | `IssueRecord` + Follow-up `FarmTask` | 기존 문제·재확인 흐름을 재사용 |
 | Image evidence | `Attachment` | 기존 비공개 Storage/RLS 흐름을 재사용 |
@@ -45,13 +45,23 @@
 
 따라서 migration, 새 API, 외부 API, 비밀값, crop-specific branch는 필요하지 않다. 화면은 분석 대시보드나 농업 처방이 아니라 현재 Work Cycle의 진입점이다.
 
+## Second Integration: Weekly Work View
+
+선택한 CropCycle의 기존 `FarmTask` 일정을 서울 시간 기준 월요일~일요일 보드로 표시한다.
+
+- 이전 주·이번 주·다음 주 이동
+- 상태와 우선순위, 문제 재확인 후속 작업 여부 표시
+- 작업 카드 선택 시 기존 Task Detail 및 결과 기록 흐름 재사용
+
+이 기능은 새로운 계획 모델이나 데이터를 생성하지 않는다. 기존 Schedule 조회의 결과만 읽으므로 migration, API, RLS, 외부 데이터 Source는 추가하지 않는다.
+
 ## Follow-up Candidates
 
 다음은 각각 독립 Issue/PR 및 사용자 검증이 필요한 후보이다.
 
 1. 사용자 인터뷰를 바탕으로 작업 목록의 정보 밀도와 모바일 입력 흐름 개선
 2. 작업 영역/운영 유형을 추가해야 하는지 Domain 검토
-3. 캘린더 또는 일정 보기의 최소 UX 개선
+3. 월간 캘린더가 필요한지 사용자 검증 후 별도 작업으로 검토
 4. 외부 데이터 Source Review 후 Weather/Market Lab을 Core와 분리해 실험
 5. Crop Pack 검증 데이터가 확보된 뒤 생육 단계 선택 UX 개선
 

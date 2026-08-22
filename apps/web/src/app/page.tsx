@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
+import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
 import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
 import {
   canRegenerateFarmInvitation,
@@ -992,6 +993,13 @@ export default function HomePage() {
     }
   }
 
+  async function handleWeeklyTaskSelect(taskId: string) {
+    await loadTaskDetail(taskId);
+    window.requestAnimationFrame(() => {
+      document.getElementById("task-detail-heading")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   async function loadHistory(farmId: string) {
     const result = await apiRequest<{ items: HistoryItem[] }>(`/api/farms/${farmId}/history`, {
       method: "GET",
@@ -1511,6 +1519,10 @@ export default function HomePage() {
           schedule={schedule}
           todayTasks={todayTasks}
         />
+      ) : null}
+
+      {userEmail && cropCycle ? (
+        <WeeklyWorkBoard onTaskSelect={(taskId) => void handleWeeklyTaskSelect(taskId)} tasks={schedule} />
       ) : null}
 
       {userEmail && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
