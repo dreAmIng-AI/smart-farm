@@ -224,6 +224,7 @@ p {
 .issue-entry,
 .issue-follow-up,
 .issue-status-entry,
+.manual-task-create,
 .farm-settings,
 .farm-collaboration,
 .farm-create,
@@ -252,6 +253,11 @@ p {
 .crop-cycle-lifecycle-entry {
   background: #fff8e8;
   border-color: #ead9a1;
+}
+
+.manual-task-create {
+  background: #f3f6fe;
+  border-color: #c5d3ee;
 }
 
 .farm-settings {
@@ -766,7 +772,8 @@ p {
 .farm-settings summary,
 .farm-collaboration summary,
 .farm-create summary,
-.crop-cycle-create summary {
+.crop-cycle-create summary,
+.manual-task-create summary {
   color: #18332a;
   cursor: pointer;
   font-weight: 700;
@@ -775,7 +782,8 @@ p {
 .farm-settings[open] summary,
 .farm-collaboration[open] summary,
 .farm-create[open] summary,
-.crop-cycle-create[open] summary {
+.crop-cycle-create[open] summary,
+.manual-task-create[open] summary {
   margin-bottom: 0.15rem;
 }
 

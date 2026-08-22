@@ -54,7 +54,7 @@ Crop Pack이 제공하는 기준 작업입니다. 작물, 품종, 생육단계, 
 
 ### FarmTask
 
-특정 Farm과 CropCycle에서 실제로 예정·수행하는 작업입니다. Today와 일정의 데이터 원본이며, 초기 Mission Card는 FarmTask의 UI 표현일 뿐 별도 핵심 객체가 아닙니다.
+특정 Farm과 CropCycle에서 실제로 예정·수행하는 작업입니다. TaskTemplate 적용, owner/admin의 직접 등록(`sourceType: manual`), IssueRecord 기반 재확인 작업으로 생성될 수 있으며 Today와 일정의 데이터 원본입니다. 초기 Mission Card는 FarmTask의 UI 표현일 뿐 별도 핵심 객체가 아닙니다.
 
 ### ActionLog
 
@@ -139,7 +139,7 @@ pending → cancelled
 
 ### 업무 규칙
 
-1. 종료된 CropCycle에는 새 자동 작업을 생성하지 않으며, 기존 일정·결과·이력은 보존합니다.
+1. 종료된 CropCycle에는 새 FarmTask를 생성하지 않으며, 기존 일정·결과·이력은 보존합니다.
 2. TaskTemplate은 기준, FarmTask는 실제 작기 작업입니다.
 3. FarmTask의 결과는 ActionLog로 남기고 현재 상태는 FarmTask가 보유합니다.
 4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.

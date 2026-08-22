@@ -48,6 +48,7 @@
 | `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
 | `PATCH /api/crop-cycles/{cropCycleId}/status` | 진행 중 CropCycle 완료·취소 처리 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
+| `POST /api/crop-cycles/{cropCycleId}/tasks` | owner/admin이 진행 중 CropCycle에 직접 FarmTask 등록 |
 | `GET /api/crop-cycles/{cropCycleId}/schedule` | 작기 전체 일정 조회 |
 | `GET /api/farms/{farmId}/tasks/today` | 오늘·지연·후속 작업 조회 |
 | `GET /api/tasks/{taskId}` | 작업 상세와 근거·검증 상태 조회 |
@@ -161,6 +162,21 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
   "taskIds": ["uuid-1", "uuid-2", "uuid-3"]
 }
 ```
+
+### 직접 FarmTask 등록
+
+`POST /api/crop-cycles/{cropCycleId}/tasks`는 owner/admin이 접근 가능한 `active` CropCycle에만 직접 작업을 추가한다. UI가 입력한 `scheduledFor`의 Asia/Seoul 자정을 UTC로 저장하며, 종료 작기는 `CROP_CYCLE_NOT_ACTIVE`(409), 없는 또는 접근 불가 작기는 `CROP_CYCLE_NOT_FOUND`(404), farmer는 `FARM_MANAGEMENT_FORBIDDEN`(403)으로 거부한다. 기존 `farm_tasks`의 manager INSERT RLS가 최종 보호를 제공한다.
+
+```json
+{
+  "title": "시설 환기 상태 확인",
+  "reason": "현장 운영자가 추가한 점검 작업",
+  "scheduledFor": "2026-09-11",
+  "priority": "medium"
+}
+```
+
+성공 시 `201`과 생성된 FarmTask를 반환한다. 직접 작업은 `sourceType: manual`, `taskType: manual`, `verificationStatus: draft`, 빈 `evidence`로 저장하며 Crop Pack의 처방이나 자동 작업 생성을 의미하지 않는다.
 
 ### Today 응답의 핵심 필드
 
@@ -297,7 +313,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `FARM_CREATION_FORBIDDEN`, `FARM_CREATION_PERMISSION_LOOKUP_FAILED`, `FARM_MANAGEMENT_FORBIDDEN`, `FARM_PERMISSION_LOOKUP_FAILED`
 - `FARM_CREATE_FAILED`, `FARM_LOOKUP_FAILED`, `FARM_UPDATE_FAILED`
 - `CROP_CYCLE_NOT_FOUND`, `CROP_CYCLE_CREATE_FAILED`, `CROP_CYCLE_UPDATE_FAILED`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_ALREADY_ENDED`, `CROP_CYCLE_NOT_ACTIVE`
-- `TASK_GENERATION_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
+- `TASK_GENERATION_FAILED`, `MANUAL_TASK_CREATE_FAILED`, `SCHEDULE_LOOKUP_FAILED`, `TODAY_LOOKUP_FAILED`
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`

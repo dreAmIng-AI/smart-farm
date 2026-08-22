@@ -1131,6 +1131,35 @@ export default function HomePage() {
     }
   }
 
+  async function handleManualTaskCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!cropCycle || !farm) {
+      return;
+    }
+
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    setIsSubmitting(true);
+    try {
+      const created = await apiRequest<{ farmTask: FarmTask }>(`/api/crop-cycles/${cropCycle.id}/tasks`, {
+        method: "POST",
+        body: JSON.stringify({
+          title: form.get("title"),
+          reason: form.get("reason"),
+          scheduledFor: form.get("scheduledFor"),
+          priority: form.get("priority"),
+        }),
+      });
+      await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
+      formElement.reset();
+      setMessage(`직접 등록한 작업 “${created.farmTask.title}”을 일정에 추가했습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "직접 작업 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleRefresh() {
     if (!cropCycle || !farm) {
       return;
@@ -1846,6 +1875,40 @@ export default function HomePage() {
             </button>
           </div>
 
+          {canManageSelectedFarm && cropCycle.status === "active" ? (
+            <details className="manual-task-create" open={schedule.length === 0}>
+              <summary>직접 작업 추가</summary>
+              <p className="field-hint">
+                현장에서 필요한 작업을 이 작기의 일정에 추가합니다. Crop Pack 처방이 아니며 검증 상태는 draft로 표시됩니다.
+              </p>
+              <form className="stack" onSubmit={handleManualTaskCreate}>
+                <label>
+                  작업명
+                  <input maxLength={200} name="title" required />
+                </label>
+                <label>
+                  작업 이유 또는 현장 메모
+                  <textarea maxLength={1000} name="reason" required rows={3} />
+                </label>
+                <label>
+                  예정일
+                  <input defaultValue={transplantDate} name="scheduledFor" required type="date" />
+                </label>
+                <label>
+                  우선순위
+                  <select defaultValue="medium" name="priority">
+                    <option value="high">높음</option>
+                    <option value="medium">보통</option>
+                    <option value="low">낮음</option>
+                  </select>
+                </label>
+                <button disabled={isSubmitting} type="submit">
+                  {isSubmitting ? "작업 추가 중..." : "직접 작업 일정에 추가"}
+                </button>
+              </form>
+            </details>
+          ) : null}
+
           <div className="stack" aria-live="polite">
             <h3 id="schedule-heading">작기 전체 일정</h3>
             {schedule.length > 0 ? (
@@ -1858,6 +1921,7 @@ export default function HomePage() {
                     <small>
                       상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
                     </small>
+                    {task.sourceType === "manual" ? <small>직접 등록 작업</small> : null}
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
                       className="compact secondary"

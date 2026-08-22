@@ -132,6 +132,8 @@ TaskTemplate → FarmTask
 | result_required | boolean | Y | 결과 기록 필요 여부 |
 | created_at / completed_at | timestamptz | Y/N | 생성·완료 시각 |
 
+`source_type = manual`은 owner/admin이 진행 중인 CropCycle에 직접 추가한 작업이다. `task_template_id`와 `parent_issue_id`는 null이며, Core는 Crop별 처방을 만들지 않기 위해 `task_type = manual`, `evidence = []`, `verification_status = draft`로 저장한다. 생성은 기존 Farm membership 기반 manager RLS와 `POST /api/crop-cycles/{cropCycleId}/tasks`의 active CropCycle 확인을 모두 통과해야 한다.
+
 ### action_logs
 
 | Field | Type | Required | Meaning |

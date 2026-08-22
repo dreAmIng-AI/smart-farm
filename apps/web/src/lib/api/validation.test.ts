@@ -12,6 +12,7 @@ import {
   parseFarmInput,
   parseFollowUpTaskInput,
   parseIssueStatusInput,
+  parseManualFarmTaskInput,
 } from "@/lib/api/validation";
 
 const validPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -232,6 +233,28 @@ describe("Follow-up FarmTask input", () => {
   it("rejects an invalid follow-up date", () => {
     expect(
       parseFollowUpTaskInput({ title: "Recheck", scheduledFor: "2026-02-30", priority: "medium" }),
+    ).toMatchObject({ ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." });
+  });
+});
+
+describe("Manual FarmTask input", () => {
+  it("accepts a direct task without crop-specific Core input", () => {
+    expect(
+      parseManualFarmTaskInput({
+        title: "Check greenhouse ventilation",
+        reason: "Operator-requested facility check.",
+        scheduledFor: "2026-08-14",
+        priority: "medium",
+      }),
+    ).toMatchObject({ ok: true });
+  });
+
+  it("requires a date and a meaningful reason", () => {
+    expect(
+      parseManualFarmTaskInput({ title: "Check", reason: "", scheduledFor: "2026-08-14", priority: "medium" }),
+    ).toMatchObject({ ok: false, error: "reason is required and must not exceed 1000 characters." });
+    expect(
+      parseManualFarmTaskInput({ title: "Check", reason: "Reason", scheduledFor: "2026-02-30", priority: "medium" }),
     ).toMatchObject({ ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." });
   });
 });
