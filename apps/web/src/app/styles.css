@@ -226,6 +226,8 @@ p {
 .issue-status-entry,
 .farm-settings,
 .farm-collaboration,
+.farm-create,
+.crop-cycle-create,
 .attachment-entry,
 .growth-stage-entry,
 .crop-cycle-lifecycle-entry {
@@ -257,6 +259,16 @@ p {
   border-color: #c5d3ee;
 }
 
+.farm-create,
+.crop-cycle-create {
+  background: #f7fbf8;
+  border: 1px solid #b9d9c1;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+
 .farm-collaboration {
   background: #eef7f0;
   border-color: #b9d9c1;
@@ -270,6 +282,31 @@ p {
 .operations-dashboard {
   background: linear-gradient(135deg, #f4fbf5 0%, #ffffff 58%);
   border-color: #a9cbb2;
+}
+
+.work-cycle-guidance {
+  background: linear-gradient(135deg, #e9f6ed 0%, #ffffff 62%);
+  border-color: #8dcaa0;
+}
+
+.work-cycle-guidance-warning {
+  background: linear-gradient(135deg, #fff4d7 0%, #ffffff 62%);
+  border-color: #e2b455;
+}
+
+.work-cycle-guidance-action {
+  background: #20613f;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  font-weight: 700;
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.work-cycle-guidance-warning .work-cycle-guidance-action {
+  background: #8a5a00;
 }
 
 .dashboard-heading,
@@ -390,14 +427,18 @@ p {
 }
 
 .farm-settings summary,
-.farm-collaboration summary {
+.farm-collaboration summary,
+.farm-create summary,
+.crop-cycle-create summary {
   color: #18332a;
   cursor: pointer;
   font-weight: 700;
 }
 
 .farm-settings[open] summary,
-.farm-collaboration[open] summary {
+.farm-collaboration[open] summary,
+.farm-create[open] summary,
+.crop-cycle-create[open] summary {
   margin-bottom: 0.15rem;
 }
 
