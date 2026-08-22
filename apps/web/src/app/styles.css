@@ -289,6 +289,206 @@ p {
   border-color: #b8c9e9;
 }
 
+.monthly-work-calendar {
+  background: linear-gradient(135deg, #fbf7ee 0%, #ffffff 62%);
+  border-color: #dbcba9;
+}
+
+.monthly-work-heading-row,
+.monthly-work-controls,
+.monthly-selected-day-heading {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.monthly-work-heading-row > div {
+  min-width: 0;
+}
+
+.monthly-work-count {
+  background: #f4e8ce;
+  border-radius: 999px;
+  color: #715216;
+  flex: none;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.35rem 0.6rem;
+  white-space: nowrap;
+}
+
+.monthly-work-controls {
+  background: #ffffff;
+  border: 1px solid #e4d8bf;
+  border-radius: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem;
+}
+
+.monthly-work-controls strong {
+  font-size: 0.875rem;
+  margin-right: auto;
+}
+
+.monthly-work-grid-scroll {
+  overflow-x: auto;
+}
+
+.monthly-work-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(8.5rem, 1fr));
+  min-width: 59.5rem;
+}
+
+.monthly-work-weekday {
+  background: #f8f5ee;
+  border: 1px solid #e8dfcd;
+  border-bottom: 0;
+  color: #405248;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.monthly-work-weekday.weekday-0 {
+  color: #a44735;
+}
+
+.monthly-work-weekday.weekday-6 {
+  color: #2f5da3;
+}
+
+.monthly-work-day {
+  border: 1px solid #e8dfcd;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 8.75rem;
+  padding: 0.45rem;
+}
+
+.monthly-work-day.is-outside-month {
+  background: #faf9f6;
+  opacity: 0.56;
+}
+
+.monthly-work-day.is-today {
+  background: #fffbed;
+  box-shadow: inset 0 0 0 2px #b98319;
+}
+
+.monthly-work-day.is-selected {
+  box-shadow: inset 0 0 0 2px #3568b2;
+}
+
+.monthly-work-date {
+  align-items: center;
+  background: transparent;
+  color: #18332a;
+  display: flex;
+  justify-content: space-between;
+  min-height: auto;
+  padding: 0;
+  text-align: left;
+}
+
+.monthly-work-date:hover {
+  background: transparent;
+  color: #17643d;
+}
+
+.monthly-work-date small {
+  background: #b98319;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.35rem;
+}
+
+.monthly-work-day ol,
+.monthly-selected-day ol {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.monthly-work-task,
+.monthly-work-more {
+  background: #eef5ef;
+  border: 0;
+  color: #18332a;
+  display: block;
+  font-size: 0.75rem;
+  min-height: auto;
+  overflow: hidden;
+  padding: 0.35rem 0.45rem;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.monthly-work-more {
+  background: transparent;
+  color: #17643d;
+  font-weight: 700;
+  padding-left: 0;
+}
+
+.monthly-work-task.status-completed,
+.monthly-selected-task.status-completed {
+  border-left: 3px solid #4d9870;
+}
+
+.monthly-work-task.status-issue_reported,
+.monthly-selected-task.status-issue_reported {
+  border-left: 3px solid #b78012;
+}
+
+.monthly-work-task.status-cancelled,
+.monthly-selected-task.status-cancelled {
+  border-left: 3px solid #9aa7a0;
+}
+
+.monthly-work-task.status-in_progress,
+.monthly-selected-task.status-in_progress {
+  border-left: 3px solid #3568b2;
+}
+
+.monthly-work-task.status-pending,
+.monthly-selected-task.status-pending {
+  border-left: 3px solid #8a5a00;
+}
+
+.monthly-selected-day {
+  background: #ffffff;
+  border: 1px solid #e4d8bf;
+  border-radius: 0.6rem;
+  padding: 0.75rem;
+}
+
+.monthly-selected-task {
+  background: #f7faf8;
+  border: 1px solid #dbe6dc;
+  color: #18332a;
+  display: grid;
+  gap: 0.25rem;
+  min-height: auto;
+  padding: 0.65rem;
+  text-align: left;
+  width: 100%;
+}
+
+.monthly-selected-task span,
+.monthly-selected-task small {
+  color: #547064;
+  font-size: 0.8rem;
+}
+
 .weekly-work-heading-row,
 .weekly-work-controls,
 .weekly-work-day header {

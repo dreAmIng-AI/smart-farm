@@ -29,7 +29,8 @@
 | Work completion and notes | `ActionLog` | 기존 결과 기록을 재사용 |
 | Issue and follow-up | `IssueRecord` + Follow-up `FarmTask` | 기존 문제·재확인 흐름을 재사용 |
 | Image evidence | `Attachment` | 기존 비공개 Storage/RLS 흐름을 재사용 |
-| Calendar/WBS/repeat/trigger | 현재 `CropCycle → TaskTemplate → FarmTask[]` | 사용자 검증 후 별도 작업으로 검토 |
+| Calendar | 현재 `CropCycle → TaskTemplate → FarmTask[]` | 주간 보드와 월간 달력으로 도입 |
+| WBS/repeat/trigger | 현재 `CropCycle → TaskTemplate → FarmTask[]` | 새 Domain 검토 후 별도 작업 |
 | Weather/pest/market | Lab/Integration | 이번 범위에서 제외 |
 | AI/RAG/diagnosis | Lab | 이번 범위에서 제외 |
 
@@ -55,13 +56,23 @@
 
 이 기능은 새로운 계획 모델이나 데이터를 생성하지 않는다. 기존 Schedule 조회의 결과만 읽으므로 migration, API, RLS, 외부 데이터 Source는 추가하지 않는다.
 
+## Third Integration: Monthly Work Calendar
+
+선택한 CropCycle의 저장된 `FarmTask`를 서울 시간 기준 일요일 시작 6주 달력으로 표시한다.
+
+- 이전 달·이번 달·다음 달 이동
+- 날짜별 작업 수와 상태가 보이는 일정 분포
+- 날짜를 누르면 그날의 모든 작업을 열고, 작업 선택 시 기존 상세·결과 기록 흐름 재사용
+
+기존 Schedule 조회 결과만 사용한다. 따라서 migration, API, RLS, 외부 데이터 Source 변경은 없다.
+
 ## Follow-up Candidates
 
 다음은 각각 독립 Issue/PR 및 사용자 검증이 필요한 후보이다.
 
 1. 사용자 인터뷰를 바탕으로 작업 목록의 정보 밀도와 모바일 입력 흐름 개선
 2. 작업 영역/운영 유형을 추가해야 하는지 Domain 검토
-3. 월간 캘린더가 필요한지 사용자 검증 후 별도 작업으로 검토
+3. WBS·반복·트리거가 실제 운영에 필요한지 Domain 검토
 4. 외부 데이터 Source Review 후 Weather/Market Lab을 Core와 분리해 실험
 5. Crop Pack 검증 데이터가 확보된 뒤 생육 단계 선택 UX 개선
 
