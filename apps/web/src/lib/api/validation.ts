@@ -24,6 +24,10 @@ export type CropCycleStatusInput = {
   status: CropCycleTerminalStatus;
 };
 
+export type FarmTaskStatusInput = {
+  status: "cancelled";
+};
+
 export type FarmMemberRole = "admin" | "farmer";
 
 export type FarmInvitationInput = {
@@ -188,6 +192,18 @@ export function parseCropCycleStatusInput(value: unknown): Parsed<CropCycleStatu
 
   if (value.status !== "completed" && value.status !== "cancelled") {
     return { ok: false, error: "status must be completed or cancelled." };
+  }
+
+  return { ok: true, data: { status: value.status } };
+}
+
+export function parseFarmTaskStatusInput(value: unknown): Parsed<FarmTaskStatusInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  if (value.status !== "cancelled") {
+    return { ok: false, error: "status must be cancelled." };
   }
 
   return { ok: true, data: { status: value.status } };

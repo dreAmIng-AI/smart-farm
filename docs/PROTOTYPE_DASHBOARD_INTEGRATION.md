@@ -75,6 +75,7 @@
 - 기존 `farm_tasks.source_type = manual`과 manager INSERT RLS 재사용
 - 직접 등록 작업은 `verificationStatus: draft`로 표시하고 Crop Pack 처방과 구분
 - Schedule, Today, 주간 보드, 월간 달력, 상세·결과 기록이 같은 작업을 즉시 사용
+- owner/admin은 아직 시작하지 않은 작업을 취소할 수 있으며, 취소된 작업은 일정에 보존된다.
 
 새 Table, migration, 별도 계획 Entity는 추가하지 않는다.
 
