@@ -26,6 +26,7 @@
 | --- | --- | --- |
 | Farm overview | `Farm` + 선택된 `CropCycle` | 운영 현황 요약으로 도입 |
 | Today/weekly work | `FarmTask` 일정 + Today 조회 | 주간 작업 운영 보기로 도입 |
+| Direct task entry | `FarmTask` with `sourceType: manual` | owner/admin 직접 등록으로 도입 |
 | Work completion and notes | `ActionLog` | 기존 결과 기록을 재사용 |
 | Issue and follow-up | `IssueRecord` + Follow-up `FarmTask` | 기존 문제·재확인 흐름을 재사용 |
 | Image evidence | `Attachment` | 기존 비공개 Storage/RLS 흐름을 재사용 |
@@ -65,6 +66,17 @@
 - 날짜를 누르면 그날의 모든 작업을 열고, 작업 선택 시 기존 상세·결과 기록 흐름 재사용
 
 기존 Schedule 조회 결과만 사용한다. 따라서 migration, API, RLS, 외부 데이터 Source 변경은 없다.
+
+## Fourth Integration: Direct Task Entry
+
+프로토타입의 새 작업 등록 흐름을 기존 `FarmTask`로 연결한다.
+
+- owner/admin만 진행 중 CropCycle에 제목·이유·예정일·우선순위로 작업을 등록
+- 기존 `farm_tasks.source_type = manual`과 manager INSERT RLS 재사용
+- 직접 등록 작업은 `verificationStatus: draft`로 표시하고 Crop Pack 처방과 구분
+- Schedule, Today, 주간 보드, 월간 달력, 상세·결과 기록이 같은 작업을 즉시 사용
+
+새 Table, migration, 별도 계획 Entity는 추가하지 않는다.
 
 ## Follow-up Candidates
 

@@ -62,6 +62,10 @@ export type FollowUpTaskInput = {
   priority: "low" | "medium" | "high";
 };
 
+export type ManualFarmTaskInput = FollowUpTaskInput & {
+  reason: string;
+};
+
 export type AttachmentFileInput = {
   extension: "jpg" | "png" | "webp";
   fileSizeBytes: number;
@@ -360,6 +364,35 @@ export function parseFollowUpTaskInput(value: unknown): Parsed<FollowUpTaskInput
   }
 
   return { ok: true, data: { title, scheduledFor, priority } };
+}
+
+export function parseManualFarmTaskInput(value: unknown): Parsed<ManualFarmTaskInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const title = requiredText(value.title);
+  const reason = requiredText(value.reason);
+  const scheduledFor = requiredText(value.scheduledFor);
+  const priority = value.priority;
+
+  if (!title || title.length > 200) {
+    return { ok: false, error: "title is required and must not exceed 200 characters." };
+  }
+
+  if (!reason || reason.length > 1000) {
+    return { ok: false, error: "reason is required and must not exceed 1000 characters." };
+  }
+
+  if (!scheduledFor || !isIsoDate(scheduledFor)) {
+    return { ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." };
+  }
+
+  if (priority !== "low" && priority !== "medium" && priority !== "high") {
+    return { ok: false, error: "priority must be low, medium, or high." };
+  }
+
+  return { ok: true, data: { title, reason, scheduledFor, priority } };
 }
 
 const attachmentTypes = {

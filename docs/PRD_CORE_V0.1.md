@@ -66,6 +66,7 @@ Farm → CropCycle → 작업계획 → 전체 일정 → Today → 결과 기�
 
 - 사진 첨부
 - 현재 생육단계 변경
+- owner/admin의 직접 FarmTask 등록
 
 ## 7. 초기 화면
 
