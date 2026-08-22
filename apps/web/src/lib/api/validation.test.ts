@@ -165,6 +165,23 @@ describe("Issue status input", () => {
 });
 
 describe("ActionLog input", () => {
+  it("accepts a work start with an optional note", () => {
+    expect(
+      parseActionLogInput({
+        actionType: "started",
+        note: "현장 작업을 시작합니다.",
+        performedAt: "2026-08-12T01:15:00.000Z",
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        actionType: "started",
+        note: "현장 작업을 시작합니다.",
+        performedAt: "2026-08-12T01:15:00.000Z",
+      },
+    });
+  });
+
   it("accepts a completed result with a short note", () => {
     expect(
       parseActionLogInput({

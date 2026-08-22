@@ -67,6 +67,18 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const taskRow = task as FarmTaskRow;
+  if (parsed.data.actionType === "started" && taskRow.status !== "pending") {
+    return NextResponse.json(
+      {
+        error: {
+          code: "INVALID_STATUS_TRANSITION",
+          message: `Farm task can only start from pending status: ${taskRow.status}.`,
+        },
+      },
+      { status: 409 },
+    );
+  }
+
   if (taskRow.status !== "pending" && taskRow.status !== "in_progress") {
     return NextResponse.json(
       {

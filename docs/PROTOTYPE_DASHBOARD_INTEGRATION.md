@@ -78,6 +78,16 @@
 
 새 Table, migration, 별도 계획 Entity는 추가하지 않는다.
 
+## Fifth Integration: Work Start State
+
+프로토타입의 작업 실행 감각은 기존 `FarmTask.status`와 `ActionLog.action_type = started`를 재사용해 최소 단위로 연결한다.
+
+- Today에서 `pending` 작업만 시작할 수 있고, 시작 ActionLog를 남긴다.
+- 시작한 작업은 `in_progress`가 되어 Today에 계속 표시되며, 기존 완료·문제·미확인 기록을 이어서 사용한다.
+- 모든 Farm 구성원이 기존 membership-checked RPC를 통해 자기 접근 Farm의 작업을 시작할 수 있다.
+
+새 테이블·역할·작물 규칙은 만들지 않으며, `202608220001_core_v01_task_start.sql`이 기존 결과 기록 RPC만 확장한다.
+
 ## Follow-up Candidates
 
 다음은 각각 독립 Issue/PR 및 사용자 검증이 필요한 후보이다.

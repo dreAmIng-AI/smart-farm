@@ -225,7 +225,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 ### 결과·문제 기록
 
-`POST /api/tasks/{taskId}/action-logs`는 `completed`, `not_checked`, `issue_reported`를 기록합니다. 완료는 FarmTask 상태를 `completed`로 바꾸며 미확인은 상태를 유지합니다. 문제 기록은 FarmTask 상태를 `issue_reported`로 바꾸고, 연결된 ActionLog와 IssueRecord를 하나의 RPC에서 생성합니다.
+`POST /api/tasks/{taskId}/action-logs`는 `started`, `completed`, `not_checked`, `issue_reported`를 기록합니다. `started`는 `pending` FarmTask에서만 가능하며 ActionLog를 남기고 상태를 `in_progress`로 바꿉니다. 완료는 FarmTask 상태를 `completed`로 바꾸며 미확인은 상태를 유지합니다. 문제 기록은 FarmTask 상태를 `issue_reported`로 바꾸고, 연결된 ActionLog와 IssueRecord를 하나의 RPC에서 생성합니다.
 
 ```json
 {
@@ -240,7 +240,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 }
 ```
 
-`performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. `issue_reported`에는 `issue`가 필수이고, `observedSymptom`은 관찰 사실입니다. 문제 기록은 확정 진단을 의미하지 않습니다.
+`performedAt`은 생략하면 서버가 현재 UTC 시각을 기록합니다. `started`는 이미 진행 중이거나 종료된 작업에 다시 기록할 수 없고 `INVALID_STATUS_TRANSITION`(409)을 반환합니다. `issue_reported`에는 `issue`가 필수이고, `observedSymptom`은 관찰 사실입니다. 문제 기록은 확정 진단을 의미하지 않습니다.
 
 ### Follow-up FarmTask 생성
 

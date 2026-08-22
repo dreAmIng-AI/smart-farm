@@ -64,6 +64,61 @@ describe("POST /api/tasks/:taskId/action-logs", () => {
     });
   });
 
+  it("records a work start and moves a pending FarmTask to in progress", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          action_log_id: "22222222-2222-4222-8222-222222222222",
+          task_status: "in_progress",
+          completed_at: null,
+        },
+      ],
+      error: null,
+    });
+
+    const response = await POST(
+      new Request(`http://localhost/api/tasks/${taskId}/action-logs`, {
+        method: "POST",
+        body: JSON.stringify({
+          actionType: "started",
+          note: "현장 작업을 시작합니다.",
+          performedAt: "2026-08-12T01:15:00.000Z",
+        }),
+      }),
+      { params: Promise.resolve({ taskId }) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(rpc).toHaveBeenCalledWith("record_farm_task_action", {
+      p_action_type: "started",
+      p_note: "현장 작업을 시작합니다.",
+      p_performed_at: "2026-08-12T01:15:00.000Z",
+      p_task_id: taskId,
+    });
+    await expect(response.json()).resolves.toMatchObject({
+      actionLog: { actionType: "started", resultCode: "started" },
+      task: { id: taskId, status: "in_progress", completedAt: null },
+    });
+  });
+
+  it("rejects starting a FarmTask that is already in progress", async () => {
+    maybeSingle.mockResolvedValue({ data: { id: taskId, status: "in_progress" }, error: null });
+
+    const response = await POST(
+      new Request(`http://localhost/api/tasks/${taskId}/action-logs`, {
+        method: "POST",
+        body: JSON.stringify({ actionType: "started" }),
+      }),
+      { params: Promise.resolve({ taskId }) },
+    );
+
+    expect(response.status).toBe(409);
+    expect(rpc).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: "INVALID_STATUS_TRANSITION" },
+    });
+  });
+
   it("rejects a result for an already completed FarmTask", async () => {
     maybeSingle.mockResolvedValue({ data: { id: taskId, status: "completed" }, error: null });
 

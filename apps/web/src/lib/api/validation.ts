@@ -50,7 +50,7 @@ export type IssueInput = {
 };
 
 export type ActionLogInput = {
-  actionType: "completed" | "not_checked" | "issue_reported";
+  actionType: "started" | "completed" | "not_checked" | "issue_reported";
   note: string | null;
   performedAt: string | null;
   issue?: IssueInput;
@@ -275,10 +275,15 @@ export function parseActionLogInput(value: unknown): Parsed<ActionLogInput> {
   }
 
   const actionType = value.actionType;
-  if (actionType !== "completed" && actionType !== "not_checked" && actionType !== "issue_reported") {
+  if (
+    actionType !== "started" &&
+    actionType !== "completed" &&
+    actionType !== "not_checked" &&
+    actionType !== "issue_reported"
+  ) {
     return {
       ok: false,
-      error: "actionType must be completed, not_checked, or issue_reported.",
+      error: "actionType must be started, completed, not_checked, or issue_reported.",
     };
   }
 

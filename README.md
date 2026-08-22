@@ -42,7 +42,7 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 - owner/admin의 직접 FarmTask 등록
 - 전체 일정과 Today의 오늘·지연 작업 확인
 - FarmTask 상세에서 작업 이유, 예정 시각, 우선순위, 근거와 검증 상태 확인
-- 완료·문제 있음·확인하지 못함 결과를 ActionLog로 기록
+- 작업 시작·완료·문제 있음·확인하지 못함을 ActionLog로 기록
 - IssueRecord와 Follow-up FarmTask 연결
 - IssueRecord 상태 변경 및 해결 시각 기록
 - 결과 또는 문제 기록에 선택적 사진 첨부
