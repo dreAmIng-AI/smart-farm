@@ -12,6 +12,7 @@ type CropCycleRow = {
 };
 
 type FarmTaskRow = {
+  assigned_user_id: string | null;
   evidence: unknown[];
   id: string;
   parent_issue_id: string | null;
@@ -33,6 +34,7 @@ function seoulStartOfDay(value: string) {
 function taskResponse(task: FarmTaskRow) {
   return {
     id: task.id,
+    assignedUserId: task.assigned_user_id,
     parentIssueId: task.parent_issue_id,
     title: task.title,
     taskType: task.task_type,
@@ -121,7 +123,7 @@ export async function POST(request: Request, context: RouteContext) {
       verification_status: "draft",
     })
     .select(
-      "id, parent_issue_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
+      "id, parent_issue_id, assigned_user_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
     )
     .single();
 

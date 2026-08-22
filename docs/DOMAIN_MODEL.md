@@ -54,7 +54,7 @@ Crop Pack이 제공하는 기준 작업입니다. 작물, 품종, 생육단계, 
 
 ### FarmTask
 
-특정 Farm과 CropCycle에서 실제로 예정·수행하는 작업입니다. TaskTemplate 적용, owner/admin의 직접 등록(`sourceType: manual`), IssueRecord 기반 재확인 작업으로 생성될 수 있으며 Today와 일정의 데이터 원본입니다. 초기 Mission Card는 FarmTask의 UI 표현일 뿐 별도 핵심 객체가 아닙니다.
+특정 Farm과 CropCycle에서 실제로 예정·수행하는 작업입니다. TaskTemplate 적용, owner/admin의 직접 등록(`sourceType: manual`), IssueRecord 기반 재확인 작업으로 생성될 수 있으며 Today와 일정의 데이터 원본입니다. owner/admin은 같은 Farm의 선택적 담당 FarmMembership를 배정해 팀 작업을 조율할 수 있지만, 담당자 배정은 작업 실행 권한이나 ActionLog 기록 권한을 제한하지 않습니다. 초기 Mission Card는 FarmTask의 UI 표현일 뿐 별도 핵심 객체가 아닙니다.
 
 ### ActionLog
 
@@ -103,6 +103,7 @@ Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
 CropCycle 1 ─ N FarmTask             scheduled plan and actual work
 TaskTemplate 1 ─ N FarmTask          when created from a template
+FarmTask 0..1 ─ 1 FarmMembership     coordination assignee in the same Farm
 FarmTask 1 ─ N ActionLog
 FarmTask 1 ─ N IssueRecord
 IssueRecord 0..1 ─ N Follow-up FarmTask
@@ -144,6 +145,7 @@ pending → cancelled
 3. FarmTask의 결과는 ActionLog로 남기고 현재 상태는 FarmTask가 보유합니다.
    `started` ActionLog는 `pending` FarmTask를 한 번만 `in_progress`로 전환하며, 시작 뒤에도 완료·미확인·문제 기록의 기존 흐름을 사용합니다.
    `cancelled`는 owner/admin이 아직 시작하지 않은 `pending` 작업만 전환할 수 있으며, 기존 실행 기록을 새로 만들거나 삭제하지 않습니다.
+   담당자 배정은 owner/admin만 `pending` 또는 `in_progress` 작업에 변경할 수 있으며, 담당자가 아니어도 기존 Farm 구성원은 실행 기록을 남길 수 있습니다.
 4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.
 5. Attachment는 ActionLog 또는 IssueRecord에 연결합니다.
 6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.

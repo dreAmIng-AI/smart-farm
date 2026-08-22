@@ -121,6 +121,7 @@ TaskTemplate → FarmTask
 | crop_cycle_id | uuid | Y | CropCycle |
 | task_template_id | uuid | N | 생성 근거 템플릿 |
 | parent_issue_id | uuid | N | Follow-up의 원본 IssueRecord |
+| assigned_user_id | uuid | N | 같은 Farm의 담당 FarmMembership User |
 | title / task_type / reason | text | Y | 실제 작업 내용 |
 | priority | text | Y | low, medium, high |
 | scheduled_for | timestamptz | N | 계획된 시각 |
@@ -135,6 +136,8 @@ TaskTemplate → FarmTask
 `source_type = manual`은 owner/admin이 진행 중인 CropCycle에 직접 추가한 작업이다. `task_template_id`와 `parent_issue_id`는 null이며, Core는 Crop별 처방을 만들지 않기 위해 `task_type = manual`, `evidence = []`, `verification_status = draft`로 저장한다. 생성은 기존 Farm membership 기반 manager RLS와 `POST /api/crop-cycles/{cropCycleId}/tasks`의 active CropCycle 확인을 모두 통과해야 한다.
 
 `pending → cancelled`는 기존 `farm_tasks.status`를 재사용하는 owner/admin 전용 상태 전환이다. 취소는 FarmTask를 삭제하거나 ActionLog를 만들지 않으며, 취소된 작업은 전체 일정에는 보존되고 Today 조회에서는 제외된다.
+
+`202608220002_core_v01_task_assignment.sql`은 선택적 `assigned_user_id`와 같은 Farm 구성원 제약 trigger를 추가한다. owner/admin은 role-checked RPC를 통해 `pending`, `in_progress` FarmTask만 배정·해제할 수 있다. 담당자 배정은 작업 조율 정보이며 ActionLog 기록 권한·작업 상태를 바꾸지 않는다. 담당 구성원이 Farm에서 제거되면 해당 담당자 값만 null로 비우며 기존 FarmTask와 실행 이력은 보존한다.
 
 ### action_logs
 
