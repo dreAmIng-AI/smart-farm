@@ -146,7 +146,7 @@ TaskTemplate → FarmTask
 | note | text | N | 짧은 메모 |
 | performed_at / created_at | timestamptz | Y | 현장 수행·저장 시각 |
 
-`202608120002_core_v01_task_results.sql`은 ActionLog를 실제 테이블·RLS로 구현합니다. UI/API는 `completed`, `not_checked`, `issue_reported`를 기록합니다. 완료는 FarmTask를 `completed`로 갱신하고, 미확인은 상태를 유지해 Today에 남깁니다.
+`202608120002_core_v01_task_results.sql`은 ActionLog를 실제 테이블·RLS로 구현합니다. `202608220001_core_v01_task_start.sql`은 기존 결과 RPC를 확장해 UI/API가 `started`, `completed`, `not_checked`, `issue_reported`를 기록하게 합니다. `started`는 `pending` FarmTask를 한 번 `in_progress`로 갱신하고 Today에 남깁니다. 완료는 `completed`로 갱신하며, 미확인은 상태를 유지합니다.
 
 ### issue_records
 

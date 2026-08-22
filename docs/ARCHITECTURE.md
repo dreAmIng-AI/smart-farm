@@ -35,7 +35,7 @@ Smart Farm Platform
 - DB 시간: UTC; UI 표시: Asia/Seoul
 - Supabase RLS, Secret의 클라이언트 노출 금지
 
-현재 저장소에는 Core v0.1의 계획·Today·결과·문제·사진 첨부·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 또는 초대 링크 내 계정 설정 → owner의 Farm 생성 또는 공유 Farm 선택 → owner/admin의 CropCycle 생성·선택·현재 생육 단계·종료 → TaskTemplate 적용 또는 직접 FarmTask 등록 → 일정 → Today → 모든 구성원의 ActionLog/IssueRecord/선택적 사진 첨부 → owner/admin의 Follow-up FarmTask → History`입니다. 선택 UI는 기존 RLS가 허용한 Farm과 CropCycle만 조회해, 기존 일정·Today·이력을 다시 불러오며 작업 계획을 자동으로 생성하지 않습니다. CropCycle 종료는 기존 `status`, `ended_at` 컬럼과 UPDATE RLS를 재사용하고, 작은 DB trigger가 종료 시각 기록·terminal 상태 보존을 강제합니다. 완료·취소 작기에는 작업 계획과 직접 작업 등록 API·UI를 모두 차단하지만 기존 데이터를 삭제하지 않습니다. 직접 등록은 기존 `farm_tasks`의 manager INSERT RLS와 Route Handler의 owner/admin·active CropCycle 확인을 함께 거치며 `source_type = manual`, `verification_status = draft`로 저장한다. 완료·문제 기록은 각각 role-checked PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. 현재 생육 단계는 owner/admin만 기존 `crop_cycles.growth_stage`를 갱신하며 FarmTask를 자동 생성·재일정하지 않습니다. 사진은 결과와 분리된 Route Handler에서 비공개 Supabase Storage에 저장하고 Attachment 메타데이터를 기록합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
+현재 저장소에는 Core v0.1의 계획·Today·작업 시작·결과·문제·사진 첨부·후속·이력을 위한 Next.js 애플리케이션, Supabase migration, 워크스페이스 설정이 있습니다. 구현 범위는 `Email 로그인 또는 초대 링크 내 계정 설정 → owner의 Farm 생성 또는 공유 Farm 선택 → owner/admin의 CropCycle 생성·선택·현재 생육 단계·종료 → TaskTemplate 적용 또는 직접 FarmTask 등록 → 일정 → Today → 모든 구성원의 작업 시작/ActionLog/IssueRecord/선택적 사진 첨부 → owner/admin의 Follow-up FarmTask → History`입니다. 선택 UI는 기존 RLS가 허용한 Farm과 CropCycle만 조회해, 기존 일정·Today·이력을 다시 불러오며 작업 계획을 자동으로 생성하지 않습니다. CropCycle 종료는 기존 `status`, `ended_at` 컬럼과 UPDATE RLS를 재사용하고, 작은 DB trigger가 종료 시각 기록·terminal 상태 보존을 강제합니다. 완료·취소 작기에는 작업 계획과 직접 작업 등록 API·UI를 모두 차단하지만 기존 데이터를 삭제하지 않습니다. 직접 등록은 기존 `farm_tasks`의 manager INSERT RLS와 Route Handler의 owner/admin·active CropCycle 확인을 함께 거치며 `source_type = manual`, `verification_status = draft`로 저장한다. 작업 시작·완료·미확인 기록은 membership-checked PostgreSQL RPC로 ActionLog와 FarmTask 상태를 원자적으로 처리하며, `started`는 `pending`을 `in_progress`로 전환합니다. 문제 RPC는 연결된 IssueRecord도 함께 생성합니다. 현재 생육 단계는 owner/admin만 기존 `crop_cycles.growth_stage`를 갱신하며 FarmTask를 자동 생성·재일정하지 않습니다. 사진은 결과와 분리된 Route Handler에서 비공개 Supabase Storage에 저장하고 Attachment 메타데이터를 기록합니다. Follow-up RPC는 원본 IssueRecord의 참조를 보존합니다. `src/proxy.ts`는 Supabase Auth 세션을 갱신해 Route Handler와 RLS가 동일한 로그인 사용자를 확인하도록 합니다. 코드 구조와 도구는 필요한 최소 단위로만 추가하며, 구조적 결정은 ADR에 기록합니다.
 
 ## Farm 협업 경계
 
@@ -57,7 +57,7 @@ Core Domain Logic은 다음 책임을 가집니다.
 - CropCycle 현재 생육 단계의 유효성 검사와 권한 있는 갱신
 - TaskTemplate을 계획된 FarmTask로 적용
 - Today의 오늘·지연 작업 조회
-- ActionLog를 통한 결과 기록과 FarmTask 상태 변경
+- ActionLog를 통한 작업 시작·결과 기록과 FarmTask 상태 변경
 - IssueRecord 상태 변경과 Follow-up FarmTask 생성·연결
 - Attachment 파일 검증·비공개 Storage 저장·이력 조회
 - 이력 조회

@@ -100,7 +100,7 @@ type TaskDetail = FarmTask & {
   createdAt: string;
 };
 
-type TaskResultAction = "completed" | "not_checked" | "issue_reported";
+type TaskResultAction = "started" | "completed" | "not_checked" | "issue_reported";
 type IssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
 type CropCycleTerminalStatus = Exclude<CropCycle["status"], "active">;
 
@@ -220,6 +220,18 @@ function taskSourceLabel(sourceType: string) {
   };
 
   return labels[sourceType] ?? sourceType;
+}
+
+function actionTypeLabel(actionType: string) {
+  const labels: Record<string, string> = {
+    completed: "완료",
+    issue_reported: "문제 기록",
+    not_checked: "확인하지 못함",
+    started: "작업 시작",
+    viewed: "확인",
+  };
+
+  return labels[actionType] ?? actionType;
 }
 
 function evidenceLabel(evidence: unknown) {
@@ -1266,11 +1278,15 @@ export default function HomePage() {
         });
         setSelectedIssue({ ...recorded.issue, taskTitle: task.title });
         setAttachmentTarget({ id: recorded.issue.id, kind: "issue", taskTitle: task.title });
-      } else {
+      } else if (actionType !== "started") {
         setAttachmentTarget({ id: recorded.actionLog.id, kind: "action_log", taskTitle: task.title });
+      } else {
+        setAttachmentTarget(null);
       }
       setMessage(
-        actionType === "completed"
+        actionType === "started"
+          ? "작업을 시작했습니다. Today에서 진행 중 상태로 계속 확인할 수 있습니다."
+          : actionType === "completed"
           ? "완료 결과를 기록했습니다. 작업이 Today에서 제외되었습니다."
           : actionType === "not_checked"
             ? "확인하지 못함 결과를 기록했습니다. 작업은 재확인을 위해 Today에 남아 있습니다."
@@ -1950,6 +1966,7 @@ export default function HomePage() {
                       {task.scheduleState === "overdue" ? "지연 작업" : "오늘 작업"}
                     </span>
                     <small>{task.reason}</small>
+                    <small>작업 상태 {taskStatusLabel(task.status)}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
@@ -1974,6 +1991,16 @@ export default function HomePage() {
                         />
                       </label>
                       <div className="action-buttons">
+                        {task.status === "pending" ? (
+                          <button
+                            className="secondary"
+                            disabled={isSubmitting}
+                            onClick={() => handleTaskResult(task, "started")}
+                            type="button"
+                          >
+                            {recordingTaskId === task.id ? "기록 중..." : "작업 시작"}
+                          </button>
+                        ) : null}
                         <button
                           disabled={isSubmitting}
                           onClick={() => handleTaskResult(task, "completed")}
@@ -2200,7 +2227,7 @@ export default function HomePage() {
                       <>
                         <strong>{item.taskTitle}</strong>
                         <small>
-                          결과 기록: {item.actionType}
+                          실행 기록: {actionTypeLabel(item.actionType)}
                           {item.note ? ` · ${item.note}` : ""}
                         </small>
                         {item.attachments.length > 0 ? <AttachmentList attachments={item.attachments} /> : null}
