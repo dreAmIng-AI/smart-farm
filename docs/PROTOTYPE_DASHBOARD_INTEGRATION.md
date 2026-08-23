@@ -16,7 +16,7 @@
 - 기상·병해충·시세 요약
 - 프로젝트/WBS, 반복 일정, 트리거 규칙, AI/RAG 실험
 
-그중 첫 세 항목은 현재 Core Platform의 Farm, CropCycle, FarmTask, ActionLog, IssueRecord, Attachment, Follow-up FarmTask와 직접 연결된다. 반면 외부 기상·병해충·시세와 AI 기능은 Data Source, 안전성, 실패 처리, 비용, 운영 책임이 검증되기 전까지 Core가 아닌 Lab/Integration 범위다.
+그중 첫 세 항목은 현재 Core Platform의 Farm, CropCycle, FarmTask, ActionLog, IssueRecord, Attachment, Follow-up FarmTask와 직접 연결된다. 외부 기상·병해충·시세의 최소 기능은 v0.2에서 공식 Source, provenance, 실패 격리, 비용과 운영 책임을 검증한 Baseline Module로 도입한다. AI 기능은 계속 Lab 범위다.
 
 프로토타입의 초기 migration에는 public read/write RLS 정책이 포함되어 있다. 이를 현재 서비스로 가져오지 않는다. Smart Farm의 기존 Farm membership 기반 RLS를 권한 경계로 유지한다.
 
@@ -32,7 +32,7 @@
 | Image evidence | `Attachment` | 기존 비공개 Storage/RLS 흐름을 재사용 |
 | Calendar | 현재 `CropCycle → TaskTemplate → FarmTask[]` | 주간 보드와 월간 달력으로 도입 |
 | WBS/repeat/trigger | 현재 `CropCycle → TaskTemplate → FarmTask[]` | 새 Domain 검토 후 별도 작업 |
-| Weather/pest/market | Lab/Integration | 이번 범위에서 제외 |
+| Weather/pest/market | v0.2 Baseline Module | 공식 Source·provenance·failure contract를 갖춘 별도 Vertical Slice로 도입 |
 | AI/RAG/diagnosis | Lab | 이번 범위에서 제외 |
 
 ## First Integration: Operations Dashboard
@@ -107,12 +107,12 @@
 1. 사용자 인터뷰를 바탕으로 작업 목록의 정보 밀도와 모바일 입력 흐름 개선
 2. 작업 영역/운영 유형을 추가해야 하는지 Domain 검토
 3. WBS·반복·트리거가 실제 운영에 필요한지 Domain 검토
-4. 외부 데이터 Source Review 후 Weather/Market Lab을 Core와 분리해 실험
+4. [v0.2] 외부 데이터 Source Review 뒤 Weather, Disease/Pest, Crop Information, Market을 Core transaction과 분리한 Baseline Module로 구현
 5. Crop Pack 검증 데이터가 확보된 뒤 생육 단계 선택 UX 개선
 
 ## Non-goals
 
 - `ActionLog`, `IssueRecord`, `FarmTask` 등 기존 Domain 명칭 변경
 - 별도의 `FarmPlan` 테이블 생성
-- Weather, Disease, Sensor, Market, AI, 자동 제어, 반복 작업 엔진 구현
+- Sensor, AI, 자동 제어, 반복 작업 엔진 구현
 - 프로토타입의 public RLS 정책 또는 인증 구조 도입

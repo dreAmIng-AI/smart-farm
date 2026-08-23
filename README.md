@@ -1,39 +1,41 @@
 # dreAmIng Smart Farm Platform
 
-dreAmIng Smart Farm은 농업정보 포털이 아니라, 농업인이 **작기 전체를 계획하고 오늘의 작업을 실행·기록하며 문제를 다음 행동과 이력으로 연결**하도록 돕는 농작업 실행관리 플랫폼입니다.
+dreAmIng Smart Farm은 농업인이 **오늘 해야 할 일, 확인할 사항, 현재 작기와 신뢰할 수 있는 참고정보**를 빠르게 파악하고, 농작업 기록을 다음 행동과 이력으로 연결하도록 돕는 농장 운영 플랫폼입니다.
 
 ## 지금 무엇을 개발하나요?
 
-현재 개발 범위는 **Core Platform v0.1**입니다. 첫 Vertical Slice의 코드와 Supabase migration이 준비되어 있으며, 이 저장소의 문서가 이후 구현의 기준입니다.
+현재 구현 기반은 **Core Platform v0.1**이며, 다음 목표는 이를 보존하는 **Platform v0.2 Real Data Pilot + Senior-Friendly UX**입니다. v0.1의 실제 Farm·작기·작업·기록 흐름을 폐기하거나 새로 설계하지 않습니다.
 
 ```text
 Farm → CropCycle → 작업계획 → Today → FarmTask 실행
      → ActionLog / IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History
+     ↘ FarmArea / Observation / Measurement / 실제 공공 참고정보 (v0.2 확장)
 ```
 
 ## 플랫폼 구조
 
-| 영역 | 역할 | 현재 위치 |
+| 영역 | 역할 | 상태 |
 |---|---|---|
-| Core Platform | 작물과 무관한 농작업 실행관리 기반 | 계획·Today·결과·Issue·후속·이력 구현 |
-| Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop |
-| Labs | 날씨, 병해충, 분석, AI, 센서, 시장 등의 독립 실험 | Core v0.1의 필수 범위 아님 |
+| Operations Core | 작물과 무관한 농작업 실행관리 기반 | v0.1 구현됨, v0.2에서 FarmArea·Observation·Measurement로 최소 확장 |
+| Baseline Modules | 실제 Weather, Disease/Pest, Crop Information, Market Information | v0.2 Pilot에서 공식 출처와 실패 격리를 전제로 도입 |
+| Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop; Core에 작물별 분기 없음 |
+| Labs | Sensor, AI, Analytics, Automation, Prediction 등 고도화 실험 | Baseline의 선행 조건이 아니며 독립 유지 |
 
 설향은 제품 범위가 아니라 **Core Platform v0.1을 현실적인 농업 사례로 검증하는 첫 Reference Crop**입니다. Core 코드와 DB에 `strawberry` 또는 `seolhyang` 전용 분기를 만들지 않습니다.
 
 ## 무엇을 먼저 읽어야 하나요?
 
-1. [제품 방향과 범위](docs/PRODUCT_PLAN.md)
-2. [Core Platform v0.1 PRD](docs/PRD_CORE_V0.1.md)
-3. [개발·협업 규칙](AGENTS.md)
-4. 구현 계약: [도메인](docs/DOMAIN_MODEL.md), [아키텍처](docs/ARCHITECTURE.md), [데이터](docs/DATA_DICTIONARY.md), [API](docs/API_CONTRACT.md)
-5. 작업을 시작할 때: [Task 템플릿](project/tasks/TASK_TEMPLATE.md)
-6. 팀원이 기능·Crop Pack·Lab을 추가할 때: [Contributor Start Guide](docs/CONTRIBUTOR_GUIDE.md)
-7. Core v0.1을 사용자와 확인할 때: [사용자 검증 가이드](project/USER_VALIDATION_GUIDE.md)
+1. [제품 방향과 범위 v0.2](docs/PRODUCT_PLAN.md)
+2. [Platform v0.2 PRD](docs/PRD_PLATFORM_V0.2.md)
+3. [Core Platform v0.1 PRD — historical](docs/PRD_CORE_V0.1.md)
+4. [개발·협업 규칙](AGENTS.md)
+5. 구현·확장 계약: [도메인](docs/DOMAIN_MODEL.md), [아키텍처](docs/ARCHITECTURE.md), [데이터](docs/DATA_DICTIONARY.md), [API](docs/API_CONTRACT.md)
+6. [Integration Contract](docs/INTEGRATION_CONTRACT.md), [공공데이터 Source Register](docs/PUBLIC_DATA_SOURCES.md), [UX 가이드](docs/UX_GUIDELINES.md)
+7. [Pilot 검증 가이드](docs/PILOT_VALIDATION_GUIDE.md)
 
-위 문서가 현재 실행 기준의 Single Source of Truth입니다. 과거 계획과 합의는 삭제하지 않고 상태를 표시해 참고 자료로 보존합니다.
+v0.2 문서가 Pilot 개발의 기준입니다. 과거 v0.1 문서와 합의는 삭제하지 않고 Historical로 보존합니다. 아직 구현되지 않은 v0.2 계약은 문서에서 `planned`로 표시하며, 구현으로 오해하지 않습니다.
 
-## Core v0.1에서 만드는 것
+## 현재 구현된 Operations Core
 
 - owner의 Farm 생성, 공유 Farm 목록 선택, owner/admin의 기본정보 수정과 CropCycle 생성·선택
 - Farm 구성원 초대 링크 생성·수락과 owner/admin/farmer 역할 관리
@@ -49,7 +51,14 @@ Farm → CropCycle → 작업계획 → Today → FarmTask 실행
 - 결과 또는 문제 기록에 선택적 사진 첨부
 - 작업·문제 이력 조회
 
-날씨, 병해충, 센서, AI/LLM, 자동 제어, 시장 API, 복잡한 분석은 이 버전의 필수 기능이 아닙니다.
+## v0.2 Pilot에서 추가할 것
+
+- 첫 화면을 Today 중심으로 전환하고, 사용자에게 Farm·CropCycle 같은 내부 용어 대신 농장·현재 작기·오늘 할 일을 사용
+- Farm 아래의 실제 관리 공간(FarmArea), FarmTask 없이 기록할 수 있는 Observation과 수치 Measurement
+- 공식 출처 기반의 Weather, Disease/Pest, Crop Information, Market Information 카드
+- 출처·기준시점·신선도 표시와 마지막 정상 데이터 fallback
+
+외부 API 키가 없거나 provider가 실패하면 가상의 수치를 만들지 않습니다. 농작업 기록은 계속 사용하고, 해당 정보 카드만 이해하기 쉬운 데이터 없음 또는 마지막 업데이트 상태를 표시합니다.
 
 ## 팀원은 어디에 기여할 수 있나요?
 
@@ -71,9 +80,10 @@ Contributor 또는 Lab의 일정이 지연되어도 Core Platform 개발은 멈�
 
 ## 문서 상태
 
-- 현재 기준: [PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md), [PRD_CORE_V0.1.md](docs/PRD_CORE_V0.1.md), [AGENTS.md](AGENTS.md)
-- 구현 계약: [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md), [API_CONTRACT.md](docs/API_CONTRACT.md)
-- 미래 실험 참고: [AI_SAFETY.md](docs/AI_SAFETY.md), [DATA_SOURCE_REVIEW.md](docs/DATA_SOURCE_REVIEW.md)
+- v0.2 기준: [PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md), [PRD_PLATFORM_V0.2.md](docs/PRD_PLATFORM_V0.2.md), [UX_GUIDELINES.md](docs/UX_GUIDELINES.md), [AGENTS.md](AGENTS.md)
+- 구현·확장 계약: [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md), [API_CONTRACT.md](docs/API_CONTRACT.md), [INTEGRATION_CONTRACT.md](docs/INTEGRATION_CONTRACT.md)
+- Pilot 준비: [PUBLIC_DATA_SOURCES.md](docs/PUBLIC_DATA_SOURCES.md), [PILOT_VALIDATION_GUIDE.md](docs/PILOT_VALIDATION_GUIDE.md)
+- Historical: [PRD_CORE_V0.1.md](docs/PRD_CORE_V0.1.md), [USER_VALIDATION_GUIDE.md](project/USER_VALIDATION_GUIDE.md)
 - 과거 방향: [PRODUCT.md](docs/PRODUCT.md), [개발 착수 합의](docs/agreements/SMART_AGRICULTURE_DEVELOPMENT_START_AGREEMENT.md)
 
 ## 기술 기준

@@ -1,65 +1,101 @@
-# Development Roadmap
+# Development Roadmap: v0.2 Real Data Pilot
 
 **Status: CURRENT EXECUTION ROADMAP**
 
-이 로드맵은 외부 기능을 순차적으로 의무 구현하는 계획이 아닙니다. Core Track과 독립적인 Parallel Experiments를 구분합니다.
+## Guiding Rule
 
-## CORE TRACK
+Keep the v0.1 Operations Core running. Deliver one independently testable Vertical Slice at a time; do not land FarmArea, frontend rewrite, Observation, provider cache and four external APIs in one PR.
 
-### Core v0.1
+## Phase 0 — Repository and Documentation Audit
 
-목표: 한 농업인이 Plan → Today → Execute → Record → Issue → Follow-up → History Work Cycle을 완료할 수 있게 합니다.
+Completed in Issue #41.
 
-- Farm, CropCycle
-- TaskTemplate에서 계획된 FarmTask 생성
-- 전체 일정과 Today
-- ActionLog, IssueRecord, Follow-up FarmTask
-- 작업·문제 이력
-- RLS, migration, Fixture, 테스트, Preview 배포
+- Confirm actual v0.1 routes, Supabase migrations, RLS and 111 tests
+- Identify the single large `page.tsx` and Today-first UX gap
+- Identify missing FarmArea, standalone Observation/Measurement, external contract and real data sources
 
-완료 기준은 [PRD_CORE_V0.1.md](PRD_CORE_V0.1.md)의 Acceptance Criteria와 Definition of Done입니다.
+## Phase 1 — v0.2 Foundation Documents
 
-### User Validation
+Issue #41.
 
-목표: Prototype과 Reference Crop Fixture로 다음 가설을 검증합니다.
+- Product plan and v0.2 PRD
+- Architecture, domain/data/API target boundary
+- Integration Contract, public-source register, UX guide and Pilot validation guide
+- Preserve `PRD_CORE_V0.1.md` as historical
 
-- 작기 전체 계획이 필요한가?
-- Today의 작업이 현장에서 유용한가?
-- 결과·문제 기록의 입력 부담이 적절한가?
-- 후속 확인과 이력이 실제 의사결정에 도움이 되는가?
+## Phase 2 — Frontend Foundation and Today UX
 
-### Core v0.2
+Separate Issue/PR.
 
-사용자 검증에서 확인된 흐름·입력·이력의 문제를 우선 개선합니다. Lab의 결과는 승격 기준을 통과했을 때만 검토합니다.
+- Extract shared domain types and feature boundaries from the current `page.tsx` without changing existing API behaviour
+- Add Today-first navigation and user-facing terminology
+- Keep monthly/weekly schedules and full settings as secondary views
+- Test keyboard/accessibility states and main task path
 
-### Improvements
+## Phase 3 — FarmArea
 
-안정성, 사용성, 데이터 품질, 운영상의 개선을 작은 Issue와 PR로 진행합니다.
+Separate Issue/PR with migration, RLS, API and tests.
 
-## PARALLEL EXPERIMENTS
+- Create, list, update and remove simple FarmArea records
+- Link CropCycle/FarmTask only when selected
+- Preserve all existing Farm/CropCycle/FarmTask records
 
-다음은 독립 Lab입니다.
+## Phase 4 — Observation and Measurement
 
-- Weather Lab
-- Disease Lab
-- Analytics Lab
-- AI Lab
-- Sensor Lab
-- Market Lab
-- Additional Crop Packs
+Separate Issue/PR with migration, RLS, API and tests.
 
-Lab은 데이터를 탐색·검증할 수 있으나 Core v0.1의 필수 의존성이나 완료 조건이 아닙니다.
+- Append-only Observation and manual Measurement records
+- Safe distinction between observed fact, issue requiring confirmation and diagnosis
+- Extend Issue origin only without breaking existing ActionLog-origin IssueRecords
 
-## Lab → Core / Integration 승격 기준
+## Phase 5 — Integration Runtime Foundation
 
-Lab 결과는 다음을 확인하기 전 Core 범위가 되지 않습니다.
+Separate Issue/PR with no client-exposed key.
 
-1. 사용자 가치와 사용 시나리오
-2. 데이터 안정성, 출처, 라이선스, 운영 가능성
-3. 농업 안전성과 Reviewer 검토
-4. 비용, 실패 처리, 유지보수 책임
-5. Core Work Cycle을 복잡하게 만들지 않는 명확한 계약
+- Server-only provider adapter/normalizer boundary
+- Provenance and freshness result envelope
+- Focused durable last-successful snapshot/cache and RLS
+- Human Korean unavailable/stale states
 
-## 현재 하지 않는 것
+## Phase 6 — Real Weather
 
-Weather/Disease/Market API, Sensor, AI Chatbot, LLM 기반 농업 판단, 자동 제어, 복잡한 Analytics, Microservice 등은 Core v0.1 구현에 포함하지 않습니다.
+Separate Issue/PR after the KMA key and Farm forecast-location decision are available.
+
+- Actual KMA current/short forecast data
+- Farm context mapping and source/update display
+- Timeout/no-data/stale-cache tests
+
+## Phase 7 — Real Disease/Pest and Crop Information
+
+Separate Issue/PR after Nongsaro key, endpoint and content review.
+
+- Current CropCycle context and official reference content
+- No diagnosis, treatment recommendation or automatic FarmTask
+- Source, base date and data-absence UI
+
+## Phase 8 — Real Market Information
+
+Separate Issue/PR after KAMIS key and price-definition decision.
+
+- Actual wholesale or retail reference price, clearly labelled
+- Item/kind/grade/market/unit/base date mapping
+- Recent trend only where source explicitly supplies it
+
+## Phase 9 — Pilot Hardening
+
+- Actual Farm end-to-end validation
+- Senior-user usability observation
+- RLS, provider failure, cache and migration review
+- lint, typecheck, test, build, Preview and documentation sync
+
+## Deferred Labs
+
+Sensor, AI, analytics, automation, prediction, advanced market intelligence and additional Crop Packs remain independent Labs. They do not block Baseline Modules or Operations Core.
+
+## Pilot Readiness
+
+| State | Meaning |
+|---|---|
+| `NOT READY` | Core or security flow is blocked, or no real data source can be used. |
+| `PARTIAL` | Current state: v0.1 operations flow works, but v0.2 additions are not all released and field-validated. |
+| `READY` | A real Farm completes the v0.2 Pilot flow with actual sources, provenance, failure fallback and user validation. |

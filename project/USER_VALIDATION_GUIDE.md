@@ -1,5 +1,9 @@
 # Core v0.1 사용자 검증 가이드
 
+> **Status: HISTORICAL — v0.1 Prototype validation baseline**
+>
+> 실제 농장·공공데이터·시니어 UX Pilot은 [docs/PILOT_VALIDATION_GUIDE.md](../docs/PILOT_VALIDATION_GUIDE.md)를 사용합니다.
+
 ## 목적
 
 이 가이드는 Core v0.1의 작업 흐름이 실제 농장 운영자가 이해하고 사용할 수 있는지 확인하기 위한 최소 검증 시나리오입니다. 결과는 제품 개선에 사용하며, 현재의 Draft TaskTemplate은 농업 처방이나 자동 실행 지시가 아닙니다.
