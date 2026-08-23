@@ -1,15 +1,15 @@
 # API Contract
 
-**Status: CURRENT IMPLEMENTATION CONTRACT**
+**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus planned v0.2 routes**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력 endpoint가 구현되어 있습니다. 이 문서는 현재 구현 계약과 경계를 정의합니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력 endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
 
 ## 1. 공통 원칙
 
 - API JSON은 `camelCase`, 시간은 ISO 8601 UTC를 사용합니다.
 - 인증은 Supabase 세션을 기준으로 하고 Farm 접근은 RLS와 서버 검증을 따릅니다.
 - Core v0.1 API는 작물 이름으로 비즈니스 로직을 분기하지 않습니다.
-- 외부 API, AI, Sensor 호출은 Core v0.1 API에 포함하지 않습니다.
+- v0.1 Core API는 외부 API, AI, Sensor 호출에 의존하지 않습니다. v0.2 Baseline Module은 독립 endpoint와 typed fallback을 통해서만 추가합니다.
 - 실제 endpoint와 오류 코드는 구현 시 코드 스키마·테스트·이 문서를 함께 갱신합니다.
 
 ### 목록 응답
@@ -357,6 +357,77 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`
 
-## 6. Out of Scope
+## 6. Planned v0.2 API Contract
 
-Weather, Disease, Market, Sensor, AI/LLM endpoint와 자동 진단·추천·제어 endpoint는 Core v0.1에서 구현하지 않습니다. 향후 Lab이 승인된 Integration으로 승격되면 독립된 API 계약과 데이터 출처·검증 상태를 추가합니다.
+### Planned resource routes
+
+| Resource / action | Intent | Access |
+|---|---|---|
+| `GET/POST /api/farms/{farmId}/areas` | FarmArea 목록 조회·생성 | member read; owner/admin create |
+| `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
+| `GET/POST /api/farms/{farmId}/observations` | Farm-wide Observation 조회·사실 기록 | member |
+| `GET/POST /api/farms/{farmId}/measurements` | Farm-wide Measurement 조회·수동 기록 | member |
+| `POST /api/observations/{observationId}/issues` | 관찰 사실을 확인이 필요한 IssueRecord로 연결 | member |
+| `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
+| `GET /api/farms/{farmId}/information/weather` | 정규화된 Weather `IntegrationResult` | member |
+| `GET /api/farms/{farmId}/information/disease-pest` | 정규화된 Disease/Pest `IntegrationResult` | member |
+| `GET /api/farms/{farmId}/information/crop` | 정규화된 Crop Information `IntegrationResult` | member |
+| `GET /api/farms/{farmId}/information/market` | 정규화된 Market `IntegrationResult` | member |
+
+The route names are a target contract. The first UI Slice may use only the route(s) it needs, but it may not expose provider-specific payloads or bypass RLS.
+
+### Planned IntegrationResult response
+
+```json
+{
+  "status": "available | stale | unavailable",
+  "data": {},
+  "provenance": {
+    "provider": "KMA",
+    "sourceName": "기상청 단기예보 조회서비스",
+    "sourceReference": "official-url-or-dataset-id",
+    "observedAt": "2026-08-24T00:00:00.000Z",
+    "retrievedAt": "2026-08-24T00:20:00.000Z",
+    "verificationStatus": "official_source",
+    "freshness": "fresh"
+  },
+  "message": null
+}
+```
+
+`unavailable` has `data: null`; it uses a user-safe Korean `message` and can omit provenance when no last successful result exists. An external 4xx/5xx/timeout must not become an error for the existing Today work-list response.
+
+### Planned Observation and Measurement inputs
+
+```json
+{
+  "farmAreaId": "uuid-or-null",
+  "cropCycleId": "uuid-or-null",
+  "observedAt": "2026-08-24T01:00:00.000Z",
+  "content": "잎에서 갈색 반점이 보임"
+}
+```
+
+```json
+{
+  "farmAreaId": "uuid-or-null",
+  "cropCycleId": "uuid-or-null",
+  "observedAt": "2026-08-24T01:00:00.000Z",
+  "metricCode": "manual_temperature",
+  "valueNumeric": 28.5,
+  "unit": "celsius",
+  "note": null
+}
+```
+
+The exact metric catalogue stays open in the Pilot; a Measurement is not an automated sensor feed or recommendation. The API rejects a FarmArea/CropCycle from another Farm with a domain error and RLS remains final protection.
+
+### Planned error family
+
+- `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`
+- `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
+- `INTEGRATION_CONTEXT_MISSING`, `INTEGRATION_UNAVAILABLE`, `INTEGRATION_CACHE_LOOKUP_FAILED`
+
+## 7. Out of Scope
+
+Weather, Disease/Pest, Crop Information and Market의 최소 Baseline endpoint는 v0.2 planned이며 아직 구현되지 않았습니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.

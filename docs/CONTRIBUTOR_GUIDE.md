@@ -10,10 +10,11 @@
 
 1. [README](../README.md)
 2. [Product Plan](PRODUCT_PLAN.md)
-3. [Core v0.1 PRD](PRD_CORE_V0.1.md)
-4. [작업 규칙](../AGENTS.md)
-5. 구현 계약: [Domain Model](DOMAIN_MODEL.md), [Architecture](ARCHITECTURE.md), [Data Dictionary](DATA_DICTIONARY.md), [API Contract](API_CONTRACT.md)
-6. [Task 문서 템플릿](../project/tasks/TASK_TEMPLATE.md)
+3. [Platform v0.2 PRD](PRD_PLATFORM_V0.2.md)
+4. [Core v0.1 PRD — historical baseline](PRD_CORE_V0.1.md)
+5. [작업 규칙](../AGENTS.md)
+6. 구현 계약: [Domain Model](DOMAIN_MODEL.md), [Architecture](ARCHITECTURE.md), [Data Dictionary](DATA_DICTIONARY.md), [API Contract](API_CONTRACT.md), [Integration Contract](INTEGRATION_CONTRACT.md)
+7. [Task 문서 템플릿](../project/tasks/TASK_TEMPLATE.md)
 
 현재 Core v0.1은 Farm 생성부터 계획, Today, 결과·문제 기록, 재확인 작업, 이력까지 구현되어 있습니다. 새로운 기능은 이 흐름의 어느 지점에 연결되는지 먼저 설명해야 합니다.
 
@@ -23,7 +24,8 @@
 |---|---|---|
 | Core Platform | Farm, CropCycle, FarmTask 실행 흐름, 권한, 공통 API와 UI | 작물별 농업 규칙, 외부 API의 원본 데이터 |
 | Crop Pack | `TaskTemplate` 데이터, 생육 단계 용어, 작업 이유·근거·검증 상태 | `if (crop === "...")` 같은 Core 분기, 작물 전용 Core 테이블 |
-| Lab | 날씨·병해충·AI·센서·시장 등의 독립 실험과 검증 결과 | Core의 필수 의존성, 검증 전 자동 처방·자동 제어 |
+| Baseline Module | Weather, Disease/Pest, Crop Information, Market의 공식 Source 기반 최소 기능 | Core transaction의 필수 의존성, 원본 provider JSON, 검증 전 진단·처방 |
+| Lab | AI·센서·분석·예측 등의 독립 실험과 검증 결과 | Core의 필수 의존성, 검증 전 자동 처방·자동 제어 |
 | Integration | 승인된 외부 시스템의 서버 측 연결 | 브라우저에서의 Secret/API key 직접 호출 |
 
 판단이 애매하면 구현을 시작하기 전에 Task 문서에 `[DECISION REQUIRED]`로 적고 Core Owner에게 확인합니다. 새 테이블, RLS, 인증·역할, 공통 API 계약, 외부 서비스 도입은 항상 이 절차가 필요합니다.
@@ -69,7 +71,7 @@ Lab 결과를 Core 또는 Integration으로 승격하려면 다음을 Task에 �
 - 운영 비용과 유지보수 담당자
 - 기존 Core 계약을 복잡하게 만들지 않는 최소 API·데이터 경계
 
-Weather, Disease, Sensor, Market, AI/LLM, 자동 진단·추천·제어는 현재 Core v0.1 범위가 아닙니다.
+v0.2에서 Weather, Disease/Pest, Crop Information, Market의 최소 기능은 공식 Source와 `INTEGRATION_CONTRACT.md`를 만족하는 독립 Baseline Module Slice로만 기여할 수 있습니다. Sensor, AI/LLM, 자동 진단·추천·제어는 계속 Lab 또는 범위 밖입니다.
 
 ## 6. 안전한 첫 기여 예시
 

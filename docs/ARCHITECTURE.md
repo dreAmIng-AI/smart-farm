@@ -1,12 +1,14 @@
 # Architecture
 
-**Status: CURRENT IMPLEMENTATION CONTRACT**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, v0.2 target marked as planned**
+
+> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea, Observation, Measurement, durable external-data cache and Baseline Modules are v0.2 target contracts until their own migration and PR are merged.
 
 ## 1. 아키텍처 목표
 
-- 작물 독립 Core Platform v0.1의 Work Cycle을 작은 수직 흐름으로 완성합니다.
+- 작물 독립 Operations Core의 v0.1 Work Cycle을 보존하고 작은 v0.2 수직 흐름으로 확장합니다.
 - Crop Pack의 농업지식과 Core 실행 로직을 분리합니다.
-- Labs와 Integrations가 Core의 일정·가용성을 막지 않게 합니다.
+- Baseline Modules와 Labs가 Core의 일정·가용성을 막지 않게 합니다.
 - DB·API·타입 계약을 일관되게 유지하고 낮은 초기 운영비용을 유지합니다.
 
 ## 2. 상위 구조
@@ -15,15 +17,29 @@
 Smart Farm Platform
 ├── Core Platform
 │   └── Farm → CropCycle → 계획 → Today → 기록 → Issue → History
+├── Baseline Modules (v0.2 planned)
+│   └── Weather / Disease-Pest / Crop Information / Market
 ├── Crop Packs
 │   └── TaskTemplate, Growth Stage, Evidence, Verification Status
 ├── Labs
-│   └── Weather / Disease / Analytics / AI / Sensor / Market / Additional Crops
+│   └── Analytics / AI / Sensor / Automation / Prediction / Additional Crops
 └── Integrations
     └── 승인되고 운영 가능한 외부 연결
 ```
 
 이 구조는 책임 경계를 설명하는 문서입니다. 개념을 이유로 빈 폴더, 패키지, Microservice, Event Bus, Queue 또는 미래 기능 전용 인프라를 만들지 않습니다.
+
+### v0.2 extension boundary
+
+```text
+Farm → optional FarmArea → CropCycle → FarmTask → ActionLog / IssueRecord
+                     ↘ Observation / Measurement
+
+Official API → server-only Provider Adapter → Normalizer
+             → cache / last successful snapshot → IntegrationResult → UI
+```
+
+`FarmArea`, `Observation`, `Measurement` are Operations Core extensions. Weather, Disease/Pest, Crop Information and Market are Baseline Modules: they use Core context but cannot make Core transactions depend on a provider response. The complete adapter, provenance and fallback rules are in [INTEGRATION_CONTRACT.md](INTEGRATION_CONTRACT.md).
 
 ## 3. 기술 기준
 
@@ -79,24 +95,25 @@ Core는 설향이나 특정 작물 이름으로 로직을 분기하지 않습니
 
 Crop Pack은 별도 런타임 서비스가 아니라 작업 템플릿 데이터의 표현 방식입니다. Strawberry / Seolhyang은 v0.1의 첫 Fixture와 Reference Crop이며, Core에 `strawberry_tasks` 또는 설향 전용 서비스·테이블을 추가하지 않습니다.
 
-## 7. Labs와 Integrations
+## 7. Baseline Modules, Labs와 Integrations
 
-Labs는 Core v0.1 바깥에서 독립적으로 실험합니다. Weather, Disease, Analytics, AI, Sensor, Market, Additional Crop Pack은 Lab에서 데이터 안정성, 사용자 가치, 안전성, 비용, 운영 책임을 확인한 뒤에만 Integration 또는 Core 확장을 제안할 수 있습니다.
+Weather, Disease/Pest, Crop Information and Market의 최소 실사용 기능은 v0.2 Baseline Module로 구현 후보가 되었다. 구현 전에도 각각 공식 Source, key, license, update cycle, field mapping과 failure mode를 검증해야 한다. Sensor, AI, Analytics, Automation, Prediction, advanced market intelligence와 Additional Crop Pack은 Lab에서 독립 실험한다.
 
 외부 시스템을 도입할 때만 아래 경계를 검토합니다.
 
 ```text
-External API → Server / Integration Layer → Adapter → Normalizer
-             → optional cache or raw store → approved Core use
+External API → Server-only Provider Adapter → Normalizer
+             → cache / last successful snapshot → IntegrationResult → UI
 ```
 
-외부 API를 Client에서 직접 호출하지 않으며, 외부 장애가 Core 작업 기록을 막아서는 안 됩니다.
+외부 API를 Client에서 직접 호출하지 않으며, 외부 장애가 Core 작업 기록을 막아서는 안 됩니다. Provider 응답 JSON, secret, raw error는 React와 사용자 화면으로 전달하지 않습니다.
 
 ## 8. 실패 처리
 
 - DB 실패: 사용자가 재시도할 수 있는 상태를 제공하고 중복 제출을 방지합니다.
 - Storage 실패: 결과 기록과 파일 업로드를 분리합니다.
 - Lab/Integration 실패: Core는 검증된 Template과 기존 기록만으로 계속 동작합니다.
+- Baseline Module 실패: 해당 카드만 `stale` 또는 `unavailable` 상태와 사용자 언어의 복구 메시지를 보입니다. 가상 값을 만들지 않습니다.
 - 데이터 또는 근거 부족: 자동 판단을 만들지 않고 `draft`, 보류 또는 검토 필요 상태를 사용합니다.
 
 ## 9. ADR

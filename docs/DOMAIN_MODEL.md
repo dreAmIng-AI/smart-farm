@@ -1,6 +1,8 @@
 # Domain Model
 
-**Status: CURRENT IMPLEMENTATION CONTRACT**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, v0.2 additions planned**
+
+> `FarmArea`, `Observation`, `Measurement` and external reference result are v0.2 design contracts. They are not current DB entities until a dedicated migration is applied.
 
 ## 1. 목적
 
@@ -30,7 +32,11 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### Farm
 
-사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다.
+사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다. v0.2에서는 공식 날씨를 위한 사용자가 확인한 예보 위치 문맥을 최소로 추가한다. 기본적으로 상세 주소나 무단 GPS 수집은 하지 않는다.
+
+### FarmArea (v0.2 planned)
+
+Farm 안의 실제 관리 공간이다. 예: `1동`, `2동`, `육묘장`, `노지 A구역`. GIS, 지도도형, 센서 연결을 전제하지 않는다. CropCycle, FarmTask, Observation, Measurement가 필요할 때 선택적으로 연결할 수 있다.
 
 ### FarmCreatorPermission
 
@@ -46,7 +52,7 @@ FarmMembership를 만들기 전의 대기 중 초대입니다. 이메일, 초대
 
 ### CropCycle
 
-하나의 Farm에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다. 작기 전체 작업계획의 시간적 범위가 되며, 현재 생육 단계는 Crop Pack의 용어를 텍스트로 기록합니다. 진행 중 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료 시각과 기존 일정·기록은 보존합니다. Core는 작물별 단계 목록을 하드코딩하지 않습니다.
+하나의 Farm에서 특정 작물을 정식한 시점부터 재배 종료까지 관리하는 작기입니다. 작기 전체 작업계획의 시간적 범위가 되며, 현재 생육 단계는 Crop Pack의 용어를 텍스트로 기록합니다. 진행 중 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료 시각과 기존 일정·기록은 보존합니다. Core는 작물별 단계 목록을 하드코딩하지 않습니다. v0.2에서는 선택적 FarmArea와 재배방식 문맥을 가질 수 있으며, 이는 자동 처방 없이 공식 참고정보를 현재 작기와 연결하는 기준이다.
 
 ### TaskTemplate
 
@@ -60,9 +66,21 @@ Crop Pack이 제공하는 기준 작업입니다. 작물, 품종, 생육단계, 
 
 사용자가 FarmTask를 확인하거나 실행한 결과의 이력입니다.
 
+### Observation (v0.2 planned)
+
+FarmTask가 없어도 남길 수 있는 사용자의 관찰 사실이다. 예: “잎에서 갈색 반점이 보임”. 확정 진단이나 농업 처방이 아니다. Farm은 필수이며 FarmArea와 CropCycle은 선택적이다.
+
+### Measurement (v0.2 planned)
+
+관찰 시각의 수치 기록이다. metric, numeric value, unit, optional note를 보관한다. Sensor 연동을 전제하지 않고 사용자의 수동 입력부터 시작한다.
+
 ### IssueRecord
 
-FarmTask 수행 중 사용자가 관찰한 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다.
+FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다고 남긴 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다. v0.1의 ActionLog/FarmTask 연결은 보존하고, v0.2에서 Observation-origin Issue를 허용할 때만 origin 관계를 확장한다.
+
+### ExternalReference (v0.2 planned read model)
+
+Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. 첫 구현에서는 별도 도메인 테이블보다 Integration cache/snapshot과 typed response로 표현한다.
 
 ### Attachment
 
@@ -101,11 +119,17 @@ User 1 ─ 0..1 FarmCreatorPermission  grants new Farm creation
 User N ─ N Farm                     through FarmMembership
 Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
+Farm 1 ─ N FarmArea                  (planned)
+FarmArea 0..1 ─ N CropCycle          (planned)
 CropCycle 1 ─ N FarmTask             scheduled plan and actual work
+FarmArea 0..1 ─ N FarmTask           (planned)
 TaskTemplate 1 ─ N FarmTask          when created from a template
 FarmTask 0..1 ─ 1 FarmMembership     coordination assignee in the same Farm
 FarmTask 1 ─ N ActionLog
 FarmTask 1 ─ N IssueRecord
+Farm 1 ─ N Observation                (planned)
+FarmArea 0..1 ─ N Observation / Measurement (planned)
+Observation 0..1 ─ 1 IssueRecord     (planned origin)
 IssueRecord 0..1 ─ N Follow-up FarmTask
 ActionLog 1 ─ N Attachment
 IssueRecord 1 ─ N Attachment
@@ -152,6 +176,8 @@ pending → cancelled
 7. 검증되지 않은 농업 데이터는 `draft`로 표시하고, 실제 처방이나 자동 제어로 사용하지 않습니다.
 8. FarmInvitation은 7일 뒤 만료되며, owner는 admin·farmer를, admin은 farmer만 초대할 수 있습니다. 역할 변경은 owner만 할 수 있고 owner 역할 이전·제거는 이 Slice 범위 밖입니다.
 9. 새 Farm 생성은 FarmCreatorPermission이 있는 owner만 가능하며, admin/farmer는 배정된 Farm에서만 역할 범위에 맞는 작업을 수행합니다.
+10. Observation은 사실, IssueRecord는 확인이 필요한 문제, Diagnosis는 확정 진단이다. v0.2는 Observation과 IssueRecord까지만 구현하며 자동 Diagnosis를 만들지 않는다.
+11. Measurement는 단위가 있는 수치 기록이다. 개별 수치는 판단·처방 또는 자동 제어를 의미하지 않는다.
 
 ## 8. 검증 상태
 

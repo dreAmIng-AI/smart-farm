@@ -1,8 +1,10 @@
 # Core Platform v0.1 PRD
 
-**Status: CURRENT DEVELOPMENT SCOPE**
+**Status: HISTORICAL — Core Platform v0.1 delivered baseline**
 
-**Product baseline: [PRODUCT_PLAN.md](PRODUCT_PLAN.md)**
+**Successor: [PRD_PLATFORM_V0.2.md](PRD_PLATFORM_V0.2.md)**
+
+> 이 문서는 v0.1 구현 범위와 의사결정을 보존합니다. v0.2 Pilot의 새 기능·UX·외부 데이터 요구사항은 이 문서를 확장하지 않고 `PRD_PLATFORM_V0.2.md`에서 관리합니다.
 
 ## 1. 목적
 

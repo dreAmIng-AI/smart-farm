@@ -2,7 +2,7 @@
 
 > **Status: REFERENCE**
 >
-> 이 문서는 향후 Lab 또는 Integration의 외부 데이터원 검토 템플릿입니다. 이 문서만으로 Core Platform v0.1에 외부 API를 구현하거나 도입할 수 없습니다.
+> 이 문서는 v0.2 Baseline Module 또는 Lab의 외부 데이터원 검토 템플릿입니다. 이 문서만으로 API 구현·Secret 등록·production 도입이 승인되지는 않습니다. Pilot 후보의 현재 상태는 `PUBLIC_DATA_SOURCES.md`를 우선 확인합니다.
 
 외부 API 또는 공식정보를 도입하기 전에 작성하는 검토 템플릿입니다.
 
