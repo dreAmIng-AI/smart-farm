@@ -6,8 +6,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import { MonthlyWorkCalendar } from "@/app/components/monthly-work-calendar";
+import { MobileNavigation } from "@/app/components/mobile-navigation";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
 import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
+import { TodayHome } from "@/app/components/today-home";
 import {
   canRegenerateFarmInvitation,
   copyFarmInvitationLink,
@@ -1468,17 +1470,16 @@ export default function HomePage() {
         ]
       : [],
   );
+  const hasSelectedWorkCycle = Boolean(userEmail && farm && cropCycle);
 
   return (
-    <main className="page-shell">
+    <main className={hasSelectedWorkCycle ? "page-shell page-shell-with-navigation" : "page-shell"}>
       <header className="hero stack">
-        <p className="eyebrow">dreAmIng Smart Farm · Core v0.1</p>
-        <h1>Core v0.1 Work Cycle</h1>
-        <p>
-          Farm 생성 → CropCycle 생성 → Draft TaskTemplate 적용 → FarmTask 생성 → 일정과 Today → 작업 시작·결과 기록
-        </p>
+        <p className="eyebrow">dreAmIng Smart Farm</p>
+        <h1>{farm ? `${farm.name} 관리` : "농장 관리"}</h1>
+        <p>{cropCycle ? "오늘 해야 할 일과 현장 기록을 먼저 확인하세요." : "농장과 작기를 선택해 오늘 해야 할 일을 확인하세요."}</p>
         <p className="draft-notice">
-          현재 Template은 개발 Fixture이며 검증 상태가 <strong>draft</strong>입니다. 실제 농업 처방이 아닙니다.
+          현재 작업 계획은 개발·검증용 데이터이며 실제 농업 처방이 아닙니다.
         </p>
       </header>
 
@@ -1592,7 +1593,7 @@ export default function HomePage() {
         {message}
       </p>
 
-      {userEmail ? (
+      {userEmail && (!farm || !cropCycle) ? (
         <WorkCycleGuidance
           canCreateFarm={canCreateFarm}
           canManageFarm={canManageSelectedFarm}
@@ -1607,18 +1608,18 @@ export default function HomePage() {
 
       {userEmail ? (
         <section className="card saved-context stack" aria-labelledby="saved-context-heading">
-          <h2 id="saved-context-heading">저장된 Farm·CropCycle 열기</h2>
+          <h2 id="saved-context-heading">관리할 농장과 작기 선택</h2>
           <p className="field-hint">
-            이전에 만든 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
+            이전에 만든 농장과 작기를 선택하면 오늘 작업, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
           </p>
           <label>
-            Farm 선택
+            농장 선택
             <select
               disabled={isRestoringContext}
               onChange={(event) => void handleSavedFarmSelect(event.target.value)}
               value={farm?.id ?? ""}
             >
-              <option value="">Farm을 선택하세요</option>
+              <option value="">농장을 선택하세요</option>
               {farms.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} · {item.regionCode}
@@ -1628,13 +1629,13 @@ export default function HomePage() {
           </label>
           {farm ? (
             <label>
-              CropCycle 선택
+              작기 선택
               <select
                 disabled={isRestoringContext}
                 onChange={(event) => void handleSavedCropCycleSelect(event.target.value)}
                 value={cropCycle?.id ?? ""}
               >
-                <option value="">CropCycle을 선택하세요</option>
+                <option value="">작기를 선택하세요</option>
                 {cropCycles.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.cropCode}
@@ -1648,29 +1649,35 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {userEmail && farm ? (
-        <OperationsDashboard
+      {userEmail && farm && cropCycle ? (
+        <TodayHome
           cropCycle={cropCycle}
           farm={farm}
           issues={dashboardIssues}
-          schedule={schedule}
-          todayTasks={todayTasks}
+          loadingTaskId={loadingTaskDetailId}
+          onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)}
+          tasks={todayTasks}
         />
       ) : null}
 
-      {userEmail && cropCycle ? (
-        <MonthlyWorkCalendar onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)} tasks={schedule} />
-      ) : null}
-
-      {userEmail && cropCycle ? (
-        <WeeklyWorkBoard onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)} tasks={schedule} />
+      {userEmail && farm && cropCycle ? (
+        <WorkCycleGuidance
+          canCreateFarm={canCreateFarm}
+          canManageFarm={canManageSelectedFarm}
+          cropCycleStatus={cropCycle.status}
+          hasAvailableFarm={farms.length > 0}
+          hasFarm={Boolean(farm)}
+          hasScheduledTasks={schedule.length > 0}
+          overdueTaskCount={todayTasks.filter((task) => task.scheduleState === "overdue").length}
+          todayTaskCount={todayTasks.filter((task) => task.scheduleState !== "overdue").length}
+        />
       ) : null}
 
       {userEmail && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
-        <h2 id="farm-heading">{farm ? "Farm 정보" : "1. Farm 생성"}</h2>
+        <h2 id="farm-heading">{farm ? "농장 정보" : "농장 만들기"}</h2>
         {canCreateFarm ? <details className="farm-create" open={shouldShowFarmCreation}>
-        <summary>{farm ? "새 Farm 추가" : "Farm 기본정보 입력"}</summary>
-        {farm ? <p className="field-hint">현재 선택한 Farm과 별도로 새 Farm을 등록합니다.</p> : null}
+        <summary>{farm ? "새 농장 추가" : "농장 기본정보 입력"}</summary>
+        {farm ? <p className="field-hint">현재 선택한 농장과 별도로 새 농장을 등록합니다.</p> : null}
         <form className="stack" onSubmit={handleFarmCreate}>
           <label>
             농장명
@@ -1692,7 +1699,7 @@ export default function HomePage() {
             <input name="cultivationMethod" defaultValue="protected_cultivation" />
           </label>
           <button disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Farm 생성 중..." : "Farm 만들기"}
+            {isSubmitting ? "농장 만드는 중..." : "농장 만들기"}
           </button>
         </form>
         </details> : null}
@@ -1705,8 +1712,8 @@ export default function HomePage() {
           <>
           {canManageSelectedFarm ? (
           <details className="farm-settings">
-            <summary>현재 Farm 기본정보 수정</summary>
-            <p className="field-hint">Farm 기본정보만 변경합니다. 기존 CropCycle, FarmTask, 결과와 이력은 바꾸지 않습니다.</p>
+            <summary>현재 농장 기본정보 수정</summary>
+            <p className="field-hint">농장 기본정보만 변경합니다. 기존 작기, 작업, 결과와 이력은 바꾸지 않습니다.</p>
             <form className="stack" key={`${farm.id}:${farm.name}:${farm.regionCode}:${farm.cultivationEnvironment}:${farm.cultivationMethod ?? ""}`} onSubmit={handleFarmUpdate}>
               <label>
                 농장명
@@ -1728,15 +1735,15 @@ export default function HomePage() {
                 <input defaultValue={farm.cultivationMethod ?? ""} name="cultivationMethod" />
               </label>
               <button disabled={isUpdatingFarm} type="submit">
-                {isUpdatingFarm ? "Farm 저장 중..." : "Farm 기본정보 저장"}
+                {isUpdatingFarm ? "저장 중..." : "농장 기본정보 저장"}
               </button>
             </form>
           </details>
           ) : (
-            <p className="field-hint">작업자는 공유된 Farm 정보를 조회하고 Today 작업 결과를 기록할 수 있습니다. Farm 기본정보와 작업 계획은 owner 또는 admin이 관리합니다.</p>
+            <p className="field-hint">작업자는 공유된 농장 정보를 조회하고 오늘 작업 결과를 기록할 수 있습니다. 농장 기본정보와 작업 계획은 소유자 또는 관리자가 관리합니다.</p>
           )}
           <details className="farm-collaboration">
-            <summary>Farm 구성원과 초대 관리</summary>
+            <summary>농장 구성원과 초대 관리</summary>
             <p className="field-hint">
               자동 이메일은 보내지 않습니다. 만든 초대 링크를 복사해 해당 이메일의 팀원에게 직접 전달하세요.
             </p>
@@ -1885,10 +1892,10 @@ export default function HomePage() {
 
       {userEmail && farm && canManageSelectedFarm ? (
         <section className="card stack" aria-labelledby="cycle-heading">
-          <h2 id="cycle-heading">2. CropCycle</h2>
-          <p className="muted">현재 Farm: {farm.name}</p>
+          <h2 id="cycle-heading">작기 만들기</h2>
+          <p className="muted">현재 농장: {farm.name}</p>
           <details className="crop-cycle-create" open={!cropCycle}>
-            <summary>{cropCycle ? "새 CropCycle 만들기" : "CropCycle 기본정보 입력"}</summary>
+            <summary>{cropCycle ? "새 작기 만들기" : "작기 기본정보 입력"}</summary>
             {cropCycle ? <p className="field-hint">현재 선택한 작기와 별도로 새 CropCycle을 등록합니다.</p> : null}
           <form className="stack" onSubmit={handleCropCycleCreate}>
             <label>
@@ -1911,7 +1918,7 @@ export default function HomePage() {
             현재는 직접 입력하거나 비워 둘 수 있습니다. 생육 단계별 선택 목록은 Crop Pack 데이터가 준비된 뒤 제공합니다.
           </p>
             <button disabled={isSubmitting} type="submit">
-              CropCycle 만들기
+              작기 만들기
             </button>
           </form>
           </details>
@@ -1920,12 +1927,12 @@ export default function HomePage() {
 
       {userEmail && cropCycle && farm ? (
         <section className="card stack" aria-labelledby="plan-heading">
-          <h2 id="plan-heading">3. Plan · 일정 · Today · 이력</h2>
+          <h2 id="plan-heading">작업 계획과 기록</h2>
           <p className="muted">
             {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
           </p>
           {!canManageSelectedFarm ? (
-            <p className="field-hint">작업자는 일정과 Today를 확인하고 결과 또는 관찰한 문제를 기록합니다. 작기·생육 단계·계획 변경은 owner 또는 admin이 처리합니다.</p>
+            <p className="field-hint">작업자는 일정과 오늘 작업을 확인하고 결과 또는 관찰한 문제를 기록합니다. 작기·생육 단계·계획 변경은 소유자 또는 관리자가 처리합니다.</p>
           ) : null}
           <section className="crop-cycle-lifecycle-entry stack" aria-labelledby="crop-cycle-status-heading">
             <h3 id="crop-cycle-status-heading">작기 상태</h3>
@@ -1978,7 +1985,7 @@ export default function HomePage() {
               Draft TaskTemplate 적용
             </button> : null}
             <button className="secondary" disabled={isSubmitting} onClick={handleRefresh} type="button">
-              일정·Today·이력 새로고침
+              일정과 기록 새로고침
             </button>
           </div>
 
@@ -2043,12 +2050,12 @@ export default function HomePage() {
                 ))}
               </ol>
             ) : (
-              <p className="muted">아직 생성된 FarmTask가 없습니다.</p>
+              <p className="muted">아직 생성된 작업이 없습니다.</p>
             )}
           </div>
 
           <div className="stack" aria-live="polite">
-            <h3 id="today-heading">Today</h3>
+            <h3 id="today-heading">오늘 할 일</h3>
             {todayTasks.length > 0 ? (
               <ol className="task-list">
                 {todayTasks.map((task) => (
@@ -2450,6 +2457,24 @@ export default function HomePage() {
           </div>
         </section>
       ) : null}
+
+      {userEmail && farm && cropCycle ? (
+        <details className="secondary-information stack">
+          <summary>일정과 농장 현황 자세히 보기</summary>
+          <p className="field-hint">오늘 해야 할 일 외에 전체 일정, 주간 작업, 운영 현황을 확인할 수 있습니다.</p>
+          <OperationsDashboard
+            cropCycle={cropCycle}
+            farm={farm}
+            issues={dashboardIssues}
+            schedule={schedule}
+            todayTasks={todayTasks}
+          />
+          <MonthlyWorkCalendar onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)} tasks={schedule} />
+          <WeeklyWorkBoard onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)} tasks={schedule} />
+        </details>
+      ) : null}
+
+      {hasSelectedWorkCycle ? <MobileNavigation /> : null}
     </main>
   );
 }
