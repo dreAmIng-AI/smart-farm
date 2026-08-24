@@ -320,6 +320,46 @@ p {
   font-weight: 700;
 }
 
+.farm-area-panel {
+  background: linear-gradient(135deg, #f3f7ff 0%, #ffffff 66%);
+  border-color: #b8c9e9;
+}
+
+.farm-area-form {
+  background: #ffffff;
+  border: 1px solid #d7e0f3;
+  border-radius: 0.6rem;
+  padding: 0.8rem;
+}
+
+.farm-area-list {
+  border-top: 1px solid #d7e0f3;
+  padding-top: 0.8rem;
+}
+
+.farm-area-list ul {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.farm-area-list li {
+  background: #ffffff;
+  border: 1px solid #d7e0f3;
+  border-left: 4px solid #5c88c9;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+}
+
+.farm-area-list span {
+  color: #405248;
+  font-size: 0.9rem;
+}
+
 .mobile-navigation {
   background: rgba(255, 255, 255, 0.97);
   border-top: 1px solid #b9d9c1;

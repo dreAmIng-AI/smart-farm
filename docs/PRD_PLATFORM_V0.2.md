@@ -38,12 +38,12 @@ Farm → CropCycle → TaskTemplate → FarmTask → Today
 | ID | Requirement | Delivery status |
 |---|---|---|
 | FR-01 | Preserve the v0.1 Farm, CropCycle, FarmTask, ActionLog, IssueRecord, Attachment and membership work cycle. | implemented |
-| FR-02 | A Farm has zero or more named FarmAreas without GIS complexity. | planned |
+| FR-02 | A Farm has zero or more named FarmAreas without GIS complexity. | implemented |
 | FR-03 | CropCycle and FarmTask can optionally identify their FarmArea. | planned |
 | FR-04 | A user can add an Observation as an observed fact without a FarmTask. | planned |
 | FR-05 | A user can add a numeric Measurement with metric, value, unit and observed time without a FarmTask. | planned |
 | FR-06 | IssueRecord remains a non-diagnostic “확인이 필요한 문제” and can originate from an Observation. | planned |
-| FR-07 | Today is the default action-first screen: tasks → issues → weather → current crop → market. | planned |
+| FR-07 | Today is the default action-first screen: tasks → issues → weather → current crop → market. | partial; tasks·issues·current crop implemented, official information pending |
 | FR-08 | Weather shows actual official data: current temperature, high/low, humidity, precipitation probability/amount, wind, alert when available, and update time. | planned; provider key required |
 | FR-09 | Disease/Pest and Crop Information show official crop-context reference information, never a diagnosis. | planned; provider key and content review required |
 | FR-10 | Market shows actual reference price with item, market, price, unit, grade, base date, source and recent comparison when supplied. | planned; provider key required |

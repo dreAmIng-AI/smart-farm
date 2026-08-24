@@ -74,6 +74,11 @@ export type ManualFarmTaskInput = FollowUpTaskInput & {
   reason: string;
 };
 
+export type FarmAreaInput = {
+  description: string | null;
+  name: string;
+};
+
 export type AttachmentFileInput = {
   extension: "jpg" | "png" | "webp";
   fileSizeBytes: number;
@@ -438,6 +443,24 @@ export function parseManualFarmTaskInput(value: unknown): Parsed<ManualFarmTaskI
   }
 
   return { ok: true, data: { title, reason, scheduledFor, priority } };
+}
+
+export function parseFarmAreaInput(value: unknown): Parsed<FarmAreaInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const name = requiredText(value.name);
+  const description = optionalText(value.description);
+  if (!name || name.length > 100) {
+    return { ok: false, error: "name is required and must not exceed 100 characters." };
+  }
+
+  if (description && description.length > 1000) {
+    return { ok: false, error: "description must not exceed 1000 characters." };
+  }
+
+  return { ok: true, data: { name, description } };
 }
 
 const attachmentTypes = {

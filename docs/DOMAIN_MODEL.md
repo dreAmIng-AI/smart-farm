@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, v0.2 additions planned**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea v0.2 addition implemented**
 
-> `FarmArea`, `Observation`, `Measurement` and external reference result are v0.2 design contracts. They are not current DB entities until a dedicated migration is applied.
+> `FarmArea`는 `202608240001_platform_v02_farm_areas.sql`로 구현되었습니다. `Observation`, `Measurement`와 external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
 
 ## 1. 목적
 
@@ -34,7 +34,7 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다. v0.2에서는 공식 날씨를 위한 사용자가 확인한 예보 위치 문맥을 최소로 추가한다. 기본적으로 상세 주소나 무단 GPS 수집은 하지 않는다.
 
-### FarmArea (v0.2 planned)
+### FarmArea
 
 Farm 안의 실제 관리 공간이다. 예: `1동`, `2동`, `육묘장`, `노지 A구역`. GIS, 지도도형, 센서 연결을 전제하지 않는다. CropCycle, FarmTask, Observation, Measurement가 필요할 때 선택적으로 연결할 수 있다.
 
@@ -119,7 +119,7 @@ User 1 ─ 0..1 FarmCreatorPermission  grants new Farm creation
 User N ─ N Farm                     through FarmMembership
 Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
-Farm 1 ─ N FarmArea                  (planned)
+Farm 1 ─ N FarmArea                  (implemented)
 FarmArea 0..1 ─ N CropCycle          (planned)
 CropCycle 1 ─ N FarmTask             scheduled plan and actual work
 FarmArea 0..1 ─ N FarmTask           (planned)

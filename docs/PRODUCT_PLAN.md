@@ -127,7 +127,7 @@ Weather, Disease/Pest, Crop Information, Market Information은 최소 실사용 
 → Observation / Issue 기록 → Follow-up → History → 시장 참고가격 확인
 ```
 
-현재 v0.1은 작업·기록 흐름만 구현되어 있다. FarmArea, Observation/Measurement, 실제 공공데이터, Today-first UX와 Pilot 데이터 검증은 별도 작은 PR로 추가한다. 따라서 v0.2 Pilot 준비 상태는 지금 `PARTIAL`이다.
+현재 Operations Core는 작업·기록 흐름, Today-first UX와 FarmArea까지 구현되어 있다. Observation/Measurement, 실제 공공데이터와 Pilot 데이터 검증은 별도 작은 PR로 추가한다. 따라서 v0.2 Pilot 준비 상태는 지금 `PARTIAL`이다.
 
 ## 10. Delivery Sequence
 

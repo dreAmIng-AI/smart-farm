@@ -1,8 +1,8 @@
 # Data Dictionary
 
-**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus planned v0.2 additions**
+**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea v0.2 addition**
 
-**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records와 attachments를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. 아래 `planned` 표는 아직 DB에 존재하지 않으며, 각각의 구현 PR에서 migration·RLS·API·tests와 함께 적용해야 합니다.**
+**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments와 farm_areas를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. Observation, Measurement, FarmArea의 작기·작업 연결, 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
 
 ## 1. 공통 규칙
 
@@ -22,7 +22,8 @@ Farm → CropCycle → FarmTask → ActionLog
 ActionLog | IssueRecord → Attachment
 TaskTemplate → FarmTask
 
-(v0.2 planned) Farm → FarmArea → CropCycle / FarmTask / Observation / Measurement
+Farm → FarmArea
+(v0.2 planned) FarmArea → CropCycle / FarmTask / Observation / Measurement
 ```
 
 `CropCycle + TaskTemplate → Scheduled FarmTask[]`가 작기 전체 작업계획을 표현합니다. 현재 `farm_plans` 테이블은 추가하지 않습니다.
@@ -184,7 +185,7 @@ TaskTemplate → FarmTask
 
 `202608120004_core_v01_attachments.sql`은 `attachments`와 비공개 `farm-attachments` Storage 버킷을 구현합니다. 한 Attachment는 ActionLog 또는 IssueRecord 중 정확히 하나만 참조합니다. 허용 파일은 JPEG, PNG, WebP이고 파일당 최대 10MB입니다. `storage_path`는 `farm_id/action_log_id/file` 구조이며, Attachment와 Storage object 모두 FarmMembership 기반 RLS를 적용합니다. `captured_at`은 P1에서 아직 별도로 수집하지 않아 null입니다.
 
-## 4. v0.2 planned data additions
+## 4. v0.2 data additions
 
 These are minimal extension candidates, not a migration backlog to apply at once. Each structure is introduced only with the Vertical Slice that reads and writes it.
 
@@ -197,15 +198,14 @@ These are minimal extension candidates, not a migration backlog to apply at once
 
 No street address or silent browser GPS is stored by default. The existing `region_code` is not assumed to be a valid KMA grid.
 
-### farm_areas (planned new table)
+### farm_areas (implemented in `202608240001_platform_v02_farm_areas.sql`)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | id | uuid | Y | 재배 구역 식별자 |
 | farm_id | uuid | Y | 소속 Farm |
 | name | text | Y | 예: 1동, 육묘장, 노지 A구역 |
-| area_type | text | N | facility, open_field, nursery, other 등 선택적 분류 |
-| note | text | N | 짧은 운영 메모 |
+| description | text | N | 짧은 운영 메모 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
 
 `unique (farm_id, name)` is sufficient for the Pilot. No GIS geometry, address or sensor fields are introduced.
