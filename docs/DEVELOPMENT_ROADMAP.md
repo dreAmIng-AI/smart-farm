@@ -44,7 +44,7 @@ Implemented by Issue #45 with migration, RLS, API and tests.
 
 Separate Issue/PR with migration, RLS, API and tests.
 
-- Append-only Observation and manual Measurement records
+- Append-only Observation implemented in Issue #47; manual Measurement remains the next independent Slice
 - Safe distinction between observed fact, issue requiring confirmation and diagnosis
 - Extend Issue origin only without breaking existing ActionLog-origin IssueRecords
 

@@ -79,6 +79,13 @@ export type FarmAreaInput = {
   name: string;
 };
 
+export type ObservationInput = {
+  content: string;
+  cropCycleId: string | null;
+  farmAreaId: string | null;
+  observedAt: string;
+};
+
 export type AttachmentFileInput = {
   extension: "jpg" | "png" | "webp";
   fileSizeBytes: number;
@@ -461,6 +468,35 @@ export function parseFarmAreaInput(value: unknown): Parsed<FarmAreaInput> {
   }
 
   return { ok: true, data: { name, description } };
+}
+
+export function parseObservationInput(value: unknown): Parsed<ObservationInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const content = requiredText(value.content);
+  const observedAt = requiredText(value.observedAt);
+  const farmAreaId = value.farmAreaId ?? null;
+  const cropCycleId = value.cropCycleId ?? null;
+
+  if (!content || content.length > 2000) {
+    return { ok: false, error: "content is required and must not exceed 2000 characters." };
+  }
+
+  if (!observedAt || !isIsoDateTime(observedAt)) {
+    return { ok: false, error: "observedAt must be an ISO 8601 UTC timestamp." };
+  }
+
+  if (farmAreaId !== null && (typeof farmAreaId !== "string" || !isUuid(farmAreaId))) {
+    return { ok: false, error: "farmAreaId must be a UUID or null." };
+  }
+
+  if (cropCycleId !== null && (typeof cropCycleId !== "string" || !isUuid(cropCycleId))) {
+    return { ok: false, error: "cropCycleId must be a UUID or null." };
+  }
+
+  return { ok: true, data: { content, cropCycleId, farmAreaId, observedAt } };
 }
 
 const attachmentTypes = {
