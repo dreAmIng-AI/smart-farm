@@ -25,7 +25,7 @@ Issue #41.
 
 ## Phase 2 — Frontend Foundation and Today UX
 
-Separate Issue/PR.
+Completed in Issue #43 / PR #44.
 
 - Extract shared domain types and feature boundaries from the current `page.tsx` without changing existing API behaviour
 - Add Today-first navigation and user-facing terminology
@@ -34,9 +34,9 @@ Separate Issue/PR.
 
 ## Phase 3 — FarmArea
 
-Separate Issue/PR with migration, RLS, API and tests.
+Implemented by Issue #45 with migration, RLS, API and tests.
 
-- Create, list, update and remove simple FarmArea records
+- Create and list simple FarmArea records; update and removal stay out of the first FarmArea Slice
 - Link CropCycle/FarmTask only when selected
 - Preserve all existing Farm/CropCycle/FarmTask records
 

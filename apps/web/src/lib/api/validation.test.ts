@@ -12,6 +12,7 @@ import {
   parseFarmMemberRoleInput,
   parseFarmTaskAssigneeInput,
   parseFarmInput,
+  parseFarmAreaInput,
   parseFollowUpTaskInput,
   parseIssueStatusInput,
   parseManualFarmTaskInput,
@@ -47,6 +48,26 @@ describe("Farm input", () => {
         cultivationEnvironment: "facility",
       }),
     ).toMatchObject({ ok: false, error: "name and regionCode are required." });
+  });
+});
+
+describe("FarmArea input", () => {
+  it("accepts a named field area with an optional note", () => {
+    expect(parseFarmAreaInput({ name: "1동", description: "시설 재배 구역" })).toEqual({
+      ok: true,
+      data: { name: "1동", description: "시설 재배 구역" },
+    });
+  });
+
+  it("rejects an empty or oversized area name", () => {
+    expect(parseFarmAreaInput({ name: "" })).toMatchObject({
+      ok: false,
+      error: "name is required and must not exceed 100 characters.",
+    });
+    expect(parseFarmAreaInput({ name: "a".repeat(101) })).toMatchObject({
+      ok: false,
+      error: "name is required and must not exceed 100 characters.",
+    });
   });
 });
 

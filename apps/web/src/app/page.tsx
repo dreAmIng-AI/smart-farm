@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
+import { FarmAreaPanel } from "@/app/components/farm-area-panel";
 import { MonthlyWorkCalendar } from "@/app/components/monthly-work-calendar";
 import { MobileNavigation } from "@/app/components/mobile-navigation";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
@@ -1889,6 +1890,10 @@ export default function HomePage() {
           </>
         ) : null}
       </section> : null}
+
+      {userEmail && farm ? (
+        <FarmAreaPanel canManageFarm={canManageSelectedFarm} farmId={farm.id} key={farm.id} />
+      ) : null}
 
       {userEmail && farm && canManageSelectedFarm ? (
         <section className="card stack" aria-labelledby="cycle-heading">

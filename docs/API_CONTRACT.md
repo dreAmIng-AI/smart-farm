@@ -56,6 +56,7 @@
 | `POST /api/tasks/{taskId}/action-logs` | 결과 기록, 필요 시 IssueRecord 생성 |
 | `POST /api/action-logs/{actionLogId}/attachments` | 결과 기록에 사진 첨부 |
 | `POST /api/issues/{issueId}/attachments` | 문제 기록에 사진 첨부 |
+| `GET/POST /api/farms/{farmId}/areas` | 재배 구역 조회·생성 |
 | `PATCH /api/issues/{issueId}` | IssueRecord 상태 변경 |
 | `POST /api/issues/{issueId}/follow-up-tasks` | IssueRecord 기반 후속 작업 생성 |
 | `GET /api/farms/{farmId}/history` | 작업·문제·후속 관계 이력 조회 |
@@ -353,17 +354,21 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `TASK_ASSIGNMENT_UPDATE_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`
+- `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_CREATE_FAILED`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`
 
-## 6. Planned v0.2 API Contract
+## 6. v0.2 API Contract
+
+### Implemented FarmArea route
+
+`GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`. FarmArea update and delete are not exposed in this Slice.
 
 ### Planned resource routes
 
 | Resource / action | Intent | Access |
 |---|---|---|
-| `GET/POST /api/farms/{farmId}/areas` | FarmArea 목록 조회·생성 | member read; owner/admin create |
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `GET/POST /api/farms/{farmId}/observations` | Farm-wide Observation 조회·사실 기록 | member |
 | `GET/POST /api/farms/{farmId}/measurements` | Farm-wide Measurement 조회·수동 기록 | member |

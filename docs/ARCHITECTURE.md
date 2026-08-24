@@ -1,8 +1,8 @@
 # Architecture
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, v0.2 target marked as planned**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea v0.2 extension implemented**
 
-> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea, Observation, Measurement, durable external-data cache and Baseline Modules are v0.2 target contracts until their own migration and PR are merged.
+> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea is an implemented v0.2 extension; Observation, Measurement, durable external-data cache and Baseline Modules remain target contracts until their own migration and PR are merged.
 
 ## 1. 아키텍처 목표
 
