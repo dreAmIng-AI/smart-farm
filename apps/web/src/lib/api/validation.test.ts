@@ -16,6 +16,7 @@ import {
   parseFollowUpTaskInput,
   parseIssueStatusInput,
   parseManualFarmTaskInput,
+  parseObservationInput,
 } from "@/lib/api/validation";
 
 const validPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -68,6 +69,31 @@ describe("FarmArea input", () => {
       ok: false,
       error: "name is required and must not exceed 100 characters.",
     });
+  });
+});
+
+describe("Observation input", () => {
+  it("accepts a standalone fact with optional FarmArea and CropCycle context", () => {
+    expect(
+      parseObservationInput({
+        content: "잎에서 갈색 반점이 보임",
+        cropCycleId: null,
+        farmAreaId: null,
+        observedAt: "2026-08-24T01:00:00.000Z",
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        content: "잎에서 갈색 반점이 보임",
+        cropCycleId: null,
+        farmAreaId: null,
+        observedAt: "2026-08-24T01:00:00.000Z",
+      },
+    });
+  });
+
+  it("rejects an Observation without a fact or valid observed time", () => {
+    expect(parseObservationInput({ content: "", observedAt: "today" })).toMatchObject({ ok: false });
   });
 });
 

@@ -1,8 +1,8 @@
 # Data Dictionary
 
-**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea v0.2 addition**
+**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea and Observation v0.2 additions**
 
-**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments와 farm_areas를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. Observation, Measurement, FarmArea의 작기·작업 연결, 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
+**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas와 observations를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. Measurement, FarmArea의 작기·작업 연결, 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
 
 ## 1. 공통 규칙
 
@@ -220,7 +220,7 @@ No street address or silent browser GPS is stored by default. The existing `regi
 
 Database validation must ensure that the selected FarmArea belongs to the same Farm as the CropCycle/FarmTask.
 
-### observations (planned new table)
+### observations (implemented by `202608240002_platform_v02_observations.sql`)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
@@ -232,7 +232,7 @@ Database validation must ensure that the selected FarmArea belongs to the same F
 | content | text | Y | 관찰된 사실 |
 | created_at | timestamptz | Y | 저장 시각 |
 
-Observation is not a diagnosis and does not require a FarmTask.
+Observation is append-only, is not a diagnosis and does not require a FarmTask. `farm_area_id` and `crop_cycle_id` are composite foreign-key constrained to the same `farm_id`.
 
 ### measurements (planned new table)
 
