@@ -84,7 +84,7 @@ Navigation is introduced only when its route/state architecture is ready; it mus
 
 - `오늘 날씨` is a direct bottom-navigation destination. A Farm selected before a CropCycle is selected still shows its Weather card immediately below the saved Farm/CropCycle chooser.
 - A saved Farm weather location must display its human-readable label and KMA grid confirmation, plus a direct link back to `오늘 날씨`. This confirmation never exposes original GPS coordinates or a street address.
-- Browser location failures distinguish permission denied, position unavailable and timeout with a next action the user can take. Raw browser error text is not shown.
+- Browser location failures distinguish permission denied, position unavailable and timeout with a next action the user can take. The one-time device request allows up to 30 seconds; if unavailable, an owner/admin can use a clearly secondary manual-coordinate conversion that clears raw values after local KMA-grid conversion. Raw browser error text is not shown.
 - Observation and Measurement are one recording area each. Repeated panels are a rendering defect, not a way to enter multiple records. The Measurement form presents item first, then value and unit together so the numeric input is readable on a small screen.
 
 ## 5. Onboarding

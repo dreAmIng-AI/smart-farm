@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { geolocationFailureMessage } from "@/lib/integrations/geolocation-feedback";
 import { toKmaForecastGrid, type KmaForecastGrid } from "@/lib/integrations/kma-grid";
+import { manualKmaLocationToGrid } from "@/lib/integrations/manual-kma-location";
 
 type WeatherLocationPanelProps = {
   farmId: string;
@@ -29,6 +30,8 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
   const [isLoadingSavedLocation, setIsLoadingSavedLocation] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [label, setLabel] = useState("");
+  const [manualLatitude, setManualLatitude] = useState("");
+  const [manualLongitude, setManualLongitude] = useState("");
   const [savedLocation, setSavedLocation] = useState<WeatherLocation | null>(null);
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
     }
 
     setIsLocating(true);
+    setFeedback("농장에 있는 기기의 현재 위치를 확인하는 중입니다. 최대 30초 정도 걸릴 수 있습니다.");
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const nextGrid = toKmaForecastGrid(position.coords.latitude, position.coords.longitude);
@@ -82,8 +86,21 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
         setFeedback(geolocationFailureMessage(error));
         setIsLocating(false);
       },
-      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 30_000 },
     );
+  }
+
+  function handleUseManualLocation() {
+    const result = manualKmaLocationToGrid(manualLatitude, manualLongitude);
+    if (!result.ok) {
+      setFeedback(result.message);
+      return;
+    }
+
+    setGrid(result.grid);
+    setManualLatitude("");
+    setManualLongitude("");
+    setFeedback("입력한 위치를 기상청 예보 격자로 확인했습니다. 입력한 위도·경도는 이 화면에서 바로 지워지며 저장하거나 서버로 보내지 않습니다.");
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -140,8 +157,36 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
           />
         </label>
         <button disabled={isLocating || isSaving} onClick={handleUseDeviceLocation} type="button">
-          {isLocating ? "위치 확인 중..." : "이 기기의 위치로 예보 위치 확인"}
+          {isLocating ? "위치 확인 중..." : "이 기기의 위치로 예보 위치 확인 (최대 30초)"}
         </button>
+        <details className="weather-location-fallback">
+          <summary>기기 위치가 안 될 때 보조 입력 사용</summary>
+          <p className="field-hint">지도에서 확인한 위도와 경도를 한 번만 입력하면, 이 기기 안에서 기상청 예보 격자로 바꿉니다.</p>
+          <div className="weather-coordinate-fields">
+            <label>
+              위도
+              <input
+                disabled={isSaving}
+                inputMode="decimal"
+                onChange={(event) => setManualLatitude(event.target.value)}
+                placeholder="예: 35.9123"
+                value={manualLatitude}
+              />
+            </label>
+            <label>
+              경도
+              <input
+                disabled={isSaving}
+                inputMode="decimal"
+                onChange={(event) => setManualLongitude(event.target.value)}
+                placeholder="예: 126.1234"
+                value={manualLongitude}
+              />
+            </label>
+          </div>
+          <button disabled={isSaving} onClick={handleUseManualLocation} type="button">입력한 위치로 예보 격자 확인</button>
+          <p className="field-hint">위도·경도는 서버·DB·로그에 전송하거나 저장하지 않습니다. 이 보조 입력은 위치 권한을 켤 수 없는 경우에만 사용하세요.</p>
+        </details>
         {grid ? <p className="weather-grid-preview">현재 사용할 기상청 예보 격자: X {grid.x} · Y {grid.y}</p> : null}
         <p className="field-hint">기기의 GPS 좌표나 상세 주소는 저장하거나 서버로 보내지 않습니다. 약 5km 단위의 기상청 예보 격자만 농장에 저장합니다.</p>
         <button disabled={!grid || label.trim().length === 0 || isSaving} type="submit">

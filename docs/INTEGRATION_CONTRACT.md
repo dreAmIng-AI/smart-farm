@@ -67,7 +67,7 @@ TTL values are initial Pilot defaults and must be reviewed against each provider
 
 ## 5. Location and Context
 
-Weather requires a reproducible forecast location. The implemented Pilot asks an owner/admin for a location label and only uses browser location after that person explicitly presses the confirmation button. The browser converts the coordinate locally to the KMA 5km grid; the server and database receive only the label and grid, never the original coordinate or a street address. FarmArea overrides and special-alert regional mapping are later work.
+Weather requires a reproducible forecast location. The implemented Pilot asks an owner/admin for a location label and only uses browser location after that person explicitly presses the confirmation button. It requests a fresh, high-accuracy device location for up to 30 seconds. If the browser cannot provide it, an owner/admin may one-time enter a map-derived latitude/longitude; the browser converts either source locally to the KMA 5km grid, clears the typed fallback values, and sends only the label and grid to the server. Neither original coordinate source nor a street address is stored, logged or sent to the API. FarmArea overrides and special-alert regional mapping are later work.
 
 Crop context is the active CropCycle. Missing crop, cultivar or growth stage produces a clear prompt to complete the current-cultivation setup; it must not select a different crop’s information.
 
