@@ -1,8 +1,9 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { geolocationFailureMessage } from "@/lib/integrations/geolocation-feedback";
 import { toKmaForecastGrid, type KmaForecastGrid } from "@/lib/integrations/kma-grid";
 
 type WeatherLocationPanelProps = {
@@ -11,20 +12,52 @@ type WeatherLocationPanelProps = {
 };
 
 type WeatherLocationResponse = {
-  weatherLocation: {
-    gridX: number;
-    gridY: number;
-    label: string;
-    updatedAt: string;
-  };
+  weatherLocation: WeatherLocation | null;
+};
+
+type WeatherLocation = {
+  gridX: number;
+  gridY: number;
+  label: string;
+  updatedAt: string;
 };
 
 export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelProps) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [grid, setGrid] = useState<KmaForecastGrid | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isLoadingSavedLocation, setIsLoadingSavedLocation] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [savedLabel, setSavedLabel] = useState<string | null>(null);
+  const [label, setLabel] = useState("");
+  const [savedLocation, setSavedLocation] = useState<WeatherLocation | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSavedLocation() {
+      try {
+        const response = await fetch(`/api/farms/${farmId}/weather-location`);
+        if (!response.ok) throw new Error("Weather location request failed");
+        const result = (await response.json()) as WeatherLocationResponse;
+        if (!active || !result.weatherLocation) return;
+
+        setSavedLocation(result.weatherLocation);
+        setLabel(result.weatherLocation.label);
+        setGrid({ x: result.weatherLocation.gridX, y: result.weatherLocation.gridY });
+      } catch {
+        if (active) {
+          setFeedback("저장된 날씨 위치를 확인하지 못했습니다. 새 위치 확인과 저장은 계속 할 수 있습니다.");
+        }
+      } finally {
+        if (active) setIsLoadingSavedLocation(false);
+      }
+    }
+
+    void loadSavedLocation();
+    return () => {
+      active = false;
+    };
+  }, [farmId]);
 
   function handleUseDeviceLocation() {
     setFeedback(null);
@@ -45,8 +78,8 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
         }
         setIsLocating(false);
       },
-      () => {
-        setFeedback("기기 위치를 가져오지 못했습니다. 위치 권한을 허용한 뒤 농장에 있는 기기에서 다시 시도해 주세요.");
+      (error) => {
+        setFeedback(geolocationFailureMessage(error));
         setIsLocating(false);
       },
       { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
@@ -72,9 +105,14 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
       if (!response.ok) throw new Error("Weather location save failed");
 
       const result = await response.json() as WeatherLocationResponse;
-      setSavedLabel(result.weatherLocation.label);
+      if (!result.weatherLocation) {
+        throw new Error("Weather location save returned no data");
+      }
+      setSavedLocation(result.weatherLocation);
+      setLabel(result.weatherLocation.label);
+      setGrid({ x: result.weatherLocation.gridX, y: result.weatherLocation.gridY });
       onSaved();
-      setFeedback("예보 위치를 저장했습니다. 오늘 날씨 카드에서 공식 정보를 불러옵니다.");
+      setFeedback("예보 위치를 저장했습니다. 아래 ‘오늘 날씨 보기’에서 공식 기상청 정보를 확인해 주세요.");
     } catch {
       setFeedback("예보 위치를 저장하지 못했습니다. 위치 이름을 확인한 뒤 다시 시도해 주세요.");
     } finally {
@@ -92,16 +130,32 @@ export function WeatherLocationPanel({ farmId, onSaved }: WeatherLocationPanelPr
       <form className="weather-location-form stack" onSubmit={handleSave}>
         <label>
           알아보기 쉬운 위치 이름
-          <input defaultValue={savedLabel ?? ""} maxLength={100} name="label" placeholder="예: A농장 · 김제시 백구면" required />
+          <input
+            maxLength={100}
+            name="label"
+            onChange={(event) => setLabel(event.target.value)}
+            placeholder="예: A농장 · 김제시 백구면"
+            required
+            value={label}
+          />
         </label>
         <button disabled={isLocating || isSaving} onClick={handleUseDeviceLocation} type="button">
           {isLocating ? "위치 확인 중..." : "이 기기의 위치로 예보 위치 확인"}
         </button>
+        {grid ? <p className="weather-grid-preview">현재 사용할 기상청 예보 격자: X {grid.x} · Y {grid.y}</p> : null}
         <p className="field-hint">기기의 GPS 좌표나 상세 주소는 저장하거나 서버로 보내지 않습니다. 약 5km 단위의 기상청 예보 격자만 농장에 저장합니다.</p>
-        <button disabled={!grid || isSaving} type="submit">
+        <button disabled={!grid || label.trim().length === 0 || isSaving} type="submit">
           {isSaving ? "저장 중..." : "농장 날씨 위치 저장"}
         </button>
       </form>
+      {isLoadingSavedLocation ? <p className="field-hint">저장된 날씨 위치를 확인하는 중입니다.</p> : null}
+      {savedLocation ? (
+        <div className="weather-location-saved" aria-live="polite">
+          <strong>저장된 농장 날씨 위치</strong>
+          <p>{savedLocation.label} · 기상청 예보 격자 X {savedLocation.gridX} · Y {savedLocation.gridY}</p>
+          <a href="#today-weather-heading">오늘 날씨 보기</a>
+        </div>
+      ) : null}
       {feedback ? <p className="inline-status" role="status">{feedback}</p> : null}
     </section>
   );

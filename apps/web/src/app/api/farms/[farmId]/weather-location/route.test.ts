@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 
-import { PATCH } from "./route";
+import { GET, PATCH } from "./route";
 
 vi.mock("@/lib/api/auth", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -50,6 +50,47 @@ describe("PATCH /api/farms/:farmId/weather-location", () => {
       weather_grid_y: 92,
     }));
     await expect(response.json()).resolves.toMatchObject({ weatherLocation: { label: "김제시 백구면", gridX: 56, gridY: 92 } });
+  });
+
+  it("returns the already saved location for an accessible Farm member", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        weather_location_label: "김제시 백구면",
+        weather_grid_x: 56,
+        weather_grid_y: 92,
+        weather_location_updated_at: "2026-08-25T01:00:00.000Z",
+      },
+      error: null,
+    });
+
+    const response = await GET(
+      new Request(`http://localhost/api/farms/${farmId}/weather-location`),
+      { params: Promise.resolve({ farmId }) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      weatherLocation: { label: "김제시 백구면", gridX: 56, gridY: 92 },
+    });
+  });
+
+  it("reports when an accessible Farm has no weather location yet", async () => {
+    maybeSingle.mockResolvedValue({
+      data: {
+        weather_location_label: null,
+        weather_grid_x: null,
+        weather_grid_y: null,
+        weather_location_updated_at: null,
+      },
+      error: null,
+    });
+
+    const response = await GET(
+      new Request(`http://localhost/api/farms/${farmId}/weather-location`),
+      { params: Promise.resolve({ farmId }) },
+    );
+
+    await expect(response.json()).resolves.toMatchObject({ weatherLocation: null });
   });
 
   it("does not allow a farmer to change the Farm weather location", async () => {

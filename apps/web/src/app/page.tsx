@@ -1655,6 +1655,15 @@ export default function HomePage() {
         </section>
       ) : null}
 
+      {userEmail && farm && !cropCycle ? (
+        <WeatherCard
+          canConfigure={canManageSelectedFarm}
+          farmId={farm.id}
+          key={`${farm.id}:${weatherRefreshVersion}`}
+          standalone
+        />
+      ) : null}
+
       {userEmail && farm && cropCycle ? (
         <TodayHome
           cropCycle={cropCycle}

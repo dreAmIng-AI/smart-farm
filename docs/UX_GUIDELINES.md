@@ -80,6 +80,13 @@ The target bottom navigation has at most five destinations:
 
 Navigation is introduced only when its route/state architecture is ready; it must not duplicate the same mutations across separate screens.
 
+## 4. Pilot usability corrections
+
+- `오늘 날씨` is a direct bottom-navigation destination. A Farm selected before a CropCycle is selected still shows its Weather card immediately below the saved Farm/CropCycle chooser.
+- A saved Farm weather location must display its human-readable label and KMA grid confirmation, plus a direct link back to `오늘 날씨`. This confirmation never exposes original GPS coordinates or a street address.
+- Browser location failures distinguish permission denied, position unavailable and timeout with a next action the user can take. Raw browser error text is not shown.
+- Observation and Measurement are one recording area each. Repeated panels are a rendering defect, not a way to enter multiple records. The Measurement form presents item first, then value and unit together so the numeric input is readable on a small screen.
+
 ## 5. Onboarding
 
 Do not start a new user with a large configuration dashboard. Ask only the context required for the first Today screen.

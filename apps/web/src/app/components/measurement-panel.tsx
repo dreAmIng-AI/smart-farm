@@ -38,6 +38,13 @@ const metricLabels: Record<string, string> = {
   other: "기타 측정",
 };
 
+const defaultUnitByMetric: Record<string, string> = {
+  manual_humidity: "%",
+  manual_soil_moisture: "%",
+  manual_temperature: "℃",
+  other: "",
+};
+
 function displayObservedAt(value: string) {
   return new Intl.DateTimeFormat("ko-KR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
 }
@@ -70,6 +77,8 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [metricCode, setMetricCode] = useState("manual_temperature");
+  const [unit, setUnit] = useState(defaultUnitByMetric.manual_temperature);
   const loadMeasurementData = useCallback(() => fetchMeasurementData(farmId), [farmId]);
   const areaNameById = useMemo(() => new Map(areas.map((area) => [area.id, area.name])), [areas]);
   const cropCycleLabelById = useMemo(
@@ -131,6 +140,8 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
       form.reset();
       setFarmAreaId("");
       setCropCycleId(selectedCropCycleId ?? "");
+      setMetricCode("manual_temperature");
+      setUnit(defaultUnitByMetric.manual_temperature);
       setFeedback("측정 기록을 저장했습니다.");
     } catch {
       setFeedback("측정 기록을 저장하지 못했습니다. 항목·수치·단위를 확인해 주세요.");
@@ -148,22 +159,39 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
       </div>
       <form className="measurement-form stack" onSubmit={handleCreate}>
         <div className="measurement-fields">
-          <label>
+          <label className="measurement-metric-field">
             측정 항목
-            <select defaultValue="manual_temperature" disabled={isSaving} name="metricCode">
+            <select
+              disabled={isSaving}
+              name="metricCode"
+              onChange={(event) => {
+                const nextMetricCode = event.target.value;
+                setMetricCode(nextMetricCode);
+                setUnit(defaultUnitByMetric[nextMetricCode] ?? "");
+              }}
+              value={metricCode}
+            >
               <option value="manual_temperature">온도</option>
               <option value="manual_humidity">습도</option>
               <option value="manual_soil_moisture">토양 수분</option>
               <option value="other">기타</option>
             </select>
           </label>
-          <label>
+          <label className="measurement-value-field">
             측정 수치
-            <input disabled={isSaving} name="valueNumeric" required step="any" type="number" />
+            <input disabled={isSaving} inputMode="decimal" name="valueNumeric" placeholder="예: 24.5" required step="any" type="number" />
           </label>
-          <label>
+          <label className="measurement-unit-field">
             단위
-            <input disabled={isSaving} maxLength={50} name="unit" placeholder="예: ℃, %, mS/cm" required />
+            <input
+              disabled={isSaving}
+              maxLength={50}
+              name="unit"
+              onChange={(event) => setUnit(event.target.value)}
+              placeholder="예: ℃, %, mS/cm"
+              required
+              value={unit}
+            />
           </label>
         </div>
         <div className="measurement-context-fields">
