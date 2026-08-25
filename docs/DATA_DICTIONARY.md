@@ -1,8 +1,8 @@
 # Data Dictionary
 
-**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea and Observation v0.2 additions**
+**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea, Observation and Measurement v0.2 additions**
 
-**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas와 observations를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. Measurement, FarmArea의 작기·작업 연결, 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
+**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas, observations와 measurements를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. FarmArea의 작기·작업 연결과 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
 
 ## 1. 공통 규칙
 
@@ -234,7 +234,7 @@ Database validation must ensure that the selected FarmArea belongs to the same F
 
 Observation is append-only, is not a diagnosis and does not require a FarmTask. `farm_area_id` and `crop_cycle_id` are composite foreign-key constrained to the same `farm_id`.
 
-### measurements (planned new table)
+### measurements (implemented by `202608240003_platform_v02_measurements.sql`)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|

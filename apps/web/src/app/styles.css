@@ -409,6 +409,62 @@ p {
   color: #405248;
 }
 
+.measurement-panel {
+  background: linear-gradient(135deg, #fff9ef 0%, #ffffff 66%);
+  border-color: #e7d1a7;
+}
+
+.measurement-form {
+  background: #ffffff;
+  border: 1px solid #eadbbb;
+  border-radius: 0.6rem;
+  padding: 0.8rem;
+}
+
+.measurement-fields,
+.measurement-context-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.measurement-list {
+  border-top: 1px solid #eadbbb;
+  padding-top: 0.8rem;
+}
+
+.measurement-list ol {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.measurement-list li {
+  background: #ffffff;
+  border: 1px solid #eadbbb;
+  border-left: 4px solid #bb8b33;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+}
+
+.measurement-list small,
+.measurement-list span {
+  color: #405248;
+}
+
+@media (min-width: 42rem) {
+  .measurement-fields {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .measurement-context-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 42rem) {
   .observation-context-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
