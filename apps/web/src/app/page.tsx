@@ -13,6 +13,8 @@ import { ObservationPanel } from "@/app/components/observation-panel";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
 import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
 import { TodayHome } from "@/app/components/today-home";
+import { WeatherCard } from "@/app/components/weather-card";
+import { WeatherLocationPanel } from "@/app/components/weather-location-panel";
 import {
   canRegenerateFarmInvitation,
   copyFarmInvitationLink,
@@ -358,6 +360,7 @@ export default function HomePage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [canCreateFarm, setCanCreateFarm] = useState(false);
   const [farm, setFarm] = useState<Farm | null>(null);
+  const [weatherRefreshVersion, setWeatherRefreshVersion] = useState(0);
   const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
   const [farmCollaboration, setFarmCollaboration] = useState<FarmCollaboration | null>(null);
   const [isLoadingFarmCollaboration, setIsLoadingFarmCollaboration] = useState(false);
@@ -1660,6 +1663,7 @@ export default function HomePage() {
           loadingTaskId={loadingTaskDetailId}
           onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)}
           tasks={todayTasks}
+          weather={<WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}`} />}
         />
       ) : null}
 
@@ -1895,6 +1899,10 @@ export default function HomePage() {
 
       {userEmail && farm ? (
         <FarmAreaPanel canManageFarm={canManageSelectedFarm} farmId={farm.id} key={farm.id} />
+      ) : null}
+
+      {userEmail && farm && canManageSelectedFarm ? (
+        <WeatherLocationPanel farmId={farm.id} onSaved={() => setWeatherRefreshVersion((value) => value + 1)} />
       ) : null}
 
       {userEmail && farm && canManageSelectedFarm ? (

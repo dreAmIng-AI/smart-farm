@@ -1,8 +1,8 @@
 # Architecture
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation and Measurement v0.2 extensions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation, Measurement and KMA Weather v0.2 extensions implemented**
 
-> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea, standalone Observation and manual Measurement are implemented v0.2 extensions; durable external-data cache and Baseline Modules remain target contracts until their own migration and PR are merged.
+> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea, standalone Observation, manual Measurement and KMA Weather with a focused durable snapshot cache are implemented v0.2 extensions; Disease/Pest, Crop Information and Market remain target contracts until their own migration and PR are merged.
 
 ## 1. 아키텍처 목표
 
@@ -97,7 +97,7 @@ Crop Pack은 별도 런타임 서비스가 아니라 작업 템플릿 데이터�
 
 ## 7. Baseline Modules, Labs와 Integrations
 
-Weather, Disease/Pest, Crop Information and Market의 최소 실사용 기능은 v0.2 Baseline Module로 구현 후보가 되었다. 구현 전에도 각각 공식 Source, key, license, update cycle, field mapping과 failure mode를 검증해야 한다. Sensor, AI, Analytics, Automation, Prediction, advanced market intelligence와 Additional Crop Pack은 Lab에서 독립 실험한다.
+KMA Weather는 server-only adapter·normalizer·snapshot fallback으로 구현되었다. Disease/Pest, Crop Information and Market은 각각 공식 Source, key, license, update cycle, field mapping과 failure mode를 검증한 뒤 같은 경계로 추가한다. Sensor, AI, Analytics, Automation, Prediction, advanced market intelligence와 Additional Crop Pack은 Lab에서 독립 실험한다.
 
 외부 시스템을 도입할 때만 아래 경계를 검토합니다.
 

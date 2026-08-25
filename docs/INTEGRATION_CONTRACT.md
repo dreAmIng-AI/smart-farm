@@ -1,6 +1,6 @@
 # Integration Contract v0.2
 
-**Status: TARGET CONTRACT — no external provider is implemented by this document**
+**Status: PARTIALLY IMPLEMENTED — KMA Weather is implemented; other Baseline Modules remain target contracts**
 
 ## 1. Purpose
 
@@ -47,7 +47,7 @@ The UI consumes this result, never HTTP/provider error strings. Credentials are 
 
 | Module | Core context | Minimum normalized data | User wording |
 |---|---|---|---|
-| Weather | Farm location + active CropCycle | temperature, daily high/low, humidity, precipitation probability/amount, wind, alert, update time | 오늘 날씨 |
+| Weather | Farm forecast location | temperature, daily high/low, humidity, precipitation probability/amount, wind, update time; alert when regional mapping is available | 오늘 날씨 |
 | Disease/Pest | CropCycle crop/cultivar/growth stage | name, crop relation, symptom, occurrence condition/period, inspection point, official reference | 현재 작기에서 확인할 병해충 정보 |
 | Crop Information | CropCycle crop/cultivar/growth stage | current-stage reference, management point, task/reference link, official reference | 재배 참고정보 |
 | Market | CropCycle crop and configured market context | item, market, price, unit, grade, base date, comparison when supplied | 시장 참고가격 |
@@ -67,7 +67,7 @@ TTL values are initial Pilot defaults and must be reviewed against each provider
 
 ## 5. Location and Context
 
-Weather requires a reproducible forecast location. The Pilot shall ask for a user-confirmed administrative area / forecast point during Farm setup and must not silently use browser GPS or retain a street address by default. The exact KMA grid mapping and data fields are a prerequisite for the Weather implementation Issue.
+Weather requires a reproducible forecast location. The implemented Pilot asks an owner/admin for a location label and only uses browser location after that person explicitly presses the confirmation button. The browser converts the coordinate locally to the KMA 5km grid; the server and database receive only the label and grid, never the original coordinate or a street address. FarmArea overrides and special-alert regional mapping are later work.
 
 Crop context is the active CropCycle. Missing crop, cultivar or growth stage produces a clear prompt to complete the current-cultivation setup; it must not select a different crop’s information.
 
@@ -81,9 +81,9 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 
 ## 7. Implementation Checklist
 
-- [ ] Provider account, key, request limit and licensing verified
-- [ ] Exact endpoint and field mapping documented in `PUBLIC_DATA_SOURCES.md`
-- [ ] Adapter unit tests for success, no data, malformed response, timeout and stale fallback
-- [ ] Provenance/freshness contract and Korean UI messages tested
-- [ ] RLS, cache lifecycle and environment-key deployment reviewed
+- [x] KMA account/key set in server-only Vercel environment variables
+- [x] KMA current-observation and short-forecast endpoint/field mapping documented in `PUBLIC_DATA_SOURCES.md`
+- [x] Adapter unit tests for success, malformed response and stale fallback
+- [x] Provenance/freshness contract and Korean UI messages tested
+- [x] RLS, cache lifecycle and environment-key deployment reviewed
 - [ ] Pilot user confirms wording is not read as diagnosis, advice or a sales-price prediction

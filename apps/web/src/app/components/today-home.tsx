@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import {
   summarizeTodayHome,
   type TodayHomeIssue,
@@ -22,13 +24,14 @@ type TodayHomeProps = {
   loadingTaskId: string | null;
   onTaskSelect: (taskId: string) => void;
   tasks: TodayHomeTask[];
+  weather: ReactNode;
 };
 
 function taskKindLabel(task: TodayHomeTask) {
   return task.scheduleState === "overdue" ? "늦어진 작업" : "오늘 할 일";
 }
 
-export function TodayHome({ cropCycle, farm, issues, loadingTaskId, onTaskSelect, tasks }: TodayHomeProps) {
+export function TodayHome({ cropCycle, farm, issues, loadingTaskId, onTaskSelect, tasks, weather }: TodayHomeProps) {
   const summary = summarizeTodayHome(tasks, issues);
   const cropName = [cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
   const stageName = cropCycle.growthStage ?? "생육 단계 미입력";
@@ -86,6 +89,8 @@ export function TodayHome({ cropCycle, farm, issues, loadingTaskId, onTaskSelect
           <p className="today-home-empty">오늘과 늦어진 작업이 없습니다. 전체 일정을 확인해 보세요.</p>
         )}
       </div>
+
+      {weather}
 
       <div className="today-home-check">
         <div>
