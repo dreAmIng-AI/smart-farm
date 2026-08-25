@@ -396,6 +396,7 @@ export default function HomePage() {
   const restoreFarmContextRef = useRef<((selectedFarm: Farm) => Promise<CropCycle[]>) | null>(null);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [isRestoringContext, setIsRestoringContext] = useState(false);
+  const [isMeasurementExpanded, setIsMeasurementExpanded] = useState(false);
   const [message, setMessage] = useState(
     "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
   );
@@ -1956,18 +1957,25 @@ export default function HomePage() {
         <ObservationPanel
           cropCycles={cropCycles}
           farmId={farm.id}
-          key={`${farm.id}:${cropCycle?.id ?? "none"}`}
           selectedCropCycleId={cropCycle?.id ?? null}
         />
       ) : null}
 
       {userEmail && farm ? (
-        <MeasurementPanel
-          cropCycles={cropCycles}
-          farmId={farm.id}
-          key={`${farm.id}:${cropCycle?.id ?? "none"}`}
-          selectedCropCycleId={cropCycle?.id ?? null}
-        />
+        <details
+          className="card optional-measurement-entry stack"
+          onToggle={(event) => setIsMeasurementExpanded(event.currentTarget.open)}
+        >
+          <summary>수치 기록은 필요할 때만 열기</summary>
+          <p className="field-hint">온도계·습도계처럼 직접 확인한 수치가 있을 때만 남기세요. 오늘의 기본 작업이나 관찰 기록에 필요한 단계는 아닙니다.</p>
+          {isMeasurementExpanded ? (
+            <MeasurementPanel
+              cropCycles={cropCycles}
+              farmId={farm.id}
+              selectedCropCycleId={cropCycle?.id ?? null}
+            />
+          ) : null}
+        </details>
       ) : null}
 
       {userEmail && cropCycle && farm ? (

@@ -579,6 +579,21 @@ p {
   border-color: #e7d1a7;
 }
 
+.optional-measurement-entry {
+  background: #fffdf8;
+  border-color: #e7d1a7;
+}
+
+.optional-measurement-entry > summary {
+  color: #5b4624;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.optional-measurement-entry > .measurement-panel {
+  margin-top: 0.35rem;
+}
+
 .measurement-form {
   background: #ffffff;
   border: 1px solid #eadbbb;
