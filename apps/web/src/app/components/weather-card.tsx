@@ -7,6 +7,7 @@ import type { WeatherIntegrationResult } from "@/app/api/farms/[farmId]/informat
 type WeatherCardProps = {
   canConfigure: boolean;
   farmId: string;
+  standalone?: boolean;
 };
 
 function formatNumber(value: number | null, suffix: string) {
@@ -24,7 +25,7 @@ async function fetchWeather(farmId: string) {
   return response.json() as Promise<WeatherIntegrationResult>;
 }
 
-export function WeatherCard({ canConfigure, farmId }: WeatherCardProps) {
+export function WeatherCard({ canConfigure, farmId, standalone = false }: WeatherCardProps) {
   const [result, setResult] = useState<WeatherIntegrationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadWeather = useCallback(() => fetchWeather(farmId), [farmId]);
@@ -55,8 +56,8 @@ export function WeatherCard({ canConfigure, farmId }: WeatherCardProps) {
 
   if (isLoading || !result) {
     return (
-      <section className="today-home-weather" aria-live="polite">
-        <h3>오늘 날씨</h3>
+      <section className={standalone ? "today-home-weather today-home-weather-standalone" : "today-home-weather"} aria-labelledby="today-weather-heading" aria-live="polite">
+        {standalone ? <h2 id="today-weather-heading">오늘 날씨</h2> : <h3 id="today-weather-heading">오늘 날씨</h3>}
         <p>공식 날씨 정보를 불러오는 중입니다.</p>
       </section>
     );
@@ -64,8 +65,8 @@ export function WeatherCard({ canConfigure, farmId }: WeatherCardProps) {
 
   if (result.status === "unavailable") {
     return (
-      <section className="today-home-weather today-home-weather-unavailable">
-        <h3>오늘 날씨</h3>
+      <section className={`${standalone ? "today-home-weather today-home-weather-standalone" : "today-home-weather"} today-home-weather-unavailable`} aria-labelledby="today-weather-heading">
+        {standalone ? <h2 id="today-weather-heading">오늘 날씨</h2> : <h3 id="today-weather-heading">오늘 날씨</h3>}
         <p>{result.message}</p>
         {canConfigure ? <a href="#weather-location-heading">날씨 위치 설정</a> : null}
       </section>
@@ -74,10 +75,10 @@ export function WeatherCard({ canConfigure, farmId }: WeatherCardProps) {
 
   const { data, provenance } = result;
   return (
-    <section className="today-home-weather" aria-labelledby="weather-heading">
+    <section className={standalone ? "today-home-weather today-home-weather-standalone" : "today-home-weather"} aria-labelledby="today-weather-heading">
       <div className="today-home-section-heading">
         <div>
-          <h3 id="weather-heading">오늘 날씨</h3>
+          {standalone ? <h2 id="today-weather-heading">오늘 날씨</h2> : <h3 id="today-weather-heading">오늘 날씨</h3>}
           <p>{data.locationLabel}</p>
         </div>
         <strong>{formatNumber(data.temperatureC, "℃")}</strong>

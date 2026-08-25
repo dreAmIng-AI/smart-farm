@@ -369,7 +369,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 `GET /api/farms/{farmId}/measurements` returns newest-first manual numeric Measurements for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, metricCode, valueNumeric, unit, note }`; the two context IDs are optional, but if supplied must belong to the same Farm. Measurements are append-only: no update or delete endpoint exists.
 
-`PATCH /api/farms/{farmId}/weather-location` allows only owner/admin to save `{ label, gridX, gridY }`. `label` is a human-readable forecast-location name; `gridX` and `gridY` are KMA 5km forecast-grid values. The browser performs any explicitly requested device-coordinate conversion locally, and the API never accepts or stores raw GPS coordinates or a street address.
+`GET /api/farms/{farmId}/weather-location` returns the accessible Farm's saved `{ label, gridX, gridY, updatedAt }` or `weatherLocation: null` when configuration is not complete. Farm members may read this non-address forecast context; only owner/admin may use `PATCH /api/farms/{farmId}/weather-location` to save `{ label, gridX, gridY }`. `label` is a human-readable forecast-location name; `gridX` and `gridY` are KMA 5km forecast-grid values. The browser performs any explicitly requested device-coordinate conversion locally, and the API never accepts or stores raw GPS coordinates or a street address.
 
 `GET /api/farms/{farmId}/information/weather` returns a normalized KMA current-observation and short-forecast result for every Farm member. Missing location context, provider failures and stale-cache fallback return `200` with the user-safe `IntegrationResult` status; they never make Today task data fail.
 
