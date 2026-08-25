@@ -9,6 +9,6 @@ describe("geolocationFailureMessage", () => {
 
   it("distinguishes unavailable position and timeout", () => {
     expect(geolocationFailureMessage({ code: 2 })).toContain("현재 위치를 확인하지 못했습니다");
-    expect(geolocationFailureMessage({ code: 3 })).toContain("시간이 초과");
+    expect(geolocationFailureMessage({ code: 3 })).toContain("기상청 연결이 아니라");
   });
 });
