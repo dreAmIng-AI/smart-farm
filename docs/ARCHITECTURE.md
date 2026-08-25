@@ -32,8 +32,9 @@ Smart Farm Platform
 ### v0.2 extension boundary
 
 ```text
-Farm → optional FarmArea → CropCycle → FarmTask → ActionLog / IssueRecord
-                     ↘ Observation / Measurement
+Farm → optional FarmArea → CropCycle → FarmTask → ActionLog → IssueRecord
+                     ↘ Observation ────────────────────────────→ IssueRecord
+                     ↘ Measurement
 
 Official API → server-only Provider Adapter → Normalizer
              → cache / last successful snapshot → IntegrationResult → UI
@@ -75,6 +76,7 @@ Core Domain Logic은 다음 책임을 가집니다.
 - FarmTask 담당자 배정의 같은 Farm 구성원 검증
 - Today의 오늘·지연 작업 조회
 - ActionLog를 통한 작업 시작·결과 기록과 FarmTask 상태 변경
+- 기존 ActionLog-origin을 보존한 Observation-origin IssueRecord 기록
 - IssueRecord 상태 변경과 Follow-up FarmTask 생성·연결
 - Attachment 파일 검증·비공개 Storage 저장·이력 조회
 - 이력 조회
@@ -89,7 +91,7 @@ Core는 설향이나 특정 작물 이름으로 로직을 분기하지 않습니
 - Farmer는 접근 가능한 Farm 데이터만 다루고, Admin의 범위는 승인된 최소 운영 현황으로 제한합니다.
 - 사진은 JPEG/PNG/WebP, 파일당 10MB까지 허용하며 파일 시그니처와 MIME type을 함께 검증합니다.
 - 사진 저장 실패가 ActionLog의 텍스트 기록 전체를 잃게 하지 않도록 결과 기록 뒤의 별도 요청으로 분리합니다.
-- Storage object는 Farm ID와 ActionLog ID 경로를 함께 사용하고, Storage RLS와 Attachment RLS 모두 Farm 접근권한을 확인합니다.
+- Storage object는 Farm ID와 ActionLog ID(작업 origin) 또는 IssueRecord ID(Observation origin) 경로를 사용하고, Storage RLS와 Attachment RLS 모두 Farm 접근권한을 확인합니다.
 
 ## 6. Crop Pack 경계
 

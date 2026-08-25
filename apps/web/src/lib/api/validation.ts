@@ -86,6 +86,11 @@ export type ObservationInput = {
   observedAt: string;
 };
 
+export type ObservationIssueInput = {
+  expertReviewRequired: boolean;
+  severity: IssueSeverity;
+};
+
 export type MeasurementInput = {
   cropCycleId: string | null;
   farmAreaId: string | null;
@@ -513,6 +518,23 @@ export function parseObservationInput(value: unknown): Parsed<ObservationInput> 
   }
 
   return { ok: true, data: { content, cropCycleId, farmAreaId, observedAt } };
+}
+
+export function parseObservationIssueInput(value: unknown): Parsed<ObservationIssueInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const severity = value.severity;
+  if (severity !== "low" && severity !== "medium" && severity !== "high" && severity !== "unknown") {
+    return { ok: false, error: "severity must be low, medium, high, or unknown." };
+  }
+
+  if (typeof value.expertReviewRequired !== "boolean") {
+    return { ok: false, error: "expertReviewRequired must be a boolean." };
+  }
+
+  return { ok: true, data: { severity, expertReviewRequired: value.expertReviewRequired } };
 }
 
 export function parseMeasurementInput(value: unknown): Parsed<MeasurementInput> {

@@ -18,6 +18,12 @@ type ObservationRow = {
   observed_by: string;
 };
 
+type ObservationIssueRow = {
+  id: string;
+  observation_id: string;
+  status: "open" | "needs_review" | "resolved" | "closed_without_action";
+};
+
 async function findAccessibleFarm(farmId: string, auth: AuthenticatedSupabaseContext) {
   const { data, error } = await auth.supabase.from("farms").select("id").eq("id", farmId).maybeSingle();
   if (error) {
@@ -104,7 +110,7 @@ async function validateFarmContext(
   return { ok: true as const };
 }
 
-function toObservation(observation: ObservationRow) {
+function toObservation(observation: ObservationRow, issue?: ObservationIssueRow) {
   return {
     id: observation.id,
     farmAreaId: observation.farm_area_id,
@@ -113,6 +119,12 @@ function toObservation(observation: ObservationRow) {
     observedAt: observation.observed_at,
     content: observation.content,
     createdAt: observation.created_at,
+    issue: issue
+      ? {
+          id: issue.id,
+          status: issue.status,
+        }
+      : null,
   };
 }
 
@@ -148,7 +160,26 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  const items = ((data ?? []) as ObservationRow[]).map(toObservation);
+  const observations = (data ?? []) as ObservationRow[];
+  if (observations.length === 0) {
+    return NextResponse.json({ items: [], meta: { count: 0 } });
+  }
+
+  const { data: issueData, error: issueError } = await auth.supabase
+    .from("issue_records")
+    .select("id, observation_id, status")
+    .in("observation_id", observations.map((observation) => observation.id));
+  if (issueError) {
+    return NextResponse.json(
+      { error: { code: "OBSERVATION_LOOKUP_FAILED", message: issueError.message } },
+      { status: 400 },
+    );
+  }
+
+  const issueByObservationId = new Map(
+    ((issueData ?? []) as ObservationIssueRow[]).map((issue) => [issue.observation_id, issue]),
+  );
+  const items = observations.map((observation) => toObservation(observation, issueByObservationId.get(observation.id)));
   return NextResponse.json({ items, meta: { count: items.length } });
 }
 

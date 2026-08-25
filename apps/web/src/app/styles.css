@@ -551,6 +551,29 @@ p {
   color: #405248;
 }
 
+.observation-issue-badge {
+  background: #fff4d7;
+  border-left: 3px solid #b98319;
+  color: #725200;
+  font-weight: 700;
+  padding: 0.4rem 0.5rem;
+}
+
+.observation-issue-entry {
+  background: #fffaf0;
+  border: 1px solid #ead9a1;
+  border-radius: 0.45rem;
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.65rem;
+}
+
+.observation-issue-entry summary {
+  color: #725200;
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .measurement-panel {
   background: linear-gradient(135deg, #fff9ef 0%, #ffffff 66%);
   border-color: #e7d1a7;

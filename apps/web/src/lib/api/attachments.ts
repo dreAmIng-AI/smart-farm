@@ -8,12 +8,18 @@ type AttachmentTarget =
   | { kind: "issue_record"; id: string };
 
 type TargetRow = {
-  action_log_id?: string;
-  farm_task_id: string;
+  action_log_id: string | null;
+  farm_task_id: string | null;
   id: string;
+  observation_id: string | null;
 };
 
 type FarmTaskRow = {
+  farm_id: string;
+  id: string;
+};
+
+type ObservationRow = {
   farm_id: string;
   id: string;
 };
@@ -40,10 +46,14 @@ async function findTarget(
 
   const result =
     target.kind === "action_log"
-      ? await auth.supabase.from("action_logs").select("id, farm_task_id").eq("id", target.id).maybeSingle()
+      ? await auth.supabase
+          .from("action_logs")
+          .select("id, farm_task_id")
+          .eq("id", target.id)
+          .maybeSingle()
       : await auth.supabase
           .from("issue_records")
-          .select("id, farm_task_id, action_log_id")
+          .select("id, farm_task_id, action_log_id, observation_id")
           .eq("id", target.id)
           .maybeSingle();
   const { data, error } = result;
@@ -56,7 +66,13 @@ async function findTarget(
     throw new AttachmentRequestError(notFoundCode, 404, notFoundMessage);
   }
 
-  return data as unknown as TargetRow;
+  const targetRow = data as unknown as Partial<TargetRow>;
+  return {
+    action_log_id: targetRow.action_log_id ?? null,
+    farm_task_id: targetRow.farm_task_id ?? null,
+    id: targetRow.id as string,
+    observation_id: targetRow.observation_id ?? null,
+  };
 }
 
 async function findFarmTask(
@@ -84,6 +100,31 @@ async function findFarmTask(
   return data as FarmTaskRow;
 }
 
+async function findObservation(
+  auth: AuthenticatedSupabaseContext,
+  observationId: string,
+): Promise<ObservationRow> {
+  const { data, error } = await auth.supabase
+    .from("observations")
+    .select("id, farm_id")
+    .eq("id", observationId)
+    .maybeSingle();
+
+  if (error) {
+    throw new AttachmentRequestError("ATTACHMENT_LOOKUP_FAILED", 400, error.message);
+  }
+
+  if (!data) {
+    throw new AttachmentRequestError(
+      "ATTACHMENT_LOOKUP_FAILED",
+      404,
+      "Observation for the attachment was not found or not accessible.",
+    );
+  }
+
+  return data as ObservationRow;
+}
+
 export async function uploadAttachment({
   auth,
   file,
@@ -96,17 +137,18 @@ export async function uploadAttachment({
   target: AttachmentTarget;
 }) {
   const targetRow = await findTarget(auth, target);
-  const farmTask = await findFarmTask(auth, targetRow.farm_task_id);
+  const farmId = targetRow.farm_task_id
+    ? (await findFarmTask(auth, targetRow.farm_task_id)).farm_id
+    : targetRow.observation_id
+      ? (await findObservation(auth, targetRow.observation_id)).farm_id
+      : null;
+  if (!farmId) {
+    throw new AttachmentRequestError("ATTACHMENT_LOOKUP_FAILED", 400, "Issue record has no valid origin.");
+  }
   const id = crypto.randomUUID();
   const actionLogId = target.kind === "action_log" ? target.id : targetRow.action_log_id;
-  if (!actionLogId) {
-    throw new AttachmentRequestError(
-      "ATTACHMENT_LOOKUP_FAILED",
-      400,
-      "Issue record is missing its linked action log.",
-    );
-  }
-  const storagePath = `${farmTask.farm_id}/${actionLogId}/${id}.${fileInput.extension}`;
+  const storageScopeId = actionLogId ?? targetRow.id;
+  const storagePath = `${farmId}/${storageScopeId}/${id}.${fileInput.extension}`;
 
   const { error: storageError } = await auth.supabase.storage
     .from(ATTACHMENT_BUCKET)

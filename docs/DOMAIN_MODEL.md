@@ -76,7 +76,7 @@ FarmTask가 없어도 남길 수 있는 사용자의 관찰 사실이다. 예: �
 
 ### IssueRecord
 
-FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다고 남긴 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다. v0.1의 ActionLog/FarmTask 연결은 보존하고, v0.2에서 Observation-origin Issue를 허용할 때만 origin 관계를 확장한다.
+FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다고 남긴 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다. v0.1의 ActionLog/FarmTask 연결은 보존하며, v0.2는 Observation-origin 관계를 하나 추가합니다. 한 IssueRecord는 두 origin 중 하나만 갖습니다.
 
 ### ExternalReference (v0.2 Weather implemented; other modules planned read model)
 
@@ -129,7 +129,7 @@ FarmTask 1 ─ N ActionLog
 FarmTask 1 ─ N IssueRecord
 Farm 1 ─ N Observation
 FarmArea 0..1 ─ N Observation / Measurement
-Observation 0..1 ─ 1 IssueRecord     (planned origin)
+Observation 0..1 ─ 1 IssueRecord     (implemented origin)
 IssueRecord 0..1 ─ N Follow-up FarmTask
 ActionLog 1 ─ N Attachment
 IssueRecord 1 ─ N Attachment
@@ -170,7 +170,7 @@ pending → cancelled
    `started` ActionLog는 `pending` FarmTask를 한 번만 `in_progress`로 전환하며, 시작 뒤에도 완료·미확인·문제 기록의 기존 흐름을 사용합니다.
    `cancelled`는 owner/admin이 아직 시작하지 않은 `pending` 작업만 전환할 수 있으며, 기존 실행 기록을 새로 만들거나 삭제하지 않습니다.
    담당자 배정은 owner/admin만 `pending` 또는 `in_progress` 작업에 변경할 수 있으며, 담당자가 아니어도 기존 Farm 구성원은 실행 기록을 남길 수 있습니다.
-4. IssueRecord는 원본 FarmTask를 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다.
+4. IssueRecord는 원본 FarmTask 또는 Observation을 참조하며, Follow-up FarmTask는 원본 IssueRecord를 참조합니다. Observation origin의 Follow-up은 CropCycle 문맥이 있을 때만 만듭니다.
 5. Attachment는 ActionLog 또는 IssueRecord에 연결합니다.
 6. Core 비즈니스 로직은 Crop 이름으로 분기하지 않습니다.
 7. 검증되지 않은 농업 데이터는 `draft`로 표시하고, 실제 처방이나 자동 제어로 사용하지 않습니다.

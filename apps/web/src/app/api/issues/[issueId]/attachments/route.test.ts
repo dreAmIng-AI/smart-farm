@@ -52,7 +52,7 @@ describe("POST /api/issues/:issueId/attachments", () => {
     } as never);
   });
 
-  it("links a photo to IssueRecord while using its ActionLog Storage path", async () => {
+  it("links a task-origin IssueRecord photo while using its ActionLog Storage path", async () => {
     const form = new FormData();
     form.append("file", new Blob([validPng], { type: "image/png" }), "issue-photo.png");
     const response = await POST(new Request(`http://localhost/api/issues/${issueId}/attachments`, { method: "POST", body: form }), {
@@ -67,6 +67,33 @@ describe("POST /api/issues/:issueId/attachments", () => {
     );
     expect(attachmentInsert).toHaveBeenCalledWith(
       expect.objectContaining({ action_log_id: null, issue_record_id: issueId }),
+    );
+  });
+
+  it("links an Observation-origin IssueRecord photo using the IssueRecord Storage path", async () => {
+    const observationId = "55555555-5555-4555-8555-555555555555";
+    issueMaybeSingle.mockResolvedValue({
+      data: { id: issueId, action_log_id: null, farm_task_id: null, observation_id: observationId },
+      error: null,
+    });
+    from.mockImplementation((table: string) => {
+      if (table === "issue_records") return { select: issueSelect };
+      if (table === "observations") return { select: farmTaskSelect };
+      return { insert: attachmentInsert };
+    });
+    farmTaskMaybeSingle.mockResolvedValue({ data: { id: observationId, farm_id: farmId }, error: null });
+
+    const form = new FormData();
+    form.append("file", new Blob([validPng], { type: "image/png" }), "observation-issue.png");
+    const response = await POST(new Request(`http://localhost/api/issues/${issueId}/attachments`, { method: "POST", body: form }), {
+      params: Promise.resolve({ issueId }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(upload).toHaveBeenCalledWith(
+      expect.stringMatching(new RegExp(`^${farmId}/${issueId}/.+\\.png$`)),
+      expect.any(File),
+      { contentType: "image/png", upsert: false },
     );
   });
 });
