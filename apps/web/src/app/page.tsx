@@ -8,6 +8,7 @@ import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import { FarmAreaPanel } from "@/app/components/farm-area-panel";
 import { MonthlyWorkCalendar } from "@/app/components/monthly-work-calendar";
 import { MobileNavigation } from "@/app/components/mobile-navigation";
+import { MeasurementPanel } from "@/app/components/measurement-panel";
 import { ObservationPanel } from "@/app/components/observation-panel";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
 import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
@@ -1933,6 +1934,15 @@ export default function HomePage() {
 
       {userEmail && farm ? (
         <ObservationPanel
+          cropCycles={cropCycles}
+          farmId={farm.id}
+          key={`${farm.id}:${cropCycle?.id ?? "none"}`}
+          selectedCropCycleId={cropCycle?.id ?? null}
+        />
+      ) : null}
+
+      {userEmail && farm ? (
+        <MeasurementPanel
           cropCycles={cropCycles}
           farmId={farm.id}
           key={`${farm.id}:${cropCycle?.id ?? "none"}`}

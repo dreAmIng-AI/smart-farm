@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea and Observation v0.2 additions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation and Measurement v0.2 additions implemented**
 
-> `FarmArea`와 `Observation`은 각각 dedicated v0.2 migration으로 구현되었습니다. `Measurement`와 external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
+> `FarmArea`, `Observation`, `Measurement`는 각각 dedicated v0.2 migration으로 구현되었습니다. external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
 
 ## 1. 목적
 
@@ -70,7 +70,7 @@ Crop Pack이 제공하는 기준 작업입니다. 작물, 품종, 생육단계, 
 
 FarmTask가 없어도 남길 수 있는 사용자의 관찰 사실이다. 예: “잎에서 갈색 반점이 보임”. 확정 진단이나 농업 처방이 아니다. Farm은 필수이며 FarmArea와 CropCycle은 선택적이다.
 
-### Measurement (v0.2 planned)
+### Measurement (v0.2 implemented)
 
 관찰 시각의 수치 기록이다. metric, numeric value, unit, optional note를 보관한다. Sensor 연동을 전제하지 않고 사용자의 수동 입력부터 시작한다.
 
@@ -128,7 +128,7 @@ FarmTask 0..1 ─ 1 FarmMembership     coordination assignee in the same Farm
 FarmTask 1 ─ N ActionLog
 FarmTask 1 ─ N IssueRecord
 Farm 1 ─ N Observation
-FarmArea 0..1 ─ N Observation / Measurement (Measurement planned)
+FarmArea 0..1 ─ N Observation / Measurement
 Observation 0..1 ─ 1 IssueRecord     (planned origin)
 IssueRecord 0..1 ─ N Follow-up FarmTask
 ActionLog 1 ─ N Attachment

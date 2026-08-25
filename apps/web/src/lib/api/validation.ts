@@ -86,6 +86,16 @@ export type ObservationInput = {
   observedAt: string;
 };
 
+export type MeasurementInput = {
+  cropCycleId: string | null;
+  farmAreaId: string | null;
+  metricCode: string;
+  note: string | null;
+  observedAt: string;
+  unit: string;
+  valueNumeric: number;
+};
+
 export type AttachmentFileInput = {
   extension: "jpg" | "png" | "webp";
   fileSizeBytes: number;
@@ -497,6 +507,46 @@ export function parseObservationInput(value: unknown): Parsed<ObservationInput> 
   }
 
   return { ok: true, data: { content, cropCycleId, farmAreaId, observedAt } };
+}
+
+export function parseMeasurementInput(value: unknown): Parsed<MeasurementInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const metricCode = requiredText(value.metricCode);
+  const unit = requiredText(value.unit);
+  const note = optionalText(value.note);
+  const observedAt = requiredText(value.observedAt);
+  const farmAreaId = value.farmAreaId ?? null;
+  const cropCycleId = value.cropCycleId ?? null;
+
+  if (!metricCode || metricCode.length > 100) {
+    return { ok: false, error: "metricCode is required and must not exceed 100 characters." };
+  }
+  if (!unit || unit.length > 50) {
+    return { ok: false, error: "unit is required and must not exceed 50 characters." };
+  }
+  if (typeof value.valueNumeric !== "number" || !Number.isFinite(value.valueNumeric)) {
+    return { ok: false, error: "valueNumeric must be a finite number." };
+  }
+  if (note && note.length > 1000) {
+    return { ok: false, error: "note must not exceed 1000 characters." };
+  }
+  if (!observedAt || !isIsoDateTime(observedAt)) {
+    return { ok: false, error: "observedAt must be an ISO 8601 UTC timestamp." };
+  }
+  if (farmAreaId !== null && (typeof farmAreaId !== "string" || !isUuid(farmAreaId))) {
+    return { ok: false, error: "farmAreaId must be a UUID or null." };
+  }
+  if (cropCycleId !== null && (typeof cropCycleId !== "string" || !isUuid(cropCycleId))) {
+    return { ok: false, error: "cropCycleId must be a UUID or null." };
+  }
+
+  return {
+    ok: true,
+    data: { cropCycleId, farmAreaId, metricCode, note, observedAt, unit, valueNumeric: value.valueNumeric },
+  };
 }
 
 const attachmentTypes = {

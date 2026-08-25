@@ -1,8 +1,8 @@
 # API Contract
 
-**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea and Observation v0.2 routes**
+**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation and Measurement v0.2 routes**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation·Measurement endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
 
 ## 1. 공통 원칙
 
@@ -361,18 +361,19 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 ## 6. v0.2 API Contract
 
-### Implemented FarmArea and Observation routes
+### Implemented FarmArea, Observation and Measurement routes
 
 `GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`. FarmArea update and delete are not exposed in this Slice.
 
 `GET /api/farms/{farmId}/observations` returns newest-first standalone Observation facts for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, content }`; the two context IDs are optional, but if supplied must belong to the same Farm. Observations are append-only: no update or delete endpoint exists.
+
+`GET /api/farms/{farmId}/measurements` returns newest-first manual numeric Measurements for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, metricCode, valueNumeric, unit, note }`; the two context IDs are optional, but if supplied must belong to the same Farm. Measurements are append-only: no update or delete endpoint exists.
 
 ### Planned resource routes
 
 | Resource / action | Intent | Access |
 |---|---|---|
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
-| `GET/POST /api/farms/{farmId}/measurements` | Farm-wide Measurement 조회·수동 기록 | member |
 | `POST /api/observations/{observationId}/issues` | 관찰 사실을 확인이 필요한 IssueRecord로 연결 | member |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
 | `GET /api/farms/{farmId}/information/weather` | 정규화된 Weather `IntegrationResult` | member |
@@ -414,7 +415,7 @@ The route names are a target contract. The first UI Slice may use only the route
 }
 ```
 
-### Planned Measurement input
+### Implemented Measurement input
 
 ```json
 {
@@ -430,10 +431,10 @@ The route names are a target contract. The first UI Slice may use only the route
 
 The exact metric catalogue stays open in the Pilot; a Measurement is not an automated sensor feed or recommendation. The API rejects a FarmArea/CropCycle from another Farm with a domain error and RLS remains final protection.
 
-### Planned error family
+### Measurement and planned error family
 
 - `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`
-- `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
+- Implemented Measurement: `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
 - Implemented Observation: `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_NOT_FOUND`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_NOT_FOUND`
 - `INTEGRATION_CONTEXT_MISSING`, `INTEGRATION_UNAVAILABLE`, `INTEGRATION_CACHE_LOOKUP_FAILED`
 

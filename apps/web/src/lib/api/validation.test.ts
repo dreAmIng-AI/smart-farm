@@ -16,6 +16,7 @@ import {
   parseFollowUpTaskInput,
   parseIssueStatusInput,
   parseManualFarmTaskInput,
+  parseMeasurementInput,
   parseObservationInput,
 } from "@/lib/api/validation";
 
@@ -94,6 +95,26 @@ describe("Observation input", () => {
 
   it("rejects an Observation without a fact or valid observed time", () => {
     expect(parseObservationInput({ content: "", observedAt: "today" })).toMatchObject({ ok: false });
+  });
+});
+
+describe("Measurement input", () => {
+  it("accepts a standalone manual numeric record", () => {
+    expect(
+      parseMeasurementInput({
+        metricCode: "manual_temperature",
+        valueNumeric: 28.5,
+        unit: "celsius",
+        note: null,
+        farmAreaId: null,
+        cropCycleId: null,
+        observedAt: "2026-08-24T01:00:00.000Z",
+      }),
+    ).toMatchObject({ ok: true, data: { valueNumeric: 28.5 } });
+  });
+
+  it("rejects a non-numeric measurement", () => {
+    expect(parseMeasurementInput({ metricCode: "manual_temperature", valueNumeric: "28", unit: "celsius" })).toMatchObject({ ok: false });
   });
 });
 
