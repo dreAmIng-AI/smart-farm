@@ -73,13 +73,14 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
   const [areas, setAreas] = useState<FarmArea[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [farmAreaId, setFarmAreaId] = useState("");
-  const [cropCycleId, setCropCycleId] = useState(selectedCropCycleId ?? "");
+  const [cropCycleIdOverride, setCropCycleIdOverride] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [metricCode, setMetricCode] = useState("manual_temperature");
   const [unit, setUnit] = useState(defaultUnitByMetric.manual_temperature);
   const loadMeasurementData = useCallback(() => fetchMeasurementData(farmId), [farmId]);
+  const cropCycleId = cropCycleIdOverride ?? selectedCropCycleId ?? "";
   const areaNameById = useMemo(() => new Map(areas.map((area) => [area.id, area.name])), [areas]);
   const cropCycleLabelById = useMemo(
     () => new Map(cropCycles.map((cropCycle) => [cropCycle.id, cropCycleLabel(cropCycle)])),
@@ -139,7 +140,7 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
       );
       form.reset();
       setFarmAreaId("");
-      setCropCycleId(selectedCropCycleId ?? "");
+      setCropCycleIdOverride(null);
       setMetricCode("manual_temperature");
       setUnit(defaultUnitByMetric.manual_temperature);
       setFeedback("측정 기록을 저장했습니다.");
@@ -204,7 +205,7 @@ export function MeasurementPanel({ cropCycles, farmId, selectedCropCycleId }: Me
           </label>
           <label>
             현재 작기 (선택)
-            <select disabled={isSaving} onChange={(event) => setCropCycleId(event.target.value)} value={cropCycleId}>
+            <select disabled={isSaving} onChange={(event) => setCropCycleIdOverride(event.target.value)} value={cropCycleId}>
               <option value="">선택하지 않음</option>
               {cropCycles.map((cropCycle) => <option key={cropCycle.id} value={cropCycle.id}>{cropCycleLabel(cropCycle)}</option>)}
             </select>

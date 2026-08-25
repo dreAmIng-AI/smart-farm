@@ -54,7 +54,7 @@ v0.2 문서가 Pilot 개발의 기준입니다. 과거 v0.1 문서와 합의는 
 ## v0.2 Pilot에서 추가할 것
 
 - 첫 화면을 Today 중심으로 전환하고, 사용자에게 Farm·CropCycle 같은 내부 용어 대신 농장·현재 작기·오늘 할 일을 사용
-- Farm 아래의 실제 관리 공간(FarmArea), FarmTask 없이 남기는 사실 기반 Observation과 수동 수치 Measurement 구현
+- Farm 아래의 실제 관리 공간(FarmArea), FarmTask 없이 남기는 사실 기반 Observation과 필요한 경우에만 쓰는 수동 수치 Measurement 구현
 - 기상청 공식 현재 실황·단기예보 Weather 카드와 위치별 최신/마지막 정상 데이터 표시
 - 공식 출처 기반의 Disease/Pest, Crop Information, Market Information 카드
 - 출처·기준시점·신선도 표시와 마지막 정상 데이터 fallback
