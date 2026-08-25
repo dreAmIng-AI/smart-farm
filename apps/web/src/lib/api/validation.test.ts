@@ -11,6 +11,7 @@ import {
   parseFarmInvitationInput,
   parseFarmMemberRoleInput,
   parseFarmTaskAssigneeInput,
+  parseFarmWeatherLocationInput,
   parseFarmInput,
   parseFarmAreaInput,
   parseFollowUpTaskInput,
@@ -115,6 +116,19 @@ describe("Measurement input", () => {
 
   it("rejects a non-numeric measurement", () => {
     expect(parseMeasurementInput({ metricCode: "manual_temperature", valueNumeric: "28", unit: "celsius" })).toMatchObject({ ok: false });
+  });
+});
+
+describe("Farm weather-location input", () => {
+  it("accepts a user-confirmed location label and KMA forecast grid", () => {
+    expect(parseFarmWeatherLocationInput({ label: "김제시 백구면", gridX: 56, gridY: 92 })).toEqual({
+      ok: true,
+      data: { label: "김제시 백구면", gridX: 56, gridY: 92 },
+    });
+  });
+
+  it("rejects a missing label or invalid grid", () => {
+    expect(parseFarmWeatherLocationInput({ label: "", gridX: 0, gridY: 254 })).toMatchObject({ ok: false });
   });
 });
 

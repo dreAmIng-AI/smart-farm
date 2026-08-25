@@ -1,8 +1,8 @@
 # Data Dictionary
 
-**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea, Observation and Measurement v0.2 additions**
+**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea, Observation, Measurement and KMA Weather v0.2 additions**
 
-**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas, observations와 measurements를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. FarmArea의 작기·작업 연결과 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
+**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas, observations, measurements와 KMA Weather용 external_data_snapshots를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. FarmArea의 작기·작업 연결과 후속 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
 
 ## 1. 공통 규칙
 
@@ -39,6 +39,9 @@ Farm → FarmArea
 | region_code | text | Y | 지역 식별값 |
 | cultivation_environment | text | Y | facility, open_field 등 |
 | cultivation_method | text | N | 재배방식 |
+| weather_location_label | text | N | 사용자가 확인한 예보 위치 이름; 상세 주소 아님 |
+| weather_grid_x / weather_grid_y | integer | N/N | 기상청 5km 동네예보 격자; 원래 GPS 좌표 아님 |
+| weather_location_updated_at | timestamptz | N | 예보 위치를 마지막으로 확인·저장한 시각 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
 
 `202608180001_farm_owner_creation_policy.sql`은 Farm 생성 INSERT를 owner creation permission으로, Farm 기본정보 UPDATE를 owner/admin으로 제한합니다. `GET /api/farms`, `GET/PATCH /api/farms/{farmId}`와 `GET /api/farms/{farmId}/crop-cycles`는 이 계약을 재사용합니다. 수정 대상은 `name`, `region_code`, `cultivation_environment`, `cultivation_method`이며 하위 CropCycle과 FarmTask를 변경하지 않습니다.
@@ -189,14 +192,15 @@ Farm → FarmArea
 
 These are minimal extension candidates, not a migration backlog to apply at once. Each structure is introduced only with the Vertical Slice that reads and writes it.
 
-### farms location context (planned alteration)
+### farms weather location context (implemented by `202608250001_platform_v02_weather_foundation.sql`)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
-| forecast_location_label | text | N | 사용자가 확인한 시·군·구 또는 예보 지점 이름 |
-| forecast_grid_x / forecast_grid_y | integer | N/N | 선택한 기상청 예보 격자; 정확한 mapping 검증 뒤 사용 |
+| weather_location_label | text | N | 사용자가 확인한 예보 위치 이름; 상세 주소 아님 |
+| weather_grid_x / weather_grid_y | integer | N/N | 선택한 기상청 5km 예보 격자 |
+| weather_location_updated_at | timestamptz | N | 마지막 위치 확인·저장 시각 |
 
-No street address or silent browser GPS is stored by default. The existing `region_code` is not assumed to be a valid KMA grid.
+No street address or silent browser GPS is stored. The user must explicitly request browser location, which is converted locally to grid X/Y before the API request; the existing `region_code` is not assumed to be a valid KMA grid.
 
 ### farm_areas (implemented in `202608240001_platform_v02_farm_areas.sql`)
 
@@ -255,22 +259,22 @@ Measurement begins as a manual field record. Sensor ingestion is not part of thi
 
 Existing v0.1 task-result IssueRecords remain valid. To create an Issue from a standalone Observation, a later migration can add `observation_id uuid null references observations(id)` and relax the current required ActionLog/FarmTask origin only with a check that exactly one valid origin path exists. This must not change or delete existing IssueRecords.
 
-### external_data_snapshots (planned new table)
+### external_data_snapshots (implemented for Weather by `202608250001_platform_v02_weather_foundation.sql`)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | id | uuid | Y | snapshot 식별자 |
-| farm_id / crop_cycle_id | uuid | N/N | 조회 문맥; Farm 밖 참고정보는 null 가능 |
-| module | text | Y | weather, disease_pest, crop_information, market |
+| farm_id | uuid FK | Y | 조회 문맥 Farm |
+| module | text | Y | 현재 `weather`; 후속 Module은 별도 migration 검토 |
 | context_key | text | Y | provider query와 정규화 버전의 cache key |
 | payload | jsonb | Y | 정규화된 공개 정보 payload, raw provider response 아님 |
 | provider / source_name / source_reference | text | Y | 출처 추적 정보 |
 | observed_at / published_at | timestamptz | N/N | provider 기준 시각 |
 | retrieved_at / expires_at | timestamptz | Y/Y | 수집·fresh 만료 시각 |
-| verification_status / freshness | text | Y | 공식 출처와 fresh/stale 상태 |
-| created_at | timestamptz | Y | snapshot 저장 시각 |
+| verification_status | text | Y | official_source 또는 cached_official_source |
+| created_at / updated_at | timestamptz | Y/Y | snapshot 생성·갱신 시각 |
 
-The first Integration Slice may use this focused durable snapshot store for last-successful fallback. It does not introduce a raw-data warehouse, provider request log or Redis dependency.
+KMA Weather uses this focused durable snapshot store for last-successful fallback. It does not introduce a raw-data warehouse, provider request log or Redis dependency.
 
 ## 5. 검증 상태
 
@@ -285,7 +289,7 @@ The first Integration Slice may use this focused durable snapshot store for last
 
 ## 6. 범위 밖 데이터
 
-`ExternalRawData`, generic `ApiCallLog`, Sensor, AI 관련 테이블은 현재 migration에 포함하지 않습니다. v0.2는 실제 Baseline Module이 구현되는 시점에만 최소 `external_data_snapshots`를 검토합니다. 데이터 출처, 안전성, 라이선스, 운영 책임과 RLS를 확인하지 않은 provider 데이터는 저장하지 않습니다.
+`ExternalRawData`, generic `ApiCallLog`, Sensor, AI 관련 테이블은 현재 migration에 포함하지 않습니다. v0.2 Weather는 정규화된 공식 결과만 `external_data_snapshots`에 저장하며 원본 KMA 응답과 API key는 저장하지 않습니다. 데이터 출처, 안전성, 라이선스, 운영 책임과 RLS를 확인하지 않은 provider 데이터는 저장하지 않습니다.
 
 ## 7. PII
 

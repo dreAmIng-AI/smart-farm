@@ -96,6 +96,12 @@ export type MeasurementInput = {
   valueNumeric: number;
 };
 
+export type FarmWeatherLocationInput = {
+  gridX: number;
+  gridY: number;
+  label: string;
+};
+
 export type AttachmentFileInput = {
   extension: "jpg" | "png" | "webp";
   fileSizeBytes: number;
@@ -547,6 +553,29 @@ export function parseMeasurementInput(value: unknown): Parsed<MeasurementInput> 
     ok: true,
     data: { cropCycleId, farmAreaId, metricCode, note, observedAt, unit, valueNumeric: value.valueNumeric },
   };
+}
+
+export function parseFarmWeatherLocationInput(value: unknown): Parsed<FarmWeatherLocationInput> {
+  if (!isRecord(value)) {
+    return { ok: false, error: "Request body must be a JSON object." };
+  }
+
+  const label = requiredText(value.label);
+  if (!label || label.length > 100) {
+    return { ok: false, error: "label is required and must not exceed 100 characters." };
+  }
+
+  const gridX = value.gridX;
+  if (typeof gridX !== "number" || !Number.isInteger(gridX) || gridX < 1 || gridX > 149) {
+    return { ok: false, error: "gridX must be a KMA forecast-grid value between 1 and 149." };
+  }
+
+  const gridY = value.gridY;
+  if (typeof gridY !== "number" || !Number.isInteger(gridY) || gridY < 1 || gridY > 253) {
+    return { ok: false, error: "gridY must be a KMA forecast-grid value between 1 and 253." };
+  }
+
+  return { ok: true, data: { label, gridX, gridY } };
 }
 
 const attachmentTypes = {

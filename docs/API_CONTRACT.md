@@ -1,8 +1,8 @@
 # API Contract
 
-**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation and Measurement v0.2 routes**
+**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation, Measurement and KMA Weather v0.2 routes**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation·Measurement endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation·Measurement·KMA Weather endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
 
 ## 1. 공통 원칙
 
@@ -361,13 +361,17 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 ## 6. v0.2 API Contract
 
-### Implemented FarmArea, Observation and Measurement routes
+### Implemented FarmArea, Observation, Measurement and Weather routes
 
 `GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`. FarmArea update and delete are not exposed in this Slice.
 
 `GET /api/farms/{farmId}/observations` returns newest-first standalone Observation facts for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, content }`; the two context IDs are optional, but if supplied must belong to the same Farm. Observations are append-only: no update or delete endpoint exists.
 
 `GET /api/farms/{farmId}/measurements` returns newest-first manual numeric Measurements for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, metricCode, valueNumeric, unit, note }`; the two context IDs are optional, but if supplied must belong to the same Farm. Measurements are append-only: no update or delete endpoint exists.
+
+`PATCH /api/farms/{farmId}/weather-location` allows only owner/admin to save `{ label, gridX, gridY }`. `label` is a human-readable forecast-location name; `gridX` and `gridY` are KMA 5km forecast-grid values. The browser performs any explicitly requested device-coordinate conversion locally, and the API never accepts or stores raw GPS coordinates or a street address.
+
+`GET /api/farms/{farmId}/information/weather` returns a normalized KMA current-observation and short-forecast result for every Farm member. Missing location context, provider failures and stale-cache fallback return `200` with the user-safe `IntegrationResult` status; they never make Today task data fail.
 
 ### Planned resource routes
 
@@ -376,14 +380,13 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `POST /api/observations/{observationId}/issues` | 관찰 사실을 확인이 필요한 IssueRecord로 연결 | member |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
-| `GET /api/farms/{farmId}/information/weather` | 정규화된 Weather `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/disease-pest` | 정규화된 Disease/Pest `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/crop` | 정규화된 Crop Information `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/market` | 정규화된 Market `IntegrationResult` | member |
 
 The route names are a target contract. The first UI Slice may use only the route(s) it needs, but it may not expose provider-specific payloads or bypass RLS.
 
-### Planned IntegrationResult response
+### Implemented Weather IntegrationResult response
 
 ```json
 {
@@ -391,18 +394,18 @@ The route names are a target contract. The first UI Slice may use only the route
   "data": {},
   "provenance": {
     "provider": "KMA",
-    "sourceName": "기상청 단기예보 조회서비스",
-    "sourceReference": "official-url-or-dataset-id",
+    "sourceName": "기상청 동네예보 격자자료",
+    "sourceReference": "https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286",
     "observedAt": "2026-08-24T00:00:00.000Z",
     "retrievedAt": "2026-08-24T00:20:00.000Z",
     "verificationStatus": "official_source",
     "freshness": "fresh"
   },
-  "message": null
+  "message": "stale일 때만 사용자 안내문"
 }
 ```
 
-`unavailable` has `data: null`; it uses a user-safe Korean `message` and can omit provenance when no last successful result exists. An external 4xx/5xx/timeout must not become an error for the existing Today work-list response.
+`available` and `stale` contain normalized Weather data only: location label, current temperature, daily high/low, humidity, precipitation probability/amount, wind and KMA base/publication time. `unavailable` has `data: null`; it uses a user-safe Korean `message` and can omit provenance when no last successful result exists. An external 4xx/5xx/timeout must not become an error for the existing Today work-list response.
 
 ### Implemented Observation input
 
@@ -431,13 +434,14 @@ The route names are a target contract. The first UI Slice may use only the route
 
 The exact metric catalogue stays open in the Pilot; a Measurement is not an automated sensor feed or recommendation. The API rejects a FarmArea/CropCycle from another Farm with a domain error and RLS remains final protection.
 
-### Measurement and planned error family
+### Weather, Measurement and planned error family
 
 - `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`
 - Implemented Measurement: `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
+- Implemented Weather location: `WEATHER_LOCATION_UPDATE_FAILED`
 - Implemented Observation: `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_NOT_FOUND`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_NOT_FOUND`
 - `INTEGRATION_CONTEXT_MISSING`, `INTEGRATION_UNAVAILABLE`, `INTEGRATION_CACHE_LOOKUP_FAILED`
 
 ## 7. Out of Scope
 
-Weather, Disease/Pest, Crop Information and Market의 최소 Baseline endpoint는 v0.2 planned이며 아직 구현되지 않았습니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.
+KMA Weather는 v0.2 구현 범위이며, 특보의 Farm-grid 지역 매핑은 후속 Slice입니다. Disease/Pest, Crop Information and Market endpoint는 아직 planned입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.

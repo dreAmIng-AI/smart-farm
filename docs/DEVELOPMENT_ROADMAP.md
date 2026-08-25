@@ -52,18 +52,16 @@ Separate Issue/PR with migration, RLS, API and tests.
 
 Separate Issue/PR with no client-exposed key.
 
-- Server-only provider adapter/normalizer boundary
-- Provenance and freshness result envelope
-- Focused durable last-successful snapshot/cache and RLS
-- Human Korean unavailable/stale states
+- Implemented for KMA Weather in Issue #51: server-only provider adapter/normalizer, provenance/freshness envelope, focused durable snapshot/RLS and Korean unavailable/stale states
 
 ## Phase 6 — Real Weather
 
-Separate Issue/PR after the KMA key and Farm forecast-location decision are available.
+Implemented in Issue #51 after the KMA key and Farm forecast-location decision.
 
 - Actual KMA current/short forecast data
-- Farm context mapping and source/update display
-- Timeout/no-data/stale-cache tests
+- User-confirmed Farm grid, source/update display and no stored raw GPS/address
+- Malformed-response and stale-cache tests
+- Follow-up: KMA special-alert area-to-Farm-grid mapping
 
 ## Phase 7 — Real Disease/Pest and Crop Information
 

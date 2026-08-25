@@ -320,6 +320,84 @@ p {
   font-weight: 700;
 }
 
+.today-home-weather {
+  background: #eef5ff;
+  border: 1px solid #c5d8ee;
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.8rem;
+}
+
+.today-home-weather-unavailable {
+  background: #f7f7f5;
+  border-color: #d5dbd6;
+}
+
+.today-home-weather h3,
+.today-home-weather p {
+  margin: 0;
+}
+
+.today-home-weather .today-home-section-heading strong {
+  color: #214b8f;
+  font-size: 1.5rem;
+}
+
+.weather-facts {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.weather-facts div {
+  background: #ffffff;
+  border: 1px solid #d9e5f2;
+  border-radius: 0.45rem;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem;
+}
+
+.weather-facts dt,
+.weather-source,
+.weather-precipitation,
+.weather-stale {
+  color: #405248;
+  font-size: 0.82rem;
+}
+
+.weather-facts dd {
+  font-size: 0.94rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.weather-stale {
+  background: #fff8e8;
+  border-left: 3px solid #b98319;
+  padding: 0.45rem 0.55rem;
+}
+
+.weather-source a,
+.today-home-weather-unavailable a {
+  color: #17643d;
+  font-weight: 700;
+}
+
+.weather-location-panel {
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 66%);
+  border-color: #bdd1e8;
+}
+
+.weather-location-form {
+  background: #ffffff;
+  border: 1px solid #d7e2ef;
+  border-radius: 0.6rem;
+  padding: 0.8rem;
+}
+
 .farm-area-panel {
   background: linear-gradient(135deg, #f3f7ff 0%, #ffffff 66%);
   border-color: #b8c9e9;

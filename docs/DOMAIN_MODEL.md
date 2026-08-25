@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation and Measurement v0.2 additions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation, Measurement and KMA Weather v0.2 additions implemented**
 
-> `FarmArea`, `Observation`, `Measurement`는 각각 dedicated v0.2 migration으로 구현되었습니다. external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
+> `FarmArea`, `Observation`, `Measurement`, KMA Weather는 각각 dedicated v0.2 migration으로 구현되었습니다. Disease/Pest, Crop Information, Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
 
 ## 1. 목적
 
@@ -32,7 +32,7 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### Farm
 
-사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다. v0.2에서는 공식 날씨를 위한 사용자가 확인한 예보 위치 문맥을 최소로 추가한다. 기본적으로 상세 주소나 무단 GPS 수집은 하지 않는다.
+사용자가 운영하거나 관리하는 농장 단위입니다. 권한 있는 Farm 구성원은 접근 가능한 Farm을 다시 선택해 하위 작기와 기록을 이어서 볼 수 있습니다. 이름, 지역 코드, 재배 환경, 재배 방식의 수정은 owner/admin만 할 수 있으며 이 선택·수정은 하위 CropCycle·FarmTask·이력의 관계와 내용을 바꾸지 않습니다. v0.2 Weather는 owner/admin이 명시적으로 확인한 예보 위치 이름과 기상청 5km 격자만 Farm에 보관한다. 상세 주소와 원래 GPS 좌표는 저장하지 않으며, 기기 위치는 사용자가 누른 일회성 격자 변환에만 사용한다.
 
 ### FarmArea
 
@@ -78,9 +78,9 @@ FarmTask가 없어도 남길 수 있는 사용자의 관찰 사실이다. 예: �
 
 FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다고 남긴 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다. v0.1의 ActionLog/FarmTask 연결은 보존하고, v0.2에서 Observation-origin Issue를 허용할 때만 origin 관계를 확장한다.
 
-### ExternalReference (v0.2 planned read model)
+### ExternalReference (v0.2 Weather implemented; other modules planned read model)
 
-Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. 첫 구현에서는 별도 도메인 테이블보다 Integration cache/snapshot과 typed response로 표현한다.
+Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. KMA Weather는 `external_data_snapshots`와 typed response로 구현되며, 다른 Module은 같은 경계를 재사용한다.
 
 ### Attachment
 
