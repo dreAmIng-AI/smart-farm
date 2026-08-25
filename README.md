@@ -9,7 +9,7 @@ dreAmIng Smart Farm은 농업인이 **오늘 해야 할 일, 확인할 사항, �
 ```text
 Farm → CropCycle → 작업계획 → Today → FarmTask 실행
      → ActionLog / IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History
-     ↘ FarmArea / Observation / Measurement / 실제 공공 참고정보 (v0.2 확장)
+     ↘ FarmArea / Observation → IssueRecord / Measurement / 실제 공공 참고정보 (v0.2 확장)
 ```
 
 ## 플랫폼 구조
@@ -46,7 +46,7 @@ v0.2 문서가 Pilot 개발의 기준입니다. 과거 v0.1 문서와 합의는 
 - 전체 일정과 Today의 오늘·지연 작업 확인
 - FarmTask 상세에서 작업 이유, 예정 시각, 우선순위, 근거와 검증 상태 확인
 - 작업 시작·완료·문제 있음·확인하지 못함을 ActionLog로 기록
-- IssueRecord와 Follow-up FarmTask 연결
+- 작업 또는 Observation에서 IssueRecord를 기록하고, 작기 문맥이 있을 때 Follow-up FarmTask 연결
 - IssueRecord 상태 변경 및 해결 시각 기록
 - 결과 또는 문제 기록에 선택적 사진 첨부
 - 작업·문제 이력 조회

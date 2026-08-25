@@ -166,7 +166,11 @@ type HistoryItem =
       kind: "issue";
       occurredAt: string;
       issueId: string;
-      farmTaskId: string;
+      actionLogId: string | null;
+      cropCycleId: string | null;
+      farmTaskId: string | null;
+      observationId: string | null;
+      origin: "task" | "observation";
       taskTitle: string;
       observedSymptom: string;
       severity: string;
@@ -1464,9 +1468,8 @@ export default function HomePage() {
   }
 
   const transplantDate = seoulDateInputValue();
-  const selectedCropCycleTaskIds = new Set(schedule.map((task) => task.id));
   const dashboardIssues = history.flatMap((item) =>
-    item.kind === "issue" && selectedCropCycleTaskIds.has(item.farmTaskId)
+    item.kind === "issue" && item.cropCycleId === cropCycle?.id
       ? [
           {
             id: item.issueId,
@@ -2418,7 +2421,7 @@ export default function HomePage() {
                     ) : null}
                     {item.kind === "issue" ? (
                       <>
-                        <strong>{item.taskTitle} · 문제 기록</strong>
+                        <strong>{item.origin === "observation" ? "관찰 기록 · 확인이 필요한 문제" : `${item.taskTitle} · 문제 기록`}</strong>
                         <small>
                           관찰: {item.observedSymptom} · 심각도 {issueSeverityLabel(item.severity)} · 상태 {issueStatusLabel(item.status)}
                         </small>
@@ -2464,7 +2467,7 @@ export default function HomePage() {
                             해결됨으로 바꾸면 해결 시각을 기록합니다. 다른 상태로 되돌리면 해결 시각은 비워집니다.
                           </small>
                         </div> : null}
-                        {canManageSelectedFarm && (item.status === "open" || item.status === "needs_review") ? (
+                        {canManageSelectedFarm && item.cropCycleId && (item.status === "open" || item.status === "needs_review") ? (
                           <button
                             className="secondary compact"
                             onClick={() =>
@@ -2481,6 +2484,9 @@ export default function HomePage() {
                           >
                             재확인 작업 만들기
                           </button>
+                        ) : null}
+                        {canManageSelectedFarm && item.origin === "observation" && !item.cropCycleId && (item.status === "open" || item.status === "needs_review") ? (
+                          <small className="field-hint">이 관찰에는 작기 정보가 없어 재확인 작업을 만들 수 없습니다.</small>
                         ) : null}
                       </>
                     ) : null}

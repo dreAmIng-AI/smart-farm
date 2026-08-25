@@ -21,6 +21,8 @@ describe("/api/farms/:farmId/observations", () => {
   const observationOrder = vi.fn();
   const observationEq = vi.fn(() => ({ order: observationOrder }));
   const observationSelect = vi.fn(() => ({ eq: observationEq }));
+  const issueIn = vi.fn();
+  const issueSelect = vi.fn(() => ({ in: issueIn }));
   const observationInsertSingle = vi.fn();
   const observationInsertSelect = vi.fn(() => ({ single: observationInsertSingle }));
   const observationInsert = vi.fn(() => ({ select: observationInsertSelect }));
@@ -36,6 +38,9 @@ describe("/api/farms/:farmId/observations", () => {
     }
     if (table === "observations") {
       return { insert: observationInsert, select: observationSelect };
+    }
+    if (table === "issue_records") {
+      return { select: issueSelect };
     }
     if (table === "farm_areas") {
       return { select: farmAreaSelect };
@@ -77,6 +82,7 @@ describe("/api/farms/:farmId/observations", () => {
       },
       error: null,
     });
+    issueIn.mockResolvedValue({ data: [], error: null });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
       supabase: { from },
@@ -91,8 +97,9 @@ describe("/api/farms/:farmId/observations", () => {
 
     expect(response.status).toBe(200);
     expect(observationEq).toHaveBeenCalledWith("farm_id", farmId);
+    expect(issueIn).toHaveBeenCalledWith("observation_id", ["44444444-4444-4444-8444-444444444444"]);
     await expect(response.json()).resolves.toMatchObject({
-      items: [{ id: "44444444-4444-4444-8444-444444444444", content: "잎에서 갈색 반점이 보임" }],
+      items: [{ id: "44444444-4444-4444-8444-444444444444", content: "잎에서 갈색 반점이 보임", issue: null }],
       meta: { count: 1 },
     });
   });

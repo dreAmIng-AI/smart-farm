@@ -44,9 +44,9 @@ Implemented by Issue #45 with migration, RLS, API and tests.
 
 Separate Issue/PR with migration, RLS, API and tests.
 
-- Append-only Observation implemented in Issue #47; manual Measurement implemented in Issue #49
+- Append-only Observation implemented in Issue #47; manual Measurement implemented in Issue #49; Observation-origin IssueRecord implemented in Issue #57
 - Safe distinction between observed fact, issue requiring confirmation and diagnosis
-- Extend Issue origin only without breaking existing ActionLog-origin IssueRecords
+- Existing ActionLog-origin IssueRecords remain unchanged while an Observation can create one IssueRecord
 
 ## Phase 5 — Integration Runtime Foundation
 

@@ -27,8 +27,10 @@ type ActionLogRow = {
 
 type IssueRow = {
   id: string;
-  action_log_id: string;
-  farm_task_id: string;
+  action_log_id: string | null;
+  crop_cycle_id: string | null;
+  farm_task_id: string | null;
+  observation_id: string | null;
   observed_symptom: string;
   severity: string;
   status: string;
@@ -73,8 +75,11 @@ type HistoryItem =
       kind: "issue";
       occurredAt: string;
       issueId: string;
-      actionLogId: string;
-      farmTaskId: string;
+      actionLogId: string | null;
+      cropCycleId: string | null;
+      farmTaskId: string | null;
+      observationId: string | null;
+      origin: "task" | "observation";
       taskTitle: string;
       observedSymptom: string;
       severity: string;
@@ -127,43 +132,72 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  const { data: taskData, error: taskError } = await auth.supabase
-    .from("farm_tasks")
-    .select("id, title, source_type, status, scheduled_for, created_at, parent_issue_id")
-    .eq("farm_id", farmId);
-
-  if (taskError) {
-    return NextResponse.json(
-      { error: { code: "HISTORY_LOOKUP_FAILED", message: taskError.message } },
-      { status: 400 },
-    );
-  }
-
-  const tasks = (taskData ?? []) as FarmTaskRow[];
-  if (tasks.length === 0) {
-    return NextResponse.json({ items: [], meta: { count: 0 } });
-  }
-
-  const taskIds = tasks.map((task) => task.id);
-  const [actionLogResult, issueResult] = await Promise.all([
+  const [taskResult, observationResult] = await Promise.all([
     auth.supabase
-      .from("action_logs")
-      .select("id, farm_task_id, action_type, result_code, note, performed_at")
-      .in("farm_task_id", taskIds),
+      .from("farm_tasks")
+      .select("id, title, source_type, status, scheduled_for, created_at, parent_issue_id")
+      .eq("farm_id", farmId),
     auth.supabase
-      .from("issue_records")
-      .select(
-        "id, action_log_id, farm_task_id, observed_symptom, severity, status, expert_review_required, created_at",
-      )
-      .in("farm_task_id", taskIds),
+      .from("observations")
+      .select("id")
+      .eq("farm_id", farmId),
   ]);
 
-  if (actionLogResult.error || issueResult.error) {
+  if (taskResult.error || observationResult.error) {
     return NextResponse.json(
       {
         error: {
           code: "HISTORY_LOOKUP_FAILED",
-          message: actionLogResult.error?.message ?? issueResult.error?.message ?? "History lookup failed.",
+          message: taskResult.error?.message ?? observationResult.error?.message ?? "History lookup failed.",
+        },
+      },
+      { status: 400 },
+    );
+  }
+
+  const tasks = (taskResult.data ?? []) as FarmTaskRow[];
+  const observations = (observationResult.data ?? []) as { id: string }[];
+  const observationIds = observations.map((observation) => observation.id);
+  if (tasks.length === 0 && observationIds.length === 0) {
+    return NextResponse.json({ items: [], meta: { count: 0 } });
+  }
+
+  const taskIds = tasks.map((task) => task.id);
+  const [actionLogResult, taskIssueResult, observationIssueResult] = await Promise.all([
+    taskIds.length > 0
+      ? auth.supabase
+      .from("action_logs")
+      .select("id, farm_task_id, action_type, result_code, note, performed_at")
+          .in("farm_task_id", taskIds)
+      : Promise.resolve({ data: [], error: null }),
+    taskIds.length > 0
+      ? auth.supabase
+      .from("issue_records")
+      .select(
+            "id, action_log_id, farm_task_id, observation_id, crop_cycle_id, observed_symptom, severity, status, expert_review_required, created_at",
+      )
+          .in("farm_task_id", taskIds)
+      : Promise.resolve({ data: [], error: null }),
+    observationIds.length > 0
+      ? auth.supabase
+          .from("issue_records")
+          .select(
+            "id, action_log_id, farm_task_id, observation_id, crop_cycle_id, observed_symptom, severity, status, expert_review_required, created_at",
+          )
+          .in("observation_id", observationIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (actionLogResult.error || taskIssueResult.error || observationIssueResult.error) {
+    return NextResponse.json(
+      {
+        error: {
+          code: "HISTORY_LOOKUP_FAILED",
+          message:
+            actionLogResult.error?.message ??
+            taskIssueResult.error?.message ??
+            observationIssueResult.error?.message ??
+            "History lookup failed.",
         },
       },
       { status: 400 },
@@ -172,7 +206,11 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const taskTitleById = new Map(tasks.map((task) => [task.id, task.title]));
   const actionLogs = (actionLogResult.data ?? []) as ActionLogRow[];
-  const issues = (issueResult.data ?? []) as IssueRow[];
+  const issueById = new Map<string, IssueRow>();
+  [...((taskIssueResult.data ?? []) as IssueRow[]), ...((observationIssueResult.data ?? []) as IssueRow[])].forEach((issue) => {
+    issueById.set(issue.id, issue);
+  });
+  const issues = [...issueById.values()];
   const actionLogIds = actionLogs.map((log) => log.id);
   const issueIds = issues.map((issue) => issue.id);
   const [actionAttachmentResult, issueAttachmentResult] = await Promise.all([
@@ -266,7 +304,10 @@ export async function GET(_request: Request, context: RouteContext) {
       issueId: issue.id,
       actionLogId: issue.action_log_id,
       farmTaskId: issue.farm_task_id,
-      taskTitle: taskTitleById.get(issue.farm_task_id) ?? "FarmTask",
+      observationId: issue.observation_id,
+      cropCycleId: issue.crop_cycle_id,
+      origin: issue.observation_id ? "observation" as const : "task" as const,
+      taskTitle: issue.farm_task_id ? (taskTitleById.get(issue.farm_task_id) ?? "FarmTask") : "관찰 기록",
       observedSymptom: issue.observed_symptom,
       severity: issue.severity,
       status: issue.status,

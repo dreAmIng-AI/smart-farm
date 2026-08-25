@@ -1,6 +1,6 @@
 # API Contract
 
-**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation, Measurement and KMA Weather v0.2 routes**
+**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation-origin IssueRecord, Measurement and KMA Weather v0.2 routes**
 
 **Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation·Measurement·KMA Weather endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
 
@@ -365,7 +365,9 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 `GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`. FarmArea update and delete are not exposed in this Slice.
 
-`GET /api/farms/{farmId}/observations` returns newest-first standalone Observation facts for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, content }`; the two context IDs are optional, but if supplied must belong to the same Farm. Observations are append-only: no update or delete endpoint exists.
+`GET /api/farms/{farmId}/observations` returns newest-first standalone Observation facts for the accessible Farm, with its optional linked Issue summary. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, content }`; the two context IDs are optional, but if supplied must belong to the same Farm. Observations are append-only: no update or delete endpoint exists.
+
+`POST /api/observations/{observationId}/issues` lets every member turn one accessible Observation into one existing non-diagnostic IssueRecord. Input is `{ severity: "low" | "medium" | "high" | "unknown", expertReviewRequired: boolean }`; it returns `201` with the Issue and `409 OBSERVATION_ALREADY_HAS_ISSUE` when the Observation is already linked. The original Observation content is preserved as the Issue's observed symptom; no diagnosis or automatic task is made.
 
 `GET /api/farms/{farmId}/measurements` returns newest-first manual numeric Measurements for the accessible Farm. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, metricCode, valueNumeric, unit, note }`; the two context IDs are optional, but if supplied must belong to the same Farm. Measurements are append-only: no update or delete endpoint exists.
 
@@ -378,7 +380,6 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 | Resource / action | Intent | Access |
 |---|---|---|
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
-| `POST /api/observations/{observationId}/issues` | 관찰 사실을 확인이 필요한 IssueRecord로 연결 | member |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
 | `GET /api/farms/{farmId}/information/disease-pest` | 정규화된 Disease/Pest `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/crop` | 정규화된 Crop Information `IntegrationResult` | member |
@@ -439,7 +440,7 @@ The exact metric catalogue stays open in the Pilot; a Measurement is not an auto
 - `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`
 - Implemented Measurement: `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
 - Implemented Weather location: `WEATHER_LOCATION_UPDATE_FAILED`
-- Implemented Observation: `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_NOT_FOUND`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_NOT_FOUND`
+- Implemented Observation: `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `OBSERVATION_NOT_FOUND`, `OBSERVATION_ALREADY_HAS_ISSUE`, `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_NOT_FOUND`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_NOT_FOUND`
 - `INTEGRATION_CONTEXT_MISSING`, `INTEGRATION_UNAVAILABLE`, `INTEGRATION_CACHE_LOOKUP_FAILED`
 
 ## 7. Out of Scope

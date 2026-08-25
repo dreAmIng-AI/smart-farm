@@ -19,6 +19,7 @@ import {
   parseManualFarmTaskInput,
   parseMeasurementInput,
   parseObservationInput,
+  parseObservationIssueInput,
 } from "@/lib/api/validation";
 
 const validPng = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -96,6 +97,22 @@ describe("Observation input", () => {
 
   it("rejects an Observation without a fact or valid observed time", () => {
     expect(parseObservationInput({ content: "", observedAt: "today" })).toMatchObject({ ok: false });
+  });
+});
+
+describe("Observation issue input", () => {
+  it("accepts a generic severity and optional expert-review request", () => {
+    expect(parseObservationIssueInput({ severity: "high", expertReviewRequired: true })).toEqual({
+      ok: true,
+      data: { severity: "high", expertReviewRequired: true },
+    });
+  });
+
+  it("rejects an unsupported severity", () => {
+    expect(parseObservationIssueInput({ severity: "diagnosed", expertReviewRequired: false })).toMatchObject({
+      ok: false,
+      error: "severity must be low, medium, high, or unknown.",
+    });
   });
 });
 

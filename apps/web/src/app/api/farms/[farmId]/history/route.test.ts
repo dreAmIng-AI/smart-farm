@@ -17,6 +17,8 @@ describe("GET /api/farms/:farmId/history", () => {
   const farmSelect = vi.fn(() => ({ eq: farmEq }));
   const taskEq = vi.fn();
   const taskSelect = vi.fn(() => ({ eq: taskEq }));
+  const observationEq = vi.fn();
+  const observationSelect = vi.fn(() => ({ eq: observationEq }));
   const actionLogIn = vi.fn();
   const actionLogSelect = vi.fn(() => ({ in: actionLogIn }));
   const issueIn = vi.fn();
@@ -31,6 +33,9 @@ describe("GET /api/farms/:farmId/history", () => {
     }
     if (table === "farm_tasks") {
       return { select: taskSelect };
+    }
+    if (table === "observations") {
+      return { select: observationSelect };
     }
     if (table === "action_logs") {
       return { select: actionLogSelect };
@@ -70,6 +75,10 @@ describe("GET /api/farms/:farmId/history", () => {
       ],
       error: null,
     });
+    observationEq.mockResolvedValue({
+      data: [{ id: "77777777-7777-4777-8777-777777777777" }],
+      error: null,
+    });
     actionLogIn.mockResolvedValue({
       data: [
         {
@@ -83,20 +92,43 @@ describe("GET /api/farms/:farmId/history", () => {
       ],
       error: null,
     });
-    issueIn.mockResolvedValue({
-      data: [
-        {
-          id: "44444444-4444-4444-8444-444444444444",
-          action_log_id: "55555555-5555-4555-8555-555555555555",
-          farm_task_id: "22222222-2222-4222-8222-222222222222",
-          observed_symptom: "Observed an unexpected condition.",
-          severity: "unknown",
-          status: "open",
-          expert_review_required: true,
-          created_at: "2026-08-13T00:00:01.000Z",
-        },
-      ],
-      error: null,
+    issueIn.mockImplementation((column: string) => {
+      if (column === "farm_task_id") {
+        return Promise.resolve({
+          data: [
+            {
+              id: "44444444-4444-4444-8444-444444444444",
+              action_log_id: "55555555-5555-4555-8555-555555555555",
+              farm_task_id: "22222222-2222-4222-8222-222222222222",
+              observation_id: null,
+              crop_cycle_id: "88888888-8888-4888-8888-888888888888",
+              observed_symptom: "Observed an unexpected condition.",
+              severity: "unknown",
+              status: "open",
+              expert_review_required: true,
+              created_at: "2026-08-13T00:00:01.000Z",
+            },
+          ],
+          error: null,
+        });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            id: "99999999-9999-4999-8999-999999999999",
+            action_log_id: null,
+            farm_task_id: null,
+            observation_id: "77777777-7777-4777-8777-777777777777",
+            crop_cycle_id: "88888888-8888-4888-8888-888888888888",
+            observed_symptom: "A standalone observation needs confirmation.",
+            severity: "medium",
+            status: "needs_review",
+            expert_review_required: false,
+            created_at: "2026-08-13T00:30:00.000Z",
+          },
+        ],
+        error: null,
+      });
     });
     attachmentIn.mockImplementation((column: string) => {
       if (column === "action_log_id") {
@@ -126,7 +158,7 @@ describe("GET /api/farms/:farmId/history", () => {
     } as never);
   });
 
-  it("returns ActionLog, IssueRecord, and Follow-up relationships in descending time order", async () => {
+  it("returns task and Observation IssueRecords with their existing relationships in descending time order", async () => {
     const response = await GET(
       new Request(`http://localhost/api/farms/${farmId}/history`),
       { params: Promise.resolve({ farmId }) },
@@ -134,9 +166,15 @@ describe("GET /api/farms/:farmId/history", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      meta: { count: 3 },
+      meta: { count: 4 },
       items: [
         { kind: "follow_up_task", parentIssueId: "44444444-4444-4444-8444-444444444444" },
+        {
+          kind: "issue",
+          origin: "observation",
+          observationId: "77777777-7777-4777-8777-777777777777",
+          farmTaskId: null,
+        },
         {
           kind: "issue",
           actionLogId: "55555555-5555-4555-8555-555555555555",

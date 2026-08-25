@@ -19,6 +19,7 @@
 ```text
 Farm → CropCycle → FarmTask → ActionLog
                          └──→ IssueRecord → Follow-up FarmTask
+Farm → Observation ────────→ IssueRecord
 ActionLog | IssueRecord → Attachment
 TaskTemplate → FarmTask
 
@@ -164,16 +165,17 @@ Farm → FarmArea
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | id | uuid | Y | 문제 식별자 |
-| action_log_id | uuid | Y | 연결된 `issue_reported` ActionLog, 1:1 |
-| farm_task_id | uuid | Y | 원본 FarmTask |
-| crop_cycle_id | uuid | Y | CropCycle |
+| action_log_id | uuid | task origin | 연결된 `issue_reported` ActionLog, 1:1 |
+| farm_task_id | uuid | task origin | 원본 FarmTask |
+| observation_id | uuid | observation origin | 원본 Observation, 1:1 |
+| crop_cycle_id | uuid | N | 작기 문맥; Observation origin에서는 Observation의 문맥을 보존 |
 | observed_symptom | text | Y | 사용자가 관찰한 사실 |
 | severity | text | Y | low, medium, high, unknown |
 | status | text | Y | open, needs_review, resolved, closed_without_action |
 | expert_review_required | boolean | Y | 전문가 확인 필요 여부 |
 | created_at / resolved_at | timestamptz | Y/N | 생성·해결 시각 |
 
-`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 문제 기록 RPC를 구현합니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다. `202608180001_farm_owner_creation_policy.sql`은 `status`, `resolved_at`의 UPDATE를 owner/admin으로 제한합니다. `resolved`에서만 `resolved_at`을 기록하며, 이 migration은 관찰 내용과 심각도를 변경할 권한을 부여하지 않습니다.
+`202608120003_core_v01_issues.sql`은 IssueRecord, RLS와 원자적 작업 문제 기록 RPC를 구현합니다. `202608250002_platform_v02_observation_issues.sql`은 기존 작업 origin을 보존하면서 Observation origin을 하나 추가합니다. 두 origin 경로 중 정확히 하나만 허용하며, Observation 하나에는 IssueRecord 하나만 연결할 수 있습니다. 문제 내용은 사용자가 관찰한 사실이며 확정 진단이나 처방이 아닙니다. `farm_tasks.parent_issue_id`는 IssueRecord를 참조하고, 같은 IssueRecord에 같은 예정일로 중복된 Follow-up FarmTask를 만들 수 없도록 제약합니다. Observation origin에서 Follow-up은 Observation에 CropCycle 문맥이 있을 때만 가능합니다.
 
 ### attachments
 
@@ -186,7 +188,7 @@ Farm → FarmArea
 | mime_type / file_size_bytes | text / bigint | Y | 파일 형식·크기 |
 | captured_at / created_at | timestamptz | N/Y | 촬영·업로드 시각 |
 
-`202608120004_core_v01_attachments.sql`은 `attachments`와 비공개 `farm-attachments` Storage 버킷을 구현합니다. 한 Attachment는 ActionLog 또는 IssueRecord 중 정확히 하나만 참조합니다. 허용 파일은 JPEG, PNG, WebP이고 파일당 최대 10MB입니다. `storage_path`는 `farm_id/action_log_id/file` 구조이며, Attachment와 Storage object 모두 FarmMembership 기반 RLS를 적용합니다. `captured_at`은 P1에서 아직 별도로 수집하지 않아 null입니다.
+`202608120004_core_v01_attachments.sql`은 `attachments`와 비공개 `farm-attachments` Storage 버킷을 구현합니다. 한 Attachment는 ActionLog 또는 IssueRecord 중 정확히 하나만 참조합니다. 허용 파일은 JPEG, PNG, WebP이고 파일당 최대 10MB입니다. Task-origin path는 `farm_id/action_log_id/file`, Observation-origin Issue path는 `farm_id/issue_record_id/file`이며, Attachment와 Storage object 모두 FarmMembership 기반 RLS를 적용합니다. `captured_at`은 P1에서 아직 별도로 수집하지 않아 null입니다.
 
 ## 4. v0.2 data additions
 
@@ -255,9 +257,9 @@ Observation is append-only, is not a diagnosis and does not require a FarmTask. 
 
 Measurement begins as a manual field record. Sensor ingestion is not part of this contract.
 
-### issue_records observation origin (planned alteration)
+### issue_records observation origin (implemented by `202608250002_platform_v02_observation_issues.sql`)
 
-Existing v0.1 task-result IssueRecords remain valid. To create an Issue from a standalone Observation, a later migration can add `observation_id uuid null references observations(id)` and relax the current required ActionLog/FarmTask origin only with a check that exactly one valid origin path exists. This must not change or delete existing IssueRecords.
+Existing v0.1 task-result IssueRecords remain valid. `observation_id uuid null references observations(id)` is added with a partial unique index, and an exactly-one-origin check permits either the existing ActionLog/FarmTask path or the new Observation path. This does not change or delete existing IssueRecords.
 
 ### external_data_snapshots (implemented for Weather by `202608250001_platform_v02_weather_foundation.sql`)
 

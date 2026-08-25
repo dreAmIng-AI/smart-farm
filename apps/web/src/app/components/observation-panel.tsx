@@ -14,12 +14,18 @@ type CropCycleOption = {
   id: string;
 };
 
+type ObservationIssueStatus = "open" | "needs_review" | "resolved" | "closed_without_action";
+
 type Observation = {
   content: string;
   createdAt: string;
   cropCycleId: string | null;
   farmAreaId: string | null;
   id: string;
+  issue: {
+    id: string;
+    status: ObservationIssueStatus;
+  } | null;
   observedAt: string;
 };
 
@@ -27,6 +33,11 @@ type ObservationPanelProps = {
   cropCycles: CropCycleOption[];
   farmId: string;
   selectedCropCycleId: string | null;
+};
+
+type ObservationIssueDraft = {
+  expertReviewRequired: boolean;
+  severity: "low" | "medium" | "high" | "unknown";
 };
 
 function cropCycleLabel(cropCycle: CropCycleOption) {
@@ -61,6 +72,8 @@ export function ObservationPanel({ cropCycles, farmId, selectedCropCycleId }: Ob
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [creatingIssueId, setCreatingIssueId] = useState<string | null>(null);
+  const [issueDrafts, setIssueDrafts] = useState<Record<string, ObservationIssueDraft>>({});
   const loadObservationData = useCallback(() => fetchObservationData(farmId), [farmId]);
   const areaNameById = useMemo(() => new Map(areas.map((area) => [area.id, area.name])), [areas]);
   const cropCycleLabelById = useMemo(
@@ -132,6 +145,44 @@ export function ObservationPanel({ cropCycles, farmId, selectedCropCycleId }: Ob
     }
   }
 
+  function issueDraftFor(observationId: string): ObservationIssueDraft {
+    return issueDrafts[observationId] ?? { severity: "unknown", expertReviewRequired: false };
+  }
+
+  async function handleCreateIssue(observation: Observation) {
+    const draft = issueDraftFor(observation.id);
+    setFeedback(null);
+    setCreatingIssueId(observation.id);
+
+    try {
+      const response = await fetch(`/api/observations/${observation.id}/issues`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      const result = await response.json().catch(() => null) as {
+        error?: { code?: string; message?: string };
+        issue?: { id: string; status: ObservationIssueStatus };
+      } | null;
+      if (!response.ok || !result?.issue) {
+        if (result?.error?.code === "OBSERVATION_ALREADY_HAS_ISSUE") {
+          setFeedback("이 관찰 기록은 이미 확인이 필요한 문제로 기록되어 있습니다. 새로고침하면 상태를 확인할 수 있습니다.");
+          return;
+        }
+        throw new Error(result?.error?.message ?? "Observation issue create failed");
+      }
+
+      setObservations((current) =>
+        current.map((item) => (item.id === observation.id ? { ...item, issue: result.issue ?? null } : item)),
+      );
+      setFeedback("관찰 기록을 확인이 필요한 문제로 기록했습니다. 이것은 확정 진단이나 처방이 아닙니다.");
+    } catch {
+      setFeedback("확인이 필요한 문제로 기록하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setCreatingIssueId(null);
+    }
+  }
+
   return (
     <section className="card observation-panel stack" aria-labelledby="observation-heading">
       <div>
@@ -179,6 +230,50 @@ export function ObservationPanel({ cropCycles, farmId, selectedCropCycleId }: Ob
                   {observation.cropCycleId ? ` · ${cropCycleLabelById.get(observation.cropCycleId) ?? "현재 작기"}` : ""}
                 </small>
                 <p>{observation.content}</p>
+                {observation.issue ? (
+                  <small className="observation-issue-badge">확인이 필요한 문제 · {observation.issue.status === "needs_review" ? "검토 필요" : observation.issue.status === "open" ? "열림" : observation.issue.status === "resolved" ? "해결됨" : "조치 없이 종료"}</small>
+                ) : (
+                  <details className="observation-issue-entry">
+                    <summary>확인이 필요한 문제로 기록</summary>
+                    <p className="field-hint">관찰한 사실은 그대로 보존합니다. 여기서는 확정 진단이나 처방을 내리지 않습니다.</p>
+                    <label>
+                      중요도
+                      <select
+                        disabled={creatingIssueId === observation.id}
+                        onChange={(event) => setIssueDrafts((current) => ({
+                          ...current,
+                          [observation.id]: { ...issueDraftFor(observation.id), severity: event.target.value as ObservationIssueDraft["severity"] },
+                        }))}
+                        value={issueDraftFor(observation.id).severity}
+                      >
+                        <option value="unknown">알 수 없음</option>
+                        <option value="low">낮음</option>
+                        <option value="medium">보통</option>
+                        <option value="high">높음</option>
+                      </select>
+                    </label>
+                    <label className="checkbox-label">
+                      <input
+                        checked={issueDraftFor(observation.id).expertReviewRequired}
+                        disabled={creatingIssueId === observation.id}
+                        onChange={(event) => setIssueDrafts((current) => ({
+                          ...current,
+                          [observation.id]: { ...issueDraftFor(observation.id), expertReviewRequired: event.target.checked },
+                        }))}
+                        type="checkbox"
+                      />
+                      전문가 확인 필요
+                    </label>
+                    <button
+                      className="issue-button compact"
+                      disabled={creatingIssueId === observation.id}
+                      onClick={() => void handleCreateIssue(observation)}
+                      type="button"
+                    >
+                      {creatingIssueId === observation.id ? "문제 기록 중..." : "확인이 필요한 문제로 기록"}
+                    </button>
+                  </details>
+                )}
               </li>
             ))}
           </ol>
