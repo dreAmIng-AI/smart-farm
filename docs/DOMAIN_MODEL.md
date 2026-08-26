@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation, Measurement and KMA Weather v0.2 additions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement and KMA Weather v0.2 additions implemented**
 
-> `FarmArea`, `Observation`, `Measurement`, KMA Weather는 각각 dedicated v0.2 migration으로 구현되었습니다. Disease/Pest, Crop Information, Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
+> `FarmArea`와 작기·작업 문맥, `Observation`, `Measurement`, KMA Weather는 각각 dedicated v0.2 migration으로 구현되었습니다. Disease/Pest, Crop Information, Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
 
 ## 1. 목적
 
@@ -120,9 +120,9 @@ User N ─ N Farm                     through FarmMembership
 Farm 1 ─ N FarmInvitation            before a new FarmMembership is accepted
 Farm 1 ─ N CropCycle
 Farm 1 ─ N FarmArea                  (implemented)
-FarmArea 0..1 ─ N CropCycle          (planned)
+FarmArea 0..1 ─ N CropCycle          (implemented)
 CropCycle 1 ─ N FarmTask             scheduled plan and actual work
-FarmArea 0..1 ─ N FarmTask           (planned)
+FarmArea 0..1 ─ N FarmTask           (implemented)
 TaskTemplate 1 ─ N FarmTask          when created from a template
 FarmTask 0..1 ─ 1 FarmMembership     coordination assignee in the same Farm
 FarmTask 1 ─ N ActionLog

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
+import {
+  requireAuthenticatedSupabaseUser,
+  requireFarmManager,
+  type AuthenticatedSupabaseContext,
+} from "@/lib/api/auth";
 import { isUuid, parseCropCycleInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ farmId: string }> };
@@ -10,11 +14,60 @@ type CropCycleRow = {
   farm_id: string;
   crop_code: string;
   cultivar: string | null;
+  farm_area_id: string | null;
   transplant_date: string;
   growth_stage: string | null;
   status: "active" | "completed" | "cancelled";
   ended_at: string | null;
 };
+
+function toCropCycle(cropCycle: CropCycleRow) {
+  return {
+    id: cropCycle.id,
+    farmId: cropCycle.farm_id,
+    cropCode: cropCycle.crop_code,
+    cultivar: cropCycle.cultivar,
+    farmAreaId: cropCycle.farm_area_id,
+    transplantDate: cropCycle.transplant_date,
+    growthStage: cropCycle.growth_stage,
+    status: cropCycle.status,
+    endedAt: cropCycle.ended_at,
+  };
+}
+
+async function validateFarmArea(
+  auth: AuthenticatedSupabaseContext,
+  farmId: string,
+  farmAreaId: string | null,
+) {
+  if (!farmAreaId) return { ok: true as const };
+
+  const { data, error } = await auth.supabase
+    .from("farm_areas")
+    .select("id, farm_id")
+    .eq("id", farmAreaId)
+    .maybeSingle();
+  if (error) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_LOOKUP_FAILED", message: error.message } },
+        { status: 400 },
+      ),
+    };
+  }
+  if (!data || data.farm_id !== farmId) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_NOT_FOUND", message: "FarmArea was not found in this Farm." } },
+        { status: 404 },
+      ),
+    };
+  }
+
+  return { ok: true as const };
+}
 
 export async function GET(_request: Request, context: RouteContext) {
   const { farmId } = await context.params;
@@ -52,7 +105,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
   const { data, error } = await auth.supabase
     .from("crop_cycles")
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
+    .select("id, farm_id, farm_area_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .eq("farm_id", farmId)
     .order("transplant_date", { ascending: false });
 
@@ -63,16 +116,7 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  const items = ((data ?? []) as CropCycleRow[]).map((cropCycle) => ({
-    id: cropCycle.id,
-    farmId: cropCycle.farm_id,
-    cropCode: cropCycle.crop_code,
-    cultivar: cropCycle.cultivar,
-    transplantDate: cropCycle.transplant_date,
-    growthStage: cropCycle.growth_stage,
-    status: cropCycle.status,
-    endedAt: cropCycle.ended_at,
-  }));
+  const items = ((data ?? []) as CropCycleRow[]).map(toCropCycle);
 
   return NextResponse.json({ items, meta: { count: items.length } });
 }
@@ -125,16 +169,22 @@ export async function POST(request: Request, context: RouteContext) {
     return authorization.response;
   }
 
+  const farmArea = await validateFarmArea(auth, farmId, parsed.data.farmAreaId);
+  if (!farmArea.ok) {
+    return farmArea.response;
+  }
+
   const { data, error } = await auth.supabase
     .from("crop_cycles")
     .insert({
       farm_id: farmId,
+      farm_area_id: parsed.data.farmAreaId,
       crop_code: parsed.data.cropCode,
       cultivar: parsed.data.cultivar,
       transplant_date: parsed.data.transplantDate,
       growth_stage: parsed.data.growthStage,
     })
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
+    .select("id, farm_id, farm_area_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .single();
 
   if (error) {
@@ -144,17 +194,5 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  return NextResponse.json(
-    {
-      id: data.id,
-      farmId: data.farm_id,
-      cropCode: data.crop_code,
-      cultivar: data.cultivar,
-      transplantDate: data.transplant_date,
-      growthStage: data.growth_stage,
-      status: data.status,
-      endedAt: data.ended_at,
-    },
-    { status: 201 },
-  );
+  return NextResponse.json(toCropCycle(data as CropCycleRow), { status: 201 });
 }

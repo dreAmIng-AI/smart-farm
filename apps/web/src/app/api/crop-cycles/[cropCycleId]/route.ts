@@ -1,9 +1,45 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
+import {
+  requireAuthenticatedSupabaseUser,
+  requireFarmManager,
+  type AuthenticatedSupabaseContext,
+} from "@/lib/api/auth";
 import { isUuid, parseCropCycleGrowthStageInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
+
+async function validateFarmArea(
+  auth: AuthenticatedSupabaseContext,
+  farmId: string,
+  farmAreaId: string | null,
+) {
+  if (!farmAreaId) return { ok: true as const };
+  const { data, error } = await auth.supabase
+    .from("farm_areas")
+    .select("id, farm_id")
+    .eq("id", farmAreaId)
+    .maybeSingle();
+  if (error) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_LOOKUP_FAILED", message: error.message } },
+        { status: 400 },
+      ),
+    };
+  }
+  if (!data || data.farm_id !== farmId) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_NOT_FOUND", message: "FarmArea was not found in this Farm." } },
+        { status: 404 },
+      ),
+    };
+  }
+  return { ok: true as const };
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { cropCycleId } = await context.params;
@@ -53,11 +89,25 @@ export async function PATCH(request: Request, context: RouteContext) {
     return authorization.response;
   }
 
+  if (parsed.data.farmAreaId !== undefined) {
+    const farmArea = await validateFarmArea(auth, existing.farm_id, parsed.data.farmAreaId);
+    if (!farmArea.ok) {
+      return farmArea.response;
+    }
+  }
+
+  const update: { farm_area_id?: string | null; growth_stage: string | null } = {
+    growth_stage: parsed.data.growthStage,
+  };
+  if (parsed.data.farmAreaId !== undefined) {
+    update.farm_area_id = parsed.data.farmAreaId;
+  }
+
   const { data, error } = await auth.supabase
     .from("crop_cycles")
-    .update({ growth_stage: parsed.data.growthStage })
+    .update(update)
     .eq("id", cropCycleId)
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
+    .select("id, farm_id, farm_area_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .single();
 
   if (error) {
@@ -72,6 +122,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     farmId: data.farm_id,
     cropCode: data.crop_code,
     cultivar: data.cultivar,
+    farmAreaId: data.farm_area_id,
     transplantDate: data.transplant_date,
     growthStage: data.growth_stage,
     status: data.status,

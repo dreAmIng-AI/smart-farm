@@ -76,6 +76,7 @@ type CropCycle = {
   farmId: string;
   cropCode: string;
   cultivar: string | null;
+  farmAreaId: string | null;
   transplantDate: string;
   growthStage: string | null;
   status: "active" | "completed" | "cancelled";
@@ -84,6 +85,7 @@ type CropCycle = {
 
 type FarmTask = {
   assignedUserId: string | null;
+  farmAreaId: string | null;
   id: string;
   parentIssueId?: string | null;
   title: string;
@@ -94,6 +96,11 @@ type FarmTask = {
   sourceType: string;
   status: string;
   scheduleState?: "overdue" | "today";
+};
+
+type FarmArea = {
+  id: string;
+  name: string;
 };
 
 type TaskDetail = FarmTask & {
@@ -372,6 +379,7 @@ export default function HomePage() {
   const [farmCollaborationFeedback, setFarmCollaborationFeedback] = useState<string | null>(null);
   const [latestInviteUrl, setLatestInviteUrl] = useState<string | null>(null);
   const [latestInviteEmail, setLatestInviteEmail] = useState<string | null>(null);
+  const [farmAreas, setFarmAreas] = useState<FarmArea[]>([]);
   const [cropCycles, setCropCycles] = useState<CropCycle[]>([]);
   const [cropCycle, setCropCycle] = useState<CropCycle | null>(null);
   const [growthStageDraft, setGrowthStageDraft] = useState("");
@@ -654,6 +662,7 @@ export default function HomePage() {
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
       setLatestInviteEmail(null);
+      setFarmAreas([]);
       setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
@@ -699,6 +708,7 @@ export default function HomePage() {
       setLatestInviteUrl(null);
       setLatestInviteEmail(null);
       setFarms((items) => [created, ...items.filter((item) => item.id !== created.id)]);
+      setFarmAreas([]);
       setCropCycles([]);
       setCropCycle(null);
       setGrowthStageDraft("");
@@ -927,6 +937,7 @@ export default function HomePage() {
         body: JSON.stringify({
           cropCode: form.get("cropCode"),
           cultivar: form.get("cultivar"),
+          farmAreaId: form.get("farmAreaId") || null,
           transplantDate: form.get("transplantDate"),
           growthStage: form.get("growthStage"),
         }),
@@ -957,19 +968,25 @@ export default function HomePage() {
       return;
     }
 
+    const form = new FormData(event.currentTarget);
+    const farmAreaId = form.get("farmAreaId");
     setIsUpdatingGrowthStage(true);
     try {
       const updated = await apiRequest<CropCycle>(`/api/crop-cycles/${cropCycle.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ growthStage: growthStageDraft }),
+        body: JSON.stringify({
+          growthStage: growthStageDraft,
+          farmAreaId: typeof farmAreaId === "string" && farmAreaId.length > 0 ? farmAreaId : null,
+        }),
       });
       setCropCycle(updated);
       setCropCycles((items) => items.map((item) => (item.id === updated.id ? updated : item)));
       setGrowthStageDraft(updated.growthStage ?? "");
+      const areaLabel = updated.farmAreaId
+        ? farmAreas.find((area) => area.id === updated.farmAreaId)?.name ?? "선택한 재배 구역"
+        : "미지정";
       setMessage(
-        updated.growthStage
-          ? `현재 생육 단계를 “${updated.growthStage}”로 저장했습니다.`
-          : "현재 생육 단계 설정을 비웠습니다.",
+        `${updated.growthStage ? `현재 생육 단계를 “${updated.growthStage}”로 저장했습니다.` : "현재 생육 단계 설정을 비웠습니다."} 주 재배 구역: ${areaLabel}.`,
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "생육 단계 저장에 실패했습니다.");
@@ -1054,6 +1071,14 @@ export default function HomePage() {
     return result.items;
   }
 
+  async function loadFarmAreas(farmId: string) {
+    const result = await apiRequest<{ items: FarmArea[] }>(`/api/farms/${farmId}/areas`, {
+      method: "GET",
+    });
+    setFarmAreas(result.items);
+    return result.items;
+  }
+
   function clearCropCycleContext() {
     setCropCycle(null);
     setGrowthStageDraft("");
@@ -1080,9 +1105,10 @@ export default function HomePage() {
     clearCropCycleContext();
     setTodayTasks([]);
     setHistory([]);
+    setFarmAreas([]);
     try {
       const cropCycleItems = await loadCropCycles(selectedFarm.id);
-      await Promise.all([loadTodayTasks(selectedFarm.id), loadHistory(selectedFarm.id)]);
+      await Promise.all([loadFarmAreas(selectedFarm.id), loadTodayTasks(selectedFarm.id), loadHistory(selectedFarm.id)]);
       return cropCycleItems;
     } finally {
       setIsRestoringContext(false);
@@ -1097,6 +1123,7 @@ export default function HomePage() {
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
       setLatestInviteEmail(null);
+      setFarmAreas([]);
       setCropCycles([]);
       clearCropCycleContext();
       setTodayTasks([]);
@@ -1184,6 +1211,7 @@ export default function HomePage() {
         body: JSON.stringify({
           title: form.get("title"),
           reason: form.get("reason"),
+          farmAreaId: form.get("farmAreaId") || null,
           scheduledFor: form.get("scheduledFor"),
           priority: form.get("priority"),
         }),
@@ -1911,7 +1939,12 @@ export default function HomePage() {
       </section> : null}
 
       {userEmail && farm ? (
-        <FarmAreaPanel canManageFarm={canManageSelectedFarm} farmId={farm.id} key={farm.id} />
+        <FarmAreaPanel
+          canManageFarm={canManageSelectedFarm}
+          farmId={farm.id}
+          key={farm.id}
+          onAreasChanged={() => void loadFarmAreas(farm.id)}
+        />
       ) : null}
 
       {userEmail && farm && canManageSelectedFarm ? (
@@ -1934,6 +1967,16 @@ export default function HomePage() {
               품종 (선택)
               <input name="cultivar" defaultValue="seolhyang" />
             </label>
+            <label>
+              주 재배 구역 (선택)
+              <select defaultValue="" name="farmAreaId">
+                <option value="">아직 지정하지 않음</option>
+                {farmAreas.map((area) => (
+                  <option key={area.id} value={area.id}>{area.name}</option>
+                ))}
+              </select>
+            </label>
+            <p className="field-hint">주 재배 구역을 정하면 이후 새로 적용하는 Template 작업에 같은 구역이 연결됩니다.</p>
             <label>
               정식일
               <input name="transplantDate" required type="date" defaultValue={transplantDate} />
@@ -1982,7 +2025,7 @@ export default function HomePage() {
         <section className="card stack" aria-labelledby="plan-heading">
           <h2 id="plan-heading">작업 계획과 기록</h2>
           <p className="muted">
-            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"}
+            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"} · 주 재배 구역 {cropCycle.farmAreaId ? farmAreas.find((area) => area.id === cropCycle.farmAreaId)?.name ?? "선택한 구역" : "미지정"}
           </p>
           {!canManageSelectedFarm ? (
             <p className="field-hint">작업자는 일정과 오늘 작업을 확인하고 결과 또는 관찰한 문제를 기록합니다. 작기·생육 단계·계획 변경은 소유자 또는 관리자가 처리합니다.</p>
@@ -2013,9 +2056,9 @@ export default function HomePage() {
           <section className="growth-stage-entry stack" aria-labelledby="growth-stage-heading">
             <h3 id="growth-stage-heading">현재 생육 단계</h3>
             <p className="field-hint">
-              Crop Pack의 단계 용어를 직접 입력합니다. 저장해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다.
+              Crop Pack의 단계 용어와 주 재배 구역을 저장합니다. 이미 생성된 FarmTask 일정은 자동으로 바뀌지 않습니다.
             </p>
-            {canManageSelectedFarm ? <form className="stack" onSubmit={handleGrowthStageUpdate}>
+            {canManageSelectedFarm ? <form className="stack" key={cropCycle.id} onSubmit={handleGrowthStageUpdate}>
               <label>
                 생육 단계 (선택 사항)
                 <input
@@ -2025,6 +2068,15 @@ export default function HomePage() {
                   placeholder="예: flowering"
                   value={growthStageDraft}
                 />
+              </label>
+              <label>
+                주 재배 구역 (선택)
+                <select defaultValue={cropCycle.farmAreaId ?? ""} name="farmAreaId">
+                  <option value="">아직 지정하지 않음</option>
+                  {farmAreas.map((area) => (
+                    <option key={area.id} value={area.id}>{area.name}</option>
+                  ))}
+                </select>
               </label>
               <div className="button-row">
                 <button disabled={isUpdatingGrowthStage} type="submit">
@@ -2058,6 +2110,15 @@ export default function HomePage() {
                   <textarea maxLength={1000} name="reason" required rows={3} />
                 </label>
                 <label>
+                  작업 대상 재배 구역 (선택)
+                  <select defaultValue={cropCycle.farmAreaId ?? ""} name="farmAreaId">
+                    <option value="">아직 지정하지 않음</option>
+                    {farmAreas.map((area) => (
+                      <option key={area.id} value={area.id}>{area.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
                   예정일
                   <input defaultValue={transplantDate} name="scheduledFor" required type="date" />
                 </label>
@@ -2089,6 +2150,7 @@ export default function HomePage() {
                       상태 {taskStatusLabel(task.status)} · 우선순위 {task.priority} · 검증 상태 {task.verificationStatus}
                     </small>
                     <small>담당 {taskAssigneeLabel(task.assignedUserId)}</small>
+                    {task.farmAreaId ? <small>재배 구역 {farmAreas.find((area) => area.id === task.farmAreaId)?.name ?? "선택한 구역"}</small> : null}
                     {task.sourceType === "manual" ? <small>직접 등록 작업</small> : null}
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
@@ -2121,6 +2183,7 @@ export default function HomePage() {
                     <small>작업 상태 {taskStatusLabel(task.status)}</small>
                     <small>담당 {taskAssigneeLabel(task.assignedUserId)}</small>
                     <small>검증 상태 {task.verificationStatus}</small>
+                    {task.farmAreaId ? <small>재배 구역 {farmAreas.find((area) => area.id === task.farmAreaId)?.name ?? "선택한 구역"}</small> : null}
                     {task.sourceType === "issue_followup" ? <small>문제 재확인 후속 작업</small> : null}
                     <button
                       className="compact secondary"
@@ -2264,6 +2327,10 @@ export default function HomePage() {
                 <div>
                   <dt>담당자</dt>
                   <dd>{taskAssigneeLabel(taskDetail.assignedUserId)}</dd>
+                </div>
+                <div>
+                  <dt>재배 구역</dt>
+                  <dd>{taskDetail.farmAreaId ? farmAreas.find((area) => area.id === taskDetail.farmAreaId)?.name ?? "선택한 구역" : "미지정"}</dd>
                 </div>
                 <div>
                   <dt>작업 출처 · 결과 기록</dt>

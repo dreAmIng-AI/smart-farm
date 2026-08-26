@@ -14,6 +14,7 @@ type FarmArea = {
 type FarmAreaPanelProps = {
   canManageFarm: boolean;
   farmId: string;
+  onAreasChanged?: () => void;
 };
 
 async function fetchFarmAreas(farmId: string) {
@@ -24,7 +25,7 @@ async function fetchFarmAreas(farmId: string) {
   return response.json() as Promise<{ items: FarmArea[] }>;
 }
 
-export function FarmAreaPanel({ canManageFarm, farmId }: FarmAreaPanelProps) {
+export function FarmAreaPanel({ canManageFarm, farmId, onAreasChanged }: FarmAreaPanelProps) {
   const [areas, setAreas] = useState<FarmArea[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +78,7 @@ export function FarmAreaPanel({ canManageFarm, farmId }: FarmAreaPanelProps) {
 
       const area = (await response.json()) as FarmArea;
       setAreas((current) => [...current, area].sort((left, right) => left.name.localeCompare(right.name, "ko")));
+      onAreasChanged?.();
       form.reset();
       setFeedback(`${area.name} 재배 구역을 저장했습니다.`);
     } catch {

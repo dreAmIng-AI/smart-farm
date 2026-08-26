@@ -186,9 +186,19 @@ describe("CropCycle input", () => {
       parseCropCycleInput({
         cropCode: "test_crop",
         cultivar: "test_variety",
+        farmAreaId: "11111111-1111-4111-8111-111111111111",
         transplantDate: "2026-08-12",
       }),
-    ).toMatchObject({ ok: true });
+    ).toEqual({
+      ok: true,
+      data: {
+        cropCode: "test_crop",
+        cultivar: "test_variety",
+        farmAreaId: "11111111-1111-4111-8111-111111111111",
+        transplantDate: "2026-08-12",
+        growthStage: null,
+      },
+    });
   });
 
   it("rejects invalid CropCycle input", () => {
@@ -198,6 +208,9 @@ describe("CropCycle input", () => {
       ok: false,
       error: "transplantDate must be a valid YYYY-MM-DD date.",
     });
+    expect(
+      parseCropCycleInput({ cropCode: "test_crop", farmAreaId: "not-a-uuid", transplantDate: "2026-08-12" }),
+    ).toMatchObject({ ok: false, error: "farmAreaId must be a UUID or null." });
   });
 });
 
@@ -403,6 +416,7 @@ describe("Manual FarmTask input", () => {
       parseManualFarmTaskInput({
         title: "Check greenhouse ventilation",
         reason: "Operator-requested facility check.",
+        farmAreaId: null,
         scheduledFor: "2026-08-14",
         priority: "medium",
       }),
@@ -416,6 +430,9 @@ describe("Manual FarmTask input", () => {
     expect(
       parseManualFarmTaskInput({ title: "Check", reason: "Reason", scheduledFor: "2026-02-30", priority: "medium" }),
     ).toMatchObject({ ok: false, error: "scheduledFor must be a valid YYYY-MM-DD date." });
+    expect(
+      parseManualFarmTaskInput({ title: "Check", reason: "Reason", farmAreaId: "not-a-uuid", scheduledFor: "2026-08-14", priority: "medium" }),
+    ).toMatchObject({ ok: false, error: "farmAreaId must be a UUID or null." });
   });
 });
 

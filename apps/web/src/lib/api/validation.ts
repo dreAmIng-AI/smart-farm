@@ -10,11 +10,13 @@ export type FarmInput = {
 export type CropCycleInput = {
   cropCode: string;
   cultivar: string | null;
+  farmAreaId: string | null;
   transplantDate: string;
   growthStage: string | null;
 };
 
 export type CropCycleGrowthStageInput = {
+  farmAreaId?: string | null;
   growthStage: string | null;
 };
 
@@ -71,6 +73,7 @@ export type FollowUpTaskInput = {
 };
 
 export type ManualFarmTaskInput = FollowUpTaskInput & {
+  farmAreaId: string | null;
   reason: string;
 };
 
@@ -179,6 +182,7 @@ export function parseCropCycleInput(value: unknown): Parsed<CropCycleInput> {
 
   const cropCode = requiredText(value.cropCode);
   const transplantDate = requiredText(value.transplantDate);
+  const farmAreaId = value.farmAreaId ?? null;
 
   if (!cropCode || !transplantDate) {
     return { ok: false, error: "cropCode and transplantDate are required." };
@@ -188,11 +192,16 @@ export function parseCropCycleInput(value: unknown): Parsed<CropCycleInput> {
     return { ok: false, error: "transplantDate must be a valid YYYY-MM-DD date." };
   }
 
+  if (farmAreaId !== null && (typeof farmAreaId !== "string" || !isUuid(farmAreaId))) {
+    return { ok: false, error: "farmAreaId must be a UUID or null." };
+  }
+
   return {
     ok: true,
     data: {
       cropCode,
       cultivar: optionalText(value.cultivar),
+      farmAreaId,
       transplantDate,
       growthStage: optionalText(value.growthStage),
     },
@@ -219,7 +228,16 @@ export function parseCropCycleGrowthStageInput(
     return { ok: false, error: "growthStage must not exceed 100 characters." };
   }
 
-  return { ok: true, data: { growthStage } };
+  if (!("farmAreaId" in value)) {
+    return { ok: true, data: { growthStage } };
+  }
+
+  const farmAreaId = value.farmAreaId ?? null;
+  if (farmAreaId !== null && (typeof farmAreaId !== "string" || !isUuid(farmAreaId))) {
+    return { ok: false, error: "farmAreaId must be a UUID or null." };
+  }
+
+  return { ok: true, data: { growthStage, farmAreaId } };
 }
 
 export function parseCropCycleStatusInput(value: unknown): Parsed<CropCycleStatusInput> {
@@ -453,6 +471,7 @@ export function parseManualFarmTaskInput(value: unknown): Parsed<ManualFarmTaskI
   const reason = requiredText(value.reason);
   const scheduledFor = requiredText(value.scheduledFor);
   const priority = value.priority;
+  const farmAreaId = value.farmAreaId ?? null;
 
   if (!title || title.length > 200) {
     return { ok: false, error: "title is required and must not exceed 200 characters." };
@@ -470,7 +489,11 @@ export function parseManualFarmTaskInput(value: unknown): Parsed<ManualFarmTaskI
     return { ok: false, error: "priority must be low, medium, or high." };
   }
 
-  return { ok: true, data: { title, reason, scheduledFor, priority } };
+  if (farmAreaId !== null && (typeof farmAreaId !== "string" || !isUuid(farmAreaId))) {
+    return { ok: false, error: "farmAreaId must be a UUID or null." };
+  }
+
+  return { ok: true, data: { title, reason, scheduledFor, priority, farmAreaId } };
 }
 
 export function parseFarmAreaInput(value: unknown): Parsed<FarmAreaInput> {
