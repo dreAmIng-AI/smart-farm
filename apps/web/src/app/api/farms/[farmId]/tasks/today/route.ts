@@ -8,6 +8,7 @@ type RouteContext = { params: Promise<{ farmId: string }> };
 
 type TodayTaskRow = {
   assigned_user_id: string | null;
+  farm_area_id: string | null;
   id: string;
   crop_cycle_id: string;
   parent_issue_id: string | null;
@@ -61,7 +62,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { data, error } = await auth.supabase
     .from("farm_tasks")
     .select(
-      "id, crop_cycle_id, parent_issue_id, assigned_user_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
+      "id, crop_cycle_id, parent_issue_id, assigned_user_id, farm_area_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
     )
     .eq("farm_id", farmId)
     .in("status", ["pending", "in_progress"])
@@ -80,6 +81,7 @@ export async function GET(_request: Request, context: RouteContext) {
     items: rows.map((task) => ({
       id: task.id,
       assignedUserId: task.assigned_user_id,
+      farmAreaId: task.farm_area_id,
       cropCycleId: task.crop_cycle_id,
       parentIssueId: task.parent_issue_id,
       title: task.title,

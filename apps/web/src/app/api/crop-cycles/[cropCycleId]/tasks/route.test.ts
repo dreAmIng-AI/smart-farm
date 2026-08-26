@@ -21,6 +21,9 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
   const insertedTaskSingle = vi.fn();
   const insertedTaskSelect = vi.fn(() => ({ single: insertedTaskSingle }));
   const insertTask = vi.fn(() => ({ select: insertedTaskSelect }));
+  const farmAreaMaybeSingle = vi.fn();
+  const farmAreaEq = vi.fn(() => ({ maybeSingle: farmAreaMaybeSingle }));
+  const farmAreaSelect = vi.fn(() => ({ eq: farmAreaEq }));
   const from = vi.fn((table: string) => {
     if (table === "crop_cycles") {
       return { select: cropCycleSelect };
@@ -28,6 +31,10 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
 
     if (table === "farm_tasks") {
       return { insert: insertTask };
+    }
+
+    if (table === "farm_areas") {
+      return { select: farmAreaSelect };
     }
 
     throw new Error(`Unexpected table: ${table}`);
@@ -44,6 +51,7 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
       data: {
         id: taskId,
         assigned_user_id: null,
+        farm_area_id: null,
         parent_issue_id: null,
         title: "Check ventilation",
         task_type: "manual",
@@ -84,6 +92,7 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
     expect(insertTask).toHaveBeenCalledWith(expect.objectContaining({
       crop_cycle_id: cropCycleId,
       farm_id: farmId,
+      farm_area_id: null,
       scheduled_for: "2026-08-13T15:00:00.000Z",
       source_type: "manual",
       verification_status: "draft",
@@ -91,6 +100,29 @@ describe("POST /api/crop-cycles/:cropCycleId/tasks", () => {
     await expect(response.json()).resolves.toMatchObject({
       farmTask: { id: taskId, assignedUserId: null, sourceType: "manual" },
     });
+  });
+
+  it("rejects a FarmArea from another Farm before creating a manual FarmTask", async () => {
+    const otherFarmAreaId = "44444444-4444-4444-8444-444444444444";
+    farmAreaMaybeSingle.mockResolvedValue({ data: { id: otherFarmAreaId, farm_id: "other-farm" }, error: null });
+
+    const response = await POST(
+      new Request(`http://localhost/api/crop-cycles/${cropCycleId}/tasks`, {
+        body: JSON.stringify({
+          title: "Check ventilation",
+          reason: "Operator-requested check.",
+          farmAreaId: otherFarmAreaId,
+          scheduledFor: "2026-08-14",
+          priority: "medium",
+        }),
+        method: "POST",
+      }),
+      { params: Promise.resolve({ cropCycleId }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(insertTask).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "FARM_AREA_NOT_FOUND" } });
   });
 
   it("rejects a closed CropCycle before creating a FarmTask", async () => {

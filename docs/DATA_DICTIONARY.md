@@ -1,8 +1,8 @@
 # Data Dictionary
 
-**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea, Observation, Measurement and KMA Weather v0.2 additions**
+**Status: CURRENT PLATFORM DATA CONTRACT — implemented v0.1 schema plus FarmArea work context, Observation, Measurement and KMA Weather v0.2 additions**
 
-**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas, observations, measurements와 KMA Weather용 external_data_snapshots를 구현합니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다. FarmArea의 작기·작업 연결과 후속 외부 데이터 cache는 각각의 구현 PR에서 migration·RLS·API·tests와 함께 추가합니다.**
+**Note: migration은 farms, farm_creator_permissions, farm_memberships, farm_invitations, crop_cycles, task_templates, farm_tasks, action_logs, issue_records, attachments, farm_areas, observations, measurements와 KMA Weather용 external_data_snapshots를 구현합니다. `crop_cycles.farm_area_id`와 `farm_tasks.farm_area_id`는 같은 Farm의 FarmArea만 참조하도록 composite foreign key로 보호됩니다. Attachment 파일은 비공개 Supabase Storage 버킷에 저장됩니다.**
 
 ## 1. 공통 규칙
 
@@ -23,8 +23,7 @@ Farm → Observation ────────→ IssueRecord
 ActionLog | IssueRecord → Attachment
 TaskTemplate → FarmTask
 
-Farm → FarmArea
-(v0.2 planned) FarmArea → CropCycle / FarmTask / Observation / Measurement
+Farm → FarmArea → optional CropCycle / FarmTask / Observation / Measurement
 ```
 
 `CropCycle + TaskTemplate → Scheduled FarmTask[]`가 작기 전체 작업계획을 표현합니다. 현재 `farm_plans` 테이블은 추가하지 않습니다.
@@ -216,15 +215,16 @@ No street address or silent browser GPS is stored. The user must explicitly requ
 
 `unique (farm_id, name)` is sufficient for the Pilot. No GIS geometry, address or sensor fields are introduced.
 
-### crop_cycles / farm_tasks FarmArea link (planned alteration)
+### crop_cycles / farm_tasks FarmArea link (implemented by `202608260001_platform_v02_farm_area_work_context.sql`)
 
 | Table | Field | Type | Required | Meaning |
 |---|---|---|---:|---|
 | crop_cycles | farm_area_id | uuid FK | N | 작기의 주 재배 구역 |
-| crop_cycles | cultivation_method | text | N | 작기 수준의 재배방식 문맥; 기존 Farm 기본값을 덮을 때만 사용 |
 | farm_tasks | farm_area_id | uuid FK | N | 작업의 대상 재배 구역 |
 
 Database validation must ensure that the selected FarmArea belongs to the same Farm as the CropCycle/FarmTask.
+
+작기 수준의 `cultivation_method` override는 이 Slice에 추가하지 않는다. Farm 기본 재배방식은 기존 `farms.cultivation_method`를 계속 사용한다.
 
 ### observations (implemented by `202608240002_platform_v02_observations.sql`)
 

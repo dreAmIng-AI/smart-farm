@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthenticatedSupabaseUser, requireFarmManager } from "@/lib/api/auth";
+import {
+  requireAuthenticatedSupabaseUser,
+  requireFarmManager,
+  type AuthenticatedSupabaseContext,
+} from "@/lib/api/auth";
 import { isUuid, parseManualFarmTaskInput } from "@/lib/api/validation";
 
 type RouteContext = { params: Promise<{ cropCycleId: string }> };
@@ -14,6 +18,7 @@ type CropCycleRow = {
 type FarmTaskRow = {
   assigned_user_id: string | null;
   evidence: unknown[];
+  farm_area_id: string | null;
   id: string;
   parent_issue_id: string | null;
   priority: "low" | "medium" | "high";
@@ -27,6 +32,38 @@ type FarmTaskRow = {
   verification_status: string;
 };
 
+async function validateFarmArea(
+  auth: AuthenticatedSupabaseContext,
+  farmId: string,
+  farmAreaId: string | null,
+) {
+  if (!farmAreaId) return { ok: true as const };
+  const { data, error } = await auth.supabase
+    .from("farm_areas")
+    .select("id, farm_id")
+    .eq("id", farmAreaId)
+    .maybeSingle();
+  if (error) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_LOOKUP_FAILED", message: error.message } },
+        { status: 400 },
+      ),
+    };
+  }
+  if (!data || data.farm_id !== farmId) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        { error: { code: "FARM_AREA_NOT_FOUND", message: "FarmArea was not found in this Farm." } },
+        { status: 404 },
+      ),
+    };
+  }
+  return { ok: true as const };
+}
+
 function seoulStartOfDay(value: string) {
   return new Date(`${value}T00:00:00.000+09:00`).toISOString();
 }
@@ -35,6 +72,7 @@ function taskResponse(task: FarmTaskRow) {
   return {
     id: task.id,
     assignedUserId: task.assigned_user_id,
+    farmAreaId: task.farm_area_id,
     parentIssueId: task.parent_issue_id,
     title: task.title,
     taskType: task.task_type,
@@ -105,12 +143,18 @@ export async function POST(request: Request, context: RouteContext) {
     return authorization.response;
   }
 
+  const farmArea = await validateFarmArea(auth, cropCycleRow.farm_id, parsed.data.farmAreaId);
+  if (!farmArea.ok) {
+    return farmArea.response;
+  }
+
   const { data, error } = await auth.supabase
     .from("farm_tasks")
     .insert({
       crop_cycle_id: cropCycleRow.id,
       evidence: [],
       farm_id: cropCycleRow.farm_id,
+      farm_area_id: parsed.data.farmAreaId,
       priority: parsed.data.priority,
       reason: parsed.data.reason,
       result_required: true,
@@ -123,7 +167,7 @@ export async function POST(request: Request, context: RouteContext) {
       verification_status: "draft",
     })
     .select(
-      "id, parent_issue_id, assigned_user_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
+      "id, parent_issue_id, assigned_user_id, farm_area_id, title, task_type, reason, priority, scheduled_for, evidence, verification_status, source_type, status, result_required",
     )
     .single();
 

@@ -39,7 +39,7 @@ Farm → CropCycle → TaskTemplate → FarmTask → Today
 |---|---|---|
 | FR-01 | Preserve the v0.1 Farm, CropCycle, FarmTask, ActionLog, IssueRecord, Attachment and membership work cycle. | implemented |
 | FR-02 | A Farm has zero or more named FarmAreas without GIS complexity. | implemented |
-| FR-03 | CropCycle and FarmTask can optionally identify their FarmArea. | planned |
+| FR-03 | CropCycle and FarmTask can optionally identify their FarmArea. | implemented |
 | FR-04 | A user can add an Observation as an observed fact without a FarmTask. | implemented |
 | FR-05 | A user can add a numeric Measurement with metric, value, unit and observed time without a FarmTask. | implemented |
 | FR-06 | IssueRecord remains a non-diagnostic “확인이 필요한 문제” and can originate from an Observation. | implemented |

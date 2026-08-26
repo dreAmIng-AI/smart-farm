@@ -1,8 +1,8 @@
 # API Contract
 
-**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea, Observation-origin IssueRecord, Measurement and KMA Weather v0.2 routes**
+**Status: CURRENT PLATFORM API CONTRACT — implemented v0.1 routes plus FarmArea work context, Observation-origin IssueRecord, Measurement and KMA Weather v0.2 routes**
 
-**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea·Observation·Measurement·KMA Weather endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
+**Note: 실제 계약의 단일 원본은 구현 스키마와 테스트입니다. 현재 Farm·CropCycle·계획·일정·Today·결과 기록·Issue·사진 첨부·후속 작업·이력·FarmArea work context·Observation·Measurement·KMA Weather endpoint가 구현되어 있습니다. 아래 `planned v0.2` endpoint는 구현되지 않았으며 해당 Vertical Slice의 migration·RLS·테스트와 함께만 활성화됩니다.**
 
 ## 1. 공통 원칙
 
@@ -45,7 +45,7 @@
 | `PATCH/DELETE /api/farms/{farmId}/members/{memberUserId}` | owner의 역할 변경 또는 owner/admin의 구성원 제거 |
 | `POST /api/farm-invitations/accept` | 로그인 이메일과 일치하는 초대 링크 수락 |
 | `GET/POST /api/farms/{farmId}/crop-cycles` | 접근 가능한 Farm의 CropCycle 목록 조회·CropCycle 생성 |
-| `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계 변경 또는 비우기 |
+| `PATCH /api/crop-cycles/{cropCycleId}` | 현재 생육 단계와 선택적 주 재배 구역 변경 또는 비우기 |
 | `PATCH /api/crop-cycles/{cropCycleId}/status` | 진행 중 CropCycle 완료·취소 처리 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks/generate` | TaskTemplate을 예정 FarmTask로 적용해 작기 계획 생성 |
 | `POST /api/crop-cycles/{cropCycleId}/tasks` | owner/admin이 진행 중 CropCycle에 직접 FarmTask 등록 |
@@ -125,6 +125,7 @@ owner만 `PATCH /api/farms/{farmId}/members/{memberUserId}`로 non-owner를 admi
 {
   "cropCode": "reference_crop",
   "cultivar": "reference_variety",
+  "farmAreaId": "uuid-or-null",
   "transplantDate": "2026-09-10",
   "growthStage": "flowering"
 }
@@ -132,13 +133,14 @@ owner만 `PATCH /api/farms/{farmId}/members/{memberUserId}`로 non-owner를 admi
 
 Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는 특정 값에 의존하지 않습니다.
 
-### 현재 생육 단계 변경
+### 현재 생육 단계·주 재배 구역 변경
 
-`PATCH /api/crop-cycles/{cropCycleId}`는 접근 가능한 CropCycle의 현재 `growthStage`만 바꿉니다. Crop Pack의 용어를 자유 텍스트로 받으며, Core는 작물별 선택 목록이나 농업 규칙을 하드코딩하지 않습니다. 빈 문자열 또는 `null`은 현재 생육 단계를 비웁니다. 최대 길이는 100자입니다.
+`PATCH /api/crop-cycles/{cropCycleId}`는 접근 가능한 CropCycle의 현재 `growthStage`와 선택적 `farmAreaId`를 바꿉니다. Crop Pack의 용어를 자유 텍스트로 받으며, Core는 작물별 선택 목록이나 농업 규칙을 하드코딩하지 않습니다. 빈 문자열 또는 `null`은 현재 생육 단계를 비우고, `farmAreaId: null`은 주 재배 구역을 해제합니다. 선택한 재배 구역은 같은 Farm에 속해야 하며, API 검증과 DB composite foreign key가 함께 보호합니다. 최대 길이는 100자입니다.
 
 ```json
 {
-  "growthStage": "flowering"
+  "growthStage": "flowering",
+  "farmAreaId": "uuid-or-null"
 }
 ```
 
@@ -156,7 +158,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 
 ### 작기 계획 생성
 
-계획 생성은 CropCycle과 적용 가능한 TaskTemplate을 사용해 예정 FarmTask를 만듭니다. 동일 CropCycle·템플릿·일정 조합의 중복 생성을 방지해야 합니다.
+계획 생성은 CropCycle과 적용 가능한 TaskTemplate을 사용해 예정 FarmTask를 만듭니다. CropCycle에 주 재배 구역이 있으면 새 template FarmTask는 그 `farmAreaId`를 함께 보관합니다. 동일 CropCycle·템플릿·일정 조합의 중복 생성을 방지해야 합니다. 기존 생성 작업의 재배 구역은 자동으로 바꾸지 않습니다.
 
 ```json
 {
@@ -173,12 +175,13 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 {
   "title": "시설 환기 상태 확인",
   "reason": "현장 운영자가 추가한 점검 작업",
+  "farmAreaId": "uuid-or-null",
   "scheduledFor": "2026-09-11",
   "priority": "medium"
 }
 ```
 
-성공 시 `201`과 생성된 FarmTask를 반환한다. 직접 작업은 `sourceType: manual`, `taskType: manual`, `verificationStatus: draft`, 빈 `evidence`로 저장하며 Crop Pack의 처방이나 자동 작업 생성을 의미하지 않는다.
+성공 시 `201`과 생성된 FarmTask를 반환한다. 선택한 `farmAreaId`는 같은 Farm 소속이어야 하며, `null`이면 작업 대상 구역을 지정하지 않는다. 직접 작업은 `sourceType: manual`, `taskType: manual`, `verificationStatus: draft`, 빈 `evidence`로 저장하며 Crop Pack의 처방이나 자동 작업 생성을 의미하지 않는다.
 
 ### Today 응답의 핵심 필드
 
@@ -195,6 +198,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
       "verificationStatus": "draft",
       "sourceType": "template",
       "assignedUserId": null,
+      "farmAreaId": "uuid-or-null",
       "status": "pending",
       "resultRequired": true,
       "scheduleState": "today"
@@ -204,11 +208,11 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
 }
 ```
 
-`scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다.
+`scheduleState`는 Today에서만 포함하며 `today` 또는 `overdue`입니다. 일정 조회, Today 조회, 작업 상세 응답은 모두 선택적 `farmAreaId`를 포함합니다.
 
 ### FarmTask 상세
 
-`GET /api/tasks/{taskId}`는 RLS로 접근 가능한 단일 FarmTask의 실행 문맥을 반환합니다. `reason`, `scheduledFor`, `dueAt`, `priority`, `evidence`, `verificationStatus`, `sourceType`, `assignedUserId`, `resultRequired`, `status`와 생성·완료 시각을 포함합니다. 이 조회는 FarmTask, TaskTemplate 또는 일정 데이터를 수정하지 않습니다. 유효하지 않은 ID는 `VALIDATION_ERROR`(400), 접근할 수 없거나 없는 작업은 `TASK_NOT_FOUND`(404)입니다.
+`GET /api/tasks/{taskId}`는 RLS로 접근 가능한 단일 FarmTask의 실행 문맥을 반환합니다. `reason`, `scheduledFor`, `dueAt`, `priority`, `evidence`, `verificationStatus`, `sourceType`, `assignedUserId`, 선택적 `farmAreaId`, `resultRequired`, `status`와 생성·완료 시각을 포함합니다. 이 조회는 FarmTask, TaskTemplate 또는 일정 데이터를 수정하지 않습니다. 유효하지 않은 ID는 `VALIDATION_ERROR`(400), 접근할 수 없거나 없는 작업은 `TASK_NOT_FOUND`(404)입니다.
 
 ```json
 {
@@ -222,6 +226,7 @@ Strawberry / Seolhyang은 첫 Fixture 값일 수 있지만, API 계약 자체는
   "verificationStatus": "draft",
   "sourceType": "template",
   "assignedUserId": null,
+  "farmAreaId": "uuid-or-null",
   "status": "pending",
   "resultRequired": true
 }

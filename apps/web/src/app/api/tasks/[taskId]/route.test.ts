@@ -31,6 +31,7 @@ describe("GET /api/tasks/:taskId", () => {
       data: {
         id: taskId,
         assigned_user_id: null,
+        farm_area_id: "55555555-5555-4555-8555-555555555555",
         farm_id: "22222222-2222-4222-8222-222222222222",
         crop_cycle_id: "33333333-3333-4333-8333-333333333333",
         task_template_id: "44444444-4444-4444-8444-444444444444",
@@ -55,6 +56,7 @@ describe("GET /api/tasks/:taskId", () => {
       data: {
         id: taskId,
         assigned_user_id: null,
+        farm_area_id: "55555555-5555-4555-8555-555555555555",
         farm_id: "22222222-2222-4222-8222-222222222222",
         crop_cycle_id: "33333333-3333-4333-8333-333333333333",
         task_template_id: "44444444-4444-4444-8444-444444444444",
@@ -95,6 +97,7 @@ describe("GET /api/tasks/:taskId", () => {
       dueAt: "2026-08-18T12:00:00.000Z",
       verificationStatus: "draft",
       assignedUserId: null,
+      farmAreaId: "55555555-5555-4555-8555-555555555555",
       resultRequired: true,
     });
   });

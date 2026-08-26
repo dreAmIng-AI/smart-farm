@@ -1,8 +1,8 @@
 # Architecture
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea, Observation, Measurement and KMA Weather v0.2 extensions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement and KMA Weather v0.2 extensions implemented**
 
-> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea, standalone Observation, manual Measurement and KMA Weather with a focused durable snapshot cache are implemented v0.2 extensions; Disease/Pest, Crop Information and Market remain target contracts until their own migration and PR are merged.
+> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea with optional CropCycle/FarmTask work context, standalone Observation, manual Measurement and KMA Weather with a focused durable snapshot cache are implemented v0.2 extensions; Disease/Pest, Crop Information and Market remain target contracts until their own migration and PR are merged.
 
 ## 1. 아키텍처 목표
 
@@ -40,7 +40,7 @@ Official API → server-only Provider Adapter → Normalizer
              → cache / last successful snapshot → IntegrationResult → UI
 ```
 
-`FarmArea`, `Observation`, `Measurement` are Operations Core extensions. Weather, Disease/Pest, Crop Information and Market are Baseline Modules: they use Core context but cannot make Core transactions depend on a provider response. The complete adapter, provenance and fallback rules are in [INTEGRATION_CONTRACT.md](INTEGRATION_CONTRACT.md).
+`FarmArea`, its optional CropCycle/FarmTask work context, `Observation`, `Measurement` are Operations Core extensions. Weather, Disease/Pest, Crop Information and Market are Baseline Modules: they use Core context but cannot make Core transactions depend on a provider response. The complete adapter, provenance and fallback rules are in [INTEGRATION_CONTRACT.md](INTEGRATION_CONTRACT.md).
 
 ## 3. 기술 기준
 

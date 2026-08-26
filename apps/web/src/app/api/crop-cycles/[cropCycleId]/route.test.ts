@@ -33,6 +33,7 @@ describe("PATCH /api/crop-cycles/:cropCycleId", () => {
         farm_id: "22222222-2222-4222-8222-222222222222",
         crop_code: "test_crop",
         cultivar: "test_variety",
+        farm_area_id: null,
         transplant_date: "2026-08-13",
         growth_stage: "flowering",
         status: "active",
@@ -64,6 +65,7 @@ describe("PATCH /api/crop-cycles/:cropCycleId", () => {
       id: cropCycleId,
       cropCode: "test_crop",
       growthStage: "flowering",
+      farmAreaId: null,
     });
   });
 

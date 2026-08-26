@@ -65,7 +65,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update({ status: parsed.data.status })
     .eq("id", cropCycleId)
     .eq("status", "active")
-    .select("id, farm_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
+    .select("id, farm_id, farm_area_id, crop_code, cultivar, transplant_date, growth_stage, status, ended_at")
     .maybeSingle();
 
   if (error) {
@@ -87,6 +87,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     farmId: data.farm_id,
     cropCode: data.crop_code,
     cultivar: data.cultivar,
+    farmAreaId: data.farm_area_id,
     transplantDate: data.transplant_date,
     growthStage: data.growth_stage,
     status: data.status,

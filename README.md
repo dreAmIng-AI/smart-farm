@@ -9,14 +9,15 @@ dreAmIng Smart Farm은 농업인이 **오늘 해야 할 일, 확인할 사항, �
 ```text
 Farm → CropCycle → 작업계획 → Today → FarmTask 실행
      → ActionLog / IssueRecord → 선택적 사진 첨부 → Follow-up FarmTask → History
-     ↘ FarmArea / Observation → IssueRecord / Measurement / 실제 공공 참고정보 (v0.2 확장)
+     ↘ FarmArea → optional CropCycle / FarmTask
+     ↘ Observation → IssueRecord / Measurement / 실제 공공 참고정보 (v0.2 확장)
 ```
 
 ## 플랫폼 구조
 
 | 영역 | 역할 | 상태 |
 |---|---|---|
-| Operations Core | 작물과 무관한 농작업 실행관리 기반 | v0.1 구현됨, v0.2 FarmArea·Observation·Measurement 구현됨 |
+| Operations Core | 작물과 무관한 농작업 실행관리 기반 | v0.1 구현됨, v0.2 FarmArea work context·Observation·Measurement 구현됨 |
 | Baseline Modules | 실제 Weather, Disease/Pest, Crop Information, Market Information | 기상청 Weather 구현됨; 나머지는 공식 출처와 실패 격리를 전제로 순차 도입 |
 | Crop Packs | 작물·품종별 생육단계, 작업 템플릿, 근거와 검증 상태 | 설향 딸기가 첫 Reference Crop; Core에 작물별 분기 없음 |
 | Labs | Sensor, AI, Analytics, Automation, Prediction 등 고도화 실험 | Baseline의 선행 조건이 아니며 독립 유지 |
@@ -107,4 +108,4 @@ Farm owner만 새 Farm을 만들 수 있습니다. owner는 admin과 farmer를 �
 2. `supabase/migrations/`의 migration을 파일명 순서대로 대상 Supabase 프로젝트에 적용합니다.
 3. `pnpm dev`를 실행하고 `http://localhost:3000`에서 등록한 이메일로 로그인합니다. 신규 팀원은 받은 초대 링크에서 계정을 직접 설정할 수 있습니다.
 
-포함 흐름은 `로그인 → owner의 Farm 생성 또는 공유 Farm 선택 → owner/admin의 재배 구역 등록 → owner/admin의 CropCycle 생성·선택·현재 생육 단계 변경·종료 → Draft TaskTemplate 적용 또는 직접 FarmTask 등록·담당자 배정 → 일정 → Today → 모든 구성원의 작업 시작·결과 기록 → IssueRecord → 선택적 사진 첨부 → owner/admin의 Follow-up FarmTask → 이력`입니다. 재배 구역은 Farm 아래의 단순한 이름·메모이며 지도·상세 주소·GPS를 저장하지 않습니다. 날씨는 owner/admin이 농장에 있는 기기에서 명시적으로 확인한 위치의 이름과 약 5km 기상청 격자만 사용하며, 원래 GPS 좌표는 저장하거나 서버에 전송하지 않습니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료된 작기에는 자동 계획과 직접 작업을 새로 추가할 수 없지만 기존 일정과 이력은 계속 조회할 수 있습니다. 직접 등록 작업은 Crop Pack 처방이 아니며 sourceType `manual`, verificationStatus `draft`로 구분합니다. owner/admin은 같은 Farm 구성원에게 pending 또는 진행 중 FarmTask를 배정하거나 해제할 수 있습니다. 담당자 배정은 조율용 표시이며 다른 구성원의 작업 시작·완료를 제한하지 않습니다. owner/admin은 아직 시작하지 않은 예정 FarmTask를 취소할 수 있으며, 취소된 작업은 전체 일정에 보존되고 Today에서는 제외됩니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Disease/AI/Sensor/Market 기능은 이후 Slice에 포함합니다.
+포함 흐름은 `로그인 → owner의 Farm 생성 또는 공유 Farm 선택 → owner/admin의 재배 구역 등록 → owner/admin의 CropCycle 생성·선택·주 재배 구역·현재 생육 단계 변경·종료 → Draft TaskTemplate 적용 또는 직접 FarmTask 등록·대상 재배 구역·담당자 배정 → 일정 → Today → 모든 구성원의 작업 시작·결과 기록 → IssueRecord → 선택적 사진 첨부 → owner/admin의 Follow-up FarmTask → 이력`입니다. 재배 구역은 Farm 아래의 단순한 이름·메모이며 지도·상세 주소·GPS를 저장하지 않습니다. CropCycle의 주 재배 구역은 이후 새 Template 작업에 상속되며, 기존 일정은 자동으로 재배정하지 않습니다. 날씨는 owner/admin이 농장에 있는 기기에서 명시적으로 확인한 위치의 이름과 약 5km 기상청 격자만 사용하며, 원래 GPS 좌표는 저장하거나 서버에 전송하지 않습니다. 저장된 Farm과 CropCycle을 선택하면 기존 일정, Today, 이력을 다시 불러오며 작업 계획은 자동으로 다시 생성하지 않습니다. 작기는 완료 또는 취소 상태로 종료할 수 있고, 종료된 작기에는 자동 계획과 직접 작업을 새로 추가할 수 없지만 기존 일정과 이력은 계속 조회할 수 있습니다. 직접 등록 작업은 Crop Pack 처방이 아니며 sourceType `manual`, verificationStatus `draft`로 구분합니다. owner/admin은 같은 Farm 구성원에게 pending 또는 진행 중 FarmTask를 배정하거나 해제할 수 있습니다. 담당자 배정은 조율용 표시이며 다른 구성원의 작업 시작·완료를 제한하지 않습니다. owner/admin은 아직 시작하지 않은 예정 FarmTask를 취소할 수 있으며, 취소된 작업은 일정에 보존되고 Today에서는 제외됩니다. 생육 단계는 Crop Pack의 용어를 자유롭게 기록하는 현재 상태이며 변경해도 기존 FarmTask 일정은 자동으로 바뀌지 않습니다. 완료 기록은 ActionLog를 만들고 FarmTask를 완료 상태로 갱신합니다. 문제 기록은 관찰 사실을 ActionLog와 연결된 IssueRecord로 저장하며, 미해결 IssueRecord에서는 원본 문제를 참조하는 재확인 작업을 만들 수 있습니다. 사진은 결과 또는 문제 기록 뒤에 별도로 올리며, 비공개 Supabase Storage와 RLS로 보호됩니다. 사진 업로드에 실패해도 기존 결과·문제 기록은 유지됩니다. Fixture는 모두 `draft`이며 실제 농업 처방이나 확정 진단이 아닙니다. Disease/AI/Sensor/Market 기능은 이후 Slice에 포함합니다.

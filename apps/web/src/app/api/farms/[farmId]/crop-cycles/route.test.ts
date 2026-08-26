@@ -22,6 +22,9 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
   const cropInsertSingle = vi.fn();
   const cropInsertSelect = vi.fn(() => ({ single: cropInsertSingle }));
   const cropInsert = vi.fn(() => ({ select: cropInsertSelect }));
+  const farmAreaMaybeSingle = vi.fn();
+  const farmAreaEq = vi.fn(() => ({ maybeSingle: farmAreaMaybeSingle }));
+  const farmAreaSelect = vi.fn(() => ({ eq: farmAreaEq }));
   const from = vi.fn();
   const rpc = vi.fn();
 
@@ -36,6 +39,7 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
           farm_id: farmId,
           crop_code: "strawberry",
           cultivar: "seolhyang",
+          farm_area_id: null,
           transplant_date: "2026-08-13",
           growth_stage: "establishment",
           status: "active",
@@ -50,6 +54,7 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
         farm_id: farmId,
         crop_code: "test_crop",
         cultivar: "test_variety",
+        farm_area_id: null,
         transplant_date: "2026-08-18",
         growth_stage: "establishment",
         status: "active",
@@ -57,9 +62,11 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
       },
       error: null,
     });
-    from.mockImplementation((table: string) =>
-      table === "farms" ? { select: farmSelect } : { select: cropSelect, insert: cropInsert },
-    );
+    from.mockImplementation((table: string) => {
+      if (table === "farms") return { select: farmSelect };
+      if (table === "farm_areas") return { select: farmAreaSelect };
+      return { select: cropSelect, insert: cropInsert };
+    });
     requireAuthenticatedUser.mockResolvedValue({
       ok: true,
       supabase: { from, rpc },
@@ -82,6 +89,7 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
           farmId,
           cropCode: "strawberry",
           cultivar: "seolhyang",
+          farmAreaId: null,
           transplantDate: "2026-08-13",
           growthStage: "establishment",
           status: "active",
@@ -123,9 +131,31 @@ describe("GET /api/farms/:farmId/crop-cycles", () => {
       farm_id: farmId,
       crop_code: "test_crop",
       cultivar: "test_variety",
+      farm_area_id: null,
       transplant_date: "2026-08-18",
       growth_stage: "establishment",
     });
+  });
+
+  it("rejects a FarmArea that belongs to another Farm before creating a CropCycle", async () => {
+    const otherFarmAreaId = "44444444-4444-4444-8444-444444444444";
+    farmAreaMaybeSingle.mockResolvedValue({ data: { id: otherFarmAreaId, farm_id: "other-farm" }, error: null });
+
+    const response = await POST(
+      new Request(`http://localhost/api/farms/${farmId}/crop-cycles`, {
+        method: "POST",
+        body: JSON.stringify({
+          cropCode: "test_crop",
+          farmAreaId: otherFarmAreaId,
+          transplantDate: "2026-08-18",
+        }),
+      }),
+      { params: Promise.resolve({ farmId }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(cropInsert).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ error: { code: "FARM_AREA_NOT_FOUND" } });
   });
 
   it("does not create a CropCycle for a farmer role", async () => {
