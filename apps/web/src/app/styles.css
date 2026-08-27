@@ -390,6 +390,74 @@ p {
   font-weight: 700;
 }
 
+.today-home-reference {
+  background: #f7f3ff;
+  border: 1px solid #d8cbea;
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+}
+
+.today-home-reference > h3,
+.today-home-reference p {
+  margin: 0;
+}
+
+.today-home-reference-unavailable {
+  background: #f7f7f5;
+  border-color: #d5dbd6;
+}
+
+.today-home-reference .today-home-section-heading p,
+.reference-safety-note,
+.reference-bulletin-list span {
+  color: #405248;
+  font-size: 0.82rem;
+}
+
+.reference-safety-note {
+  background: #ffffff;
+  border-left: 3px solid #7752a7;
+  padding: 0.45rem 0.55rem;
+}
+
+.reference-bulletin-list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reference-bulletin-list li {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e0d6ed;
+  border-radius: 0.45rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.6rem;
+}
+
+.reference-bulletin-list li > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.reference-bulletin-list strong {
+  overflow-wrap: anywhere;
+}
+
+.reference-bulletin-list a {
+  color: #553582;
+  flex: 0 0 auto;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .weather-location-panel {
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 66%);
   border-color: #bdd1e8;

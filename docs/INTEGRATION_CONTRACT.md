@@ -1,6 +1,6 @@
 # Integration Contract v0.2
 
-**Status: PARTIALLY IMPLEMENTED — KMA Weather is implemented; other Baseline Modules remain target contracts**
+**Status: PARTIALLY IMPLEMENTED — KMA Weather and the nationwide Nongsaro Disease/Pest occurrence bulletin are implemented; crop-context Disease/Pest, Crop Information and Market remain target contracts**
 
 ## 1. Purpose
 
@@ -71,6 +71,10 @@ Weather requires a reproducible forecast location. The implemented Pilot asks an
 
 Crop context is the active CropCycle. Missing crop, cultivar or growth stage produces a clear prompt to complete the current-cultivation setup; it must not select a different crop’s information.
 
+### Implemented first Disease/Pest slice
+
+`GET /api/farms/{farmId}/information/disease-pest` currently uses Nongsaro `dbyhsCccrrncInfoList`. That provider endpoint publishes nationwide occurrence-bulletin metadata, not a reliable crop/cultivar/growth-stage result. The normalized response therefore contains only a title, published date and official attachment link, labels the card as nationwide reference material and never presents it as a Farm diagnosis, crop-specific alert or treatment guidance. The UI is shown beside the selected CropCycle only to retain Today context; it does not imply an API crop match. The crop-context module-contract row above remains the requirement for a later dedicated endpoint.
+
 ## 6. Security and Operations
 
 - Adapters run only in server Route Handlers or server modules.
@@ -82,6 +86,7 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 ## 7. Implementation Checklist
 
 - [x] KMA account/key set in server-only Vercel environment variables
+- [x] Nongsaro `dbyhsCccrrncInfoList` key and endpoint mapping set in server-only environment variables
 - [x] KMA current-observation and short-forecast endpoint/field mapping documented in `PUBLIC_DATA_SOURCES.md`
 - [x] Adapter unit tests for success, malformed response and stale fallback
 - [x] Provenance/freshness contract and Korean UI messages tested

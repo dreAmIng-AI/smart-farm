@@ -13,6 +13,7 @@ import { ObservationPanel } from "@/app/components/observation-panel";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
 import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
 import { TodayHome } from "@/app/components/today-home";
+import { DiseasePestCard } from "@/app/components/disease-pest-card";
 import { WeatherCard } from "@/app/components/weather-card";
 import { WeatherLocationPanel } from "@/app/components/weather-location-panel";
 import {
@@ -1699,6 +1700,7 @@ export default function HomePage() {
       {userEmail && farm && cropCycle ? (
         <TodayHome
           cropCycle={cropCycle}
+          diseasePest={<DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest`} />}
           farm={farm}
           issues={dashboardIssues}
           loadingTaskId={loadingTaskDetailId}
