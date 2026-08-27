@@ -1,6 +1,6 @@
 # Integration Contract v0.2
 
-**Status: PARTIALLY IMPLEMENTED — KMA Weather and the nationwide Nongsaro Disease/Pest occurrence bulletin are implemented; crop-context Disease/Pest, Crop Information and Market remain target contracts**
+**Status: PARTIALLY IMPLEMENTED — KMA Weather, nationwide Nongsaro Disease/Pest occurrence bulletin and Crop Pack-mapped Nongsaro crop-reference links are implemented; cultivar/growth-stage Disease/Pest and Market remain target contracts**
 
 ## 1. Purpose
 
@@ -73,7 +73,11 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 
 ### Implemented first Disease/Pest slice
 
-`GET /api/farms/{farmId}/information/disease-pest` currently uses Nongsaro `dbyhsCccrrncInfoList`. That provider endpoint publishes nationwide occurrence-bulletin metadata, not a reliable crop/cultivar/growth-stage result. The normalized response therefore contains only a title, published date and official attachment link, labels the card as nationwide reference material and never presents it as a Farm diagnosis, crop-specific alert or treatment guidance. The UI is shown beside the selected CropCycle only to retain Today context; it does not imply an API crop match. The crop-context module-contract row above remains the requirement for a later dedicated endpoint.
+`GET /api/farms/{farmId}/information/disease-pest` currently uses Nongsaro `dbyhsCccrrncInfoList`. That provider endpoint publishes nationwide occurrence-bulletin metadata, not a reliable crop/cultivar/growth-stage result. The normalized response therefore contains only a title, published date and official attachment link, labels the card as nationwide reference material and never presents it as a Farm diagnosis, crop-specific alert or treatment guidance. The UI is shown beside the selected CropCycle only to retain Today context; it does not imply an API crop match.
+
+### Implemented Crop Pack-mapped crop-reference slice
+
+`GET /api/farms/{farmId}/information/crop?cropCycleId={uuid}` looks up the selected accessible CropCycle, then resolves its internal `cropCode` through a versioned Crop Pack profile. Only a profile explicitly registered with `verificationStatus: "evidence_checked"` can query Nongsaro `cropTechInfo`; an unregistered crop returns an honest unavailable state instead of using another crop's data. The adapter traverses the provider category tree and accepts only an exact official crop-name match before it reads its Disease/Pest technical-reference titles and original links. The result has no diagnosis, treatment, cultivar or growth-stage claim. It uses a 24-hour fresh TTL and can display a Farm-scoped normalized last-successful value as stale for 30 days.
 
 ## 6. Security and Operations
 
@@ -86,7 +90,7 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 ## 7. Implementation Checklist
 
 - [x] KMA account/key set in server-only Vercel environment variables
-- [x] Nongsaro `dbyhsCccrrncInfoList` key and endpoint mapping set in server-only environment variables
+- [x] Nongsaro `dbyhsCccrrncInfoList` and Crop Pack-mapped `cropTechInfo` endpoint mapping set in server-only environment variables
 - [x] KMA current-observation and short-forecast endpoint/field mapping documented in `PUBLIC_DATA_SOURCES.md`
 - [x] Adapter unit tests for success, malformed response and stale fallback
 - [x] Provenance/freshness contract and Korean UI messages tested

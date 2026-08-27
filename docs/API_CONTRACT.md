@@ -386,13 +386,16 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 The first Nongsaro occurrence-bulletin endpoint is nationwide and does not reliably filter by crop/cultivar/growth stage. It is therefore an explicit, non-crop-specific official reference. A crop-context Disease/Pest route needs an additional reviewed provider mapping before it can add symptom, occurrence condition or inspection point fields.
 
+### Implemented Crop Pack-mapped crop reference
+
+`GET /api/farms/{farmId}/information/crop?cropCycleId={uuid}` returns a normalized Nongsaro `IntegrationResult` for every Farm member with access to both the Farm and selected CropCycle. Its data is `{ officialCropName, items }`, where each item contains only `{ title, publishedAt, referenceUrl }`. The route uses a registered Crop Pack provider-name mapping and requires an exact Nongsaro crop-name category match. Missing `cropCycleId`, an inaccessible CropCycle, an unregistered Crop Pack, provider errors and stale-cache fallback are all handled without disrupting Today. It returns neither provider XML nor an API key, diagnosis, treatment or automatic task.
+
 ### Planned resource routes
 
 | Resource / action | Intent | Access |
 |---|---|---|
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
-| `GET /api/farms/{farmId}/information/crop` | 정규화된 Crop Information `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/market` | 정규화된 Market `IntegrationResult` | member |
 
 The route names are a target contract. The first UI Slice may use only the route(s) it needs, but it may not expose provider-specific payloads or bypass RLS.
@@ -455,4 +458,4 @@ The exact metric catalogue stays open in the Pilot; a Measurement is not an auto
 
 ## 7. Out of Scope
 
-KMA Weather와 전국 단위 Nongsaro Disease/Pest occurrence-bulletin endpoint는 v0.2 구현 범위이며, 특보의 Farm-grid 지역 매핑과 crop-context Disease/Pest mapping은 후속 Slice입니다. Crop Information and Market endpoint는 아직 planned입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.
+KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence-bulletin endpoint와 Crop Pack-mapped Nongsaro Crop Information endpoint는 v0.2 구현 범위입니다. 특보의 Farm-grid 지역 매핑, cultivar/growth-stage-specific Disease/Pest mapping과 Market endpoint는 후속 Slice입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.

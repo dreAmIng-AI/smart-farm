@@ -65,10 +65,10 @@ Implemented in Issue #51 after the KMA key and Farm forecast-location decision.
 
 ## Phase 7 — Real Disease/Pest and Crop Information
 
-The first Disease/Pest occurrence-bulletin Slice is implemented in Issue #65: server-only Nongsaro `dbyhsCccrrncInfoList`, normalized nationwide bulletin metadata, Farm-scoped stale fallback and Today provenance/data-absence UI.
+The first Disease/Pest occurrence-bulletin Slice is implemented in Issue #65: server-only Nongsaro `dbyhsCccrrncInfoList`, normalized nationwide bulletin metadata, Farm-scoped stale fallback and Today provenance/data-absence UI. Issue #67 adds a Crop Pack-mapped Nongsaro `cropTechInfo` Slice that requires an exact official crop-name category match before showing crop-specific technical reference titles/original links.
 
 - The bulletin is not crop-specific and is explicitly not a diagnosis, treatment recommendation or automatic FarmTask.
-- A next small Issue must validate a crop/cultivar/growth-stage endpoint before adding crop-context Disease/Pest or Crop Information content.
+- A next small Issue must validate cultivar/growth-stage fields before adding a more specific Disease/Pest or Crop Information context.
 
 ## Phase 8 — Real Market Information
 
