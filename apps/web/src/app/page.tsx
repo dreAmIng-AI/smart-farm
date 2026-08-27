@@ -15,6 +15,7 @@ import { WorkCycleGuidance } from "@/app/components/work-cycle-guidance";
 import { TodayHome } from "@/app/components/today-home";
 import { CropReferenceCard } from "@/app/components/crop-reference-card";
 import { DiseasePestCard } from "@/app/components/disease-pest-card";
+import { MarketReferenceCard } from "@/app/components/market-reference-card";
 import { WeatherCard } from "@/app/components/weather-card";
 import { WeatherLocationPanel } from "@/app/components/weather-location-panel";
 import {
@@ -1706,6 +1707,7 @@ export default function HomePage() {
           farm={farm}
           issues={dashboardIssues}
           loadingTaskId={loadingTaskDetailId}
+          market={<MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference`} />}
           onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)}
           tasks={todayTasks}
           weather={<WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}`} />}

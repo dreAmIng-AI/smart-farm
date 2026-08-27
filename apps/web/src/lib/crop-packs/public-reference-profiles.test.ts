@@ -3,9 +3,14 @@ import { describe, expect, it } from "vitest";
 import { getPublicReferenceCropProfile, listPublicReferenceCropProfiles } from "@/lib/crop-packs/public-reference-profiles";
 
 describe("public reference Crop Pack profiles", () => {
-  it("maps an internal crop code to an official provider crop name without Core branching", () => {
+  it("maps an internal crop code to official public-information providers without Core branching", () => {
     expect(getPublicReferenceCropProfile(" Strawberry ")).toEqual({
       cropCode: "strawberry",
+      kamisMarketReference: {
+        categoryCode: "400",
+        grade: "상품",
+        itemName: "딸기",
+      },
       nongsaroCropName: "딸기",
       verificationStatus: "evidence_checked",
     });

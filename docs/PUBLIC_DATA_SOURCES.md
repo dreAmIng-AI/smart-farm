@@ -1,6 +1,6 @@
 # Public Data Sources for v0.2 Pilot
 
-**Status: SOURCE REGISTER — KMA Weather, nationwide Nongsaro occurrence bulletin and Crop Pack-mapped Nongsaro crop references are connected; cultivar/growth-stage Disease/Pest and Market remain candidates**
+**Status: SOURCE REGISTER — KMA Weather, nationwide Nongsaro occurrence bulletin and Crop Pack-mapped Nongsaro crop references are connected; KAMIS nationwide wholesale adapter is ready pending deployment credentials; cultivar/growth-stage Disease/Pest remains a candidate**
 
 This register records the official candidates selected for the Pilot. Before implementation, the owner must obtain the relevant key, verify the current usage terms and record the exact endpoint/field mapping. A source is not production-ready merely because it has a public web page.
 
@@ -12,11 +12,11 @@ This register records the official candidates selected for the Pilot. Before imp
 | Weather alert | [기상청 API Hub 특보현황](https://apihub.kma.go.kr/apiList.do?apiMov=%ED%8A%B9.%EC%A0%95%EB%B3%B4+%EC%9E%90%EB%A3%8C+%EC%A1%B0%ED%9A%8C&seqApi=10&seqApiSub=288) | 기상청 API Hub | `wrn_now_data_new.php` access issued; regional mapping remains pending | Later Farm-grid to warning-area mapping |
 | Disease/Pest | [농사로 OpenAPI](https://www.nongsaro.go.kr/portal/ps/psz/psza/contentMain.ps?menuId=PS00191) and [병해충 발생정보](https://api.nongsaro.go.kr/sample/rest/dbyhsCccrrncInfo/dbyhsCccrrncInfo.jsp) | 농촌진흥청 / 농사로 | server-only key configured for `dbyhsCccrrncInfoList` | nationwide occurrence bulletin metadata with official attachment; never Farm diagnosis |
 | Crop Information | [농사로 작목기술 서비스](https://api.nongsaro.go.kr/sample/rest/cropTechInfo/cropTechInfo.jsp) | 농촌진흥청 / 농사로 | server-only `cropTechInfo` use with Crop Pack profile mapping | exact-crop technical Disease/Pest title and official original link; no diagnosis or advice |
-| Market | [KAMIS Open API](https://www.kamis.or.kr/customer/reference/openapi_list.do) | 한국농수산식품유통공사(aT) | KAMIS key / requester ID or public-data portal key required | Daily wholesale or retail reference price with market, grade and unit |
+| Market | [KAMIS Open API](https://www.kamis.or.kr/customer/reference/openapi_list.do) | 한국농수산식품유통공사(aT) | server-only `KAMIS_CERT_KEY` and `KAMIS_CERT_ID` required for deployment | `dailyPriceByCategoryList`, entire-region wholesale (`02`) price with item, provider kind, grade, unit and base date |
 
 ## 2. Confirmed Characteristics from Official Documentation
 
-- KAMIS documents daily item/category price APIs and recent price-trend APIs. Its request parameters identify the retail/wholesale class, location, date and unit conversion, so the product must label the returned market and price meaning rather than calling it a farm sale forecast. [KAMIS Open API 안내](https://www.kamis.or.kr/customer/reference/openapi_list.do?action=detail&boardno=1)
+- KAMIS documents daily item/category price APIs and recent price-trend APIs. The implemented adapter uses `dailyPriceByCategoryList`, `p_product_cls_code=02` and no region parameter (`전체지역` default), then applies an exact Crop Pack item-name match and prefers its registered grade. The result preserves the provider kind, grade, unit and base date rather than calling it a farm sale forecast. [KAMIS Open API 안내](https://www.kamis.or.kr/customer/reference/openapi_list.do?action=detail&boardno=1)
 - 농사로 describes OpenAPI registration as phone identity verification, application approval, then issued key. The implemented `dbyhsCccrrncInfoList` endpoint returns title, author, registration date, view count and attachment metadata for nationwide occurrence bulletins. The implemented `cropTechInfo` adapter resolves an internal Crop Pack `cropCode` to an explicitly registered Korean provider name and accepts only an exact Nongsaro category match before it returns technical-reference title/link metadata. It does not establish a cultivar or growth-stage match. [농사로 OpenAPI 안내](https://www.nongsaro.go.kr/portal/ps/psz/psza/contentMain.ps?menuId=PS00191)
 - KMA API Hub publishes the current-observation and short-forecast grid endpoints used by the Weather adapter. The short forecast is produced at 02, 05, 08, 11, 14, 17, 20 and 23 KST; current observations are updated more frequently. The adapter records the KMA-provided base/publication time and keeps a bounded fallback. [기상청 동네예보 격자자료](https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286)
 
@@ -24,9 +24,9 @@ This register records the official candidates selected for the Pilot. Before imp
 
 | Item | Weather | Disease/Crop | Market |
 |---|---|---|---|
-| Account/key | KMA API Hub `authKey` | `dbyhsCccrrncInfoList` and `cropTechInfo` use the server-only Nongsaro key; provider access is isolated by unavailable state | KAMIS key/requester ID or Public Data Portal key |
-| Exact endpoint | Implemented current/short forecast; warning regional mapping pending | `dbyhsCccrrncInfoList` nationwide bulletin and `cropTechInfo` exact-crop title/link reference implemented | Initial wholesale or retail endpoint and item/grade codes |
-| Mapping | Farm area → KMA grid / forecast point | nationwide bulletin has no crop mapping; Crop Pack `crop_code` → registered Korean crop name → exact provider category implemented; cultivar/growth stage remains pending | `crop_code` → KAMIS item/kind/market/grade code |
+| Account/key | KMA API Hub `authKey` | `dbyhsCccrrncInfoList` and `cropTechInfo` use the server-only Nongsaro key; provider access is isolated by unavailable state | `KAMIS_CERT_KEY` and `KAMIS_CERT_ID` |
+| Exact endpoint | Implemented current/short forecast; warning regional mapping pending | `dbyhsCccrrncInfoList` nationwide bulletin and `cropTechInfo` exact-crop title/link reference implemented | Implemented `dailyPriceByCategoryList`, wholesale `02`, entire-region default |
+| Mapping | Farm area → KMA grid / forecast point | nationwide bulletin has no crop mapping; Crop Pack `crop_code` → registered Korean crop name → exact provider category implemented; cultivar/growth stage remains pending | Crop Pack `crop_code` → KAMIS category/item/preferred grade → exact provider item name |
 | Legal/operational review | attribution, rate limit, update schedule | attribution, reuse conditions, update schedule | attribution, rate limit, price meaning and update schedule |
 | Environment | server-only key | server-only key | server-only key |
 
@@ -44,5 +44,6 @@ This register records the official candidates selected for the Pilot. Before imp
 - [x] Pilot Farm label-to-grid mapping and privacy wording
 - [ ] KMA special-alert area-to-Farm grid mapping
 - [x] Nongsaro Crop Pack-mapped exact-crop title/link reference endpoint (`cropTechInfo`); cultivar/growth-stage mapping remains open
-- [ ] KAMIS strawberry item/kind/grade/market code mapping and choice of wholesale vs retail first
+- [x] KAMIS first reference: Crop Pack-mapped strawberry item, preferred `상품`, `전체지역` wholesale context
+- [ ] KAMIS credentials, current traffic/attribution and commercial-use terms confirmed at key issuance time
 - [ ] Each provider’s current traffic, attribution and commercial-use terms at key issuance time

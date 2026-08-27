@@ -396,9 +396,12 @@ The first Nongsaro occurrence-bulletin endpoint is nationwide and does not relia
 |---|---|---|
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
-| `GET /api/farms/{farmId}/information/market` | 정규화된 Market `IntegrationResult` | member |
 
 The route names are a target contract. The first UI Slice may use only the route(s) it needs, but it may not expose provider-specific payloads or bypass RLS.
+
+### Implemented Market reference
+
+`GET /api/farms/{farmId}/information/market?cropCycleId={uuid}` returns a normalized KAMIS `IntegrationResult` for every Farm member with access to both the Farm and selected CropCycle. Its data is `{ itemName, kindName, grade, unit, marketName: "전체지역", priceWon, previousPriceWon, baseDate }`. It uses only a Crop Pack profile explicitly registered with KAMIS category/item/preferred-grade metadata, accepts an exact provider item-name match and prefers the registered grade. An unregistered Crop Pack, missing `cropCycleId`, inaccessible context, missing key/provider error and stale-cache fallback are all handled without disrupting Today or Core. The public UI calls this result “전국 도매 참고가,” but it is neither a Farm’s sale price nor an expected revenue value. The route returns neither provider JSON nor API credentials.
 
 ### Implemented Weather IntegrationResult response
 
@@ -458,4 +461,4 @@ The exact metric catalogue stays open in the Pilot; a Measurement is not an auto
 
 ## 7. Out of Scope
 
-KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence-bulletin endpoint와 Crop Pack-mapped Nongsaro Crop Information endpoint는 v0.2 구현 범위입니다. 특보의 Farm-grid 지역 매핑, cultivar/growth-stage-specific Disease/Pest mapping과 Market endpoint는 후속 Slice입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.
+KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence-bulletin endpoint, Crop Pack-mapped Nongsaro Crop Information endpoint와 KAMIS 전체지역 도매 Market endpoint는 v0.2 구현 범위입니다. 특보의 Farm-grid 지역 매핑, cultivar/growth-stage-specific Disease/Pest mapping과 Farm-configured 지역 출하시장 비교는 후속 Slice입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.

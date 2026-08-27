@@ -43,12 +43,12 @@ Farm → CropCycle → TaskTemplate → FarmTask → Today
 | FR-04 | A user can add an Observation as an observed fact without a FarmTask. | implemented |
 | FR-05 | A user can add a numeric Measurement with metric, value, unit and observed time without a FarmTask. | implemented |
 | FR-06 | IssueRecord remains a non-diagnostic “확인이 필요한 문제” and can originate from an Observation. | implemented |
-| FR-07 | Today is the default action-first screen: tasks → issues → weather → current crop → market. | partial; tasks·issues·KMA Weather·nationwide bulletin·Crop Pack-mapped Nongsaro reference implemented, market pending |
+| FR-07 | Today is the default action-first screen: tasks → issues → weather → current crop → market. | partial; tasks·issues·KMA Weather·nationwide bulletin·Crop Pack-mapped Nongsaro reference are live, KAMIS market adapter/UI/cache await deployment credentials |
 | FR-08 | Weather shows actual official data: current temperature, high/low, humidity, precipitation probability/amount, wind, alert when available, and update time. | partial; KMA current/short forecast and update time implemented, regional alert mapping pending |
 | FR-09 | Disease/Pest and Crop Information show official crop-context reference information, never a diagnosis. | partial; nationwide bulletin and exact Crop Pack-mapped Nongsaro reference links implemented; cultivar/growth-stage-specific content remains pending |
-| FR-10 | Market shows actual reference price with item, market, price, unit, grade, base date, source and recent comparison when supplied. | planned; provider key required |
-| FR-11 | External data is server-only, normalized, cacheable and provenance-aware. | partial; KMA Weather and Nongsaro bulletin/crop-reference modules implemented |
-| FR-12 | An external provider failure cannot block Farm, Today, Task, Observation, Issue or History actions. | partial; KMA Weather failure is isolated |
+| FR-10 | Market shows actual reference price with item, market, price, unit, grade, base date, source and recent comparison when supplied. | partial; KAMIS entire-region wholesale adapter/UI/cache implemented, provider credentials required for live data |
+| FR-11 | External data is server-only, normalized, cacheable and provenance-aware. | partial; KMA Weather, Nongsaro bulletin/crop-reference and KAMIS market adapters implemented |
+| FR-12 | An external provider failure cannot block Farm, Today, Task, Observation, Issue or History actions. | partial; KMA Weather, Nongsaro and KAMIS failure paths are isolated |
 
 ## 5. UX Requirements
 
@@ -98,7 +98,7 @@ verificationStatus, freshness
 |---|---|
 | AC-01 | An owner can create a real Farm, add a simple location context and an optional FarmArea. |
 | AC-02 | A user can find today’s tasks, active issues and current crop context from the first screen. |
-| AC-03 | Weather, Disease/Pest, Crop Information and Market each display official data with provenance, or an honest unavailable/stale state. (partial: KMA Weather, nationwide Nongsaro occurrence bulletin and Crop Pack-mapped reference links implemented) |
+| AC-03 | Weather, Disease/Pest, Crop Information and Market each display official data with provenance, or an honest unavailable/stale state. (partial: KMA Weather, nationwide Nongsaro occurrence bulletin and Crop Pack-mapped reference links are live; KAMIS market adapter awaits deployment credentials) |
 | AC-04 | A user can record a task result, Observation, Measurement and Issue without losing existing v0.1 data. | implemented |
 | AC-05 | A provider outage affects only its card; Today and recording continue normally. |
 | AC-06 | Farm membership RLS still prevents cross-Farm reads and writes for all new records and cached external data. |

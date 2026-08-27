@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement, KMA Weather, Nongsaro occurrence-bulletin and Crop Pack-mapped crop reference v0.2 additions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement and public-information v0.2 additions implemented**
 
-> `FarmArea`와 작기·작업 문맥, `Observation`, `Measurement`, KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin, Crop Pack-mapped Nongsaro crop reference는 각각 dedicated v0.2 migration으로 구현되었습니다. cultivar/growth-stage-specific Disease/Pest와 Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
+> `FarmArea`와 작기·작업 문맥, `Observation`, `Measurement`, KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin, Crop Pack-mapped Nongsaro crop reference는 각각 dedicated v0.2 migration으로 운영됩니다. KAMIS 전체지역 도매 참고가격 adapter/UI/cache와 migration은 구현되었으며 deployment credential 등록 후 운영합니다. cultivar/growth-stage-specific Disease/Pest는 별도 design contract입니다.
 
 ## 1. 목적
 
@@ -78,9 +78,9 @@ FarmTask가 없어도 남길 수 있는 사용자의 관찰 사실이다. 예: �
 
 FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다고 남긴 문제 또는 이상 상황입니다. 농업적 확정 진단이 아닙니다. v0.1의 ActionLog/FarmTask 연결은 보존하며, v0.2는 Observation-origin 관계를 하나 추가합니다. 한 IssueRecord는 두 origin 중 하나만 갖습니다.
 
-### ExternalReference (v0.2 Weather implemented; other modules planned read model)
+### ExternalReference (v0.2 public-information read model implemented)
 
-Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin과 Crop Pack-mapped Nongsaro crop reference는 `external_data_snapshots`와 typed response로 구현되며, 다른 Module은 같은 경계를 재사용한다.
+Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin, Crop Pack-mapped Nongsaro crop reference와 Crop Pack-mapped KAMIS 전체지역 도매 참고가격은 `external_data_snapshots`와 typed response로 구현되며, 다른 Module은 같은 경계를 재사용한다. KAMIS 결과는 시장·등급·단위·기준일을 포함하지만 농가 수취가나 판매 예측이 아니다.
 
 ### Attachment
 

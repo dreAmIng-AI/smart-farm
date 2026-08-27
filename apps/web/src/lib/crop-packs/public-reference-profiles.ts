@@ -1,5 +1,10 @@
 export type PublicReferenceCropProfile = {
   cropCode: string;
+  kamisMarketReference?: {
+    categoryCode: string;
+    grade: string;
+    itemName: string;
+  };
   nongsaroCropName: string;
   verificationStatus: "evidence_checked";
 };
@@ -7,6 +12,11 @@ export type PublicReferenceCropProfile = {
 const publicReferenceCropProfiles: PublicReferenceCropProfile[] = [
   {
     cropCode: "strawberry",
+    kamisMarketReference: {
+      categoryCode: "400",
+      grade: "상품",
+      itemName: "딸기",
+    },
     nongsaroCropName: "딸기",
     verificationStatus: "evidence_checked",
   },
