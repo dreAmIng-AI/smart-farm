@@ -380,13 +380,18 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 `GET /api/farms/{farmId}/information/weather` returns a normalized KMA current-observation and short-forecast result for every Farm member. Missing location context, provider failures and stale-cache fallback return `200` with the user-safe `IntegrationResult` status; they never make Today task data fail.
 
+### Implemented Disease/Pest occurrence bulletin
+
+`GET /api/farms/{farmId}/information/disease-pest` returns a normalized Nongsaro nationwide `IntegrationResult` for every Farm member. It has `{ bulletins, scope: "national_occurrence_bulletin" }`, where every bulletin contains only `{ title, publishedAt, attachmentUrl }`. It never returns provider XML, an API key or a Farm diagnosis. Fresh data uses a 24-hour cache TTL; a last successful result may be labelled stale for up to seven days. The response is `200` with a Korean unavailable/stale state when the provider cannot be used, so Today, work and record routes continue working.
+
+The first Nongsaro occurrence-bulletin endpoint is nationwide and does not reliably filter by crop/cultivar/growth stage. It is therefore an explicit, non-crop-specific official reference. A crop-context Disease/Pest route needs an additional reviewed provider mapping before it can add symptom, occurrence condition or inspection point fields.
+
 ### Planned resource routes
 
 | Resource / action | Intent | Access |
 |---|---|---|
 | `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
-| `GET /api/farms/{farmId}/information/disease-pest` | 정규화된 Disease/Pest `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/crop` | 정규화된 Crop Information `IntegrationResult` | member |
 | `GET /api/farms/{farmId}/information/market` | 정규화된 Market `IntegrationResult` | member |
 
@@ -450,4 +455,4 @@ The exact metric catalogue stays open in the Pilot; a Measurement is not an auto
 
 ## 7. Out of Scope
 
-KMA Weather는 v0.2 구현 범위이며, 특보의 Farm-grid 지역 매핑은 후속 Slice입니다. Disease/Pest, Crop Information and Market endpoint는 아직 planned입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.
+KMA Weather와 전국 단위 Nongsaro Disease/Pest occurrence-bulletin endpoint는 v0.2 구현 범위이며, 특보의 Farm-grid 지역 매핑과 crop-context Disease/Pest mapping은 후속 Slice입니다. Crop Information and Market endpoint는 아직 planned입니다. Sensor, AI/LLM, 자동 진단·추천·제어, 자동 시설 제어, 가격·수확량 예측 endpoint는 v0.2 범위 밖입니다.
