@@ -72,11 +72,11 @@ The first Disease/Pest occurrence-bulletin Slice is implemented in Issue #65: se
 
 ## Phase 8 — Real Market Information
 
-Separate Issue/PR after KAMIS key and price-definition decision.
+The first Market Slice is implemented in Issue #69, pending deployment credentials: KAMIS server-only `dailyPriceByCategoryList`, Crop Pack item/category/preferred-grade mapping, whole-region default wholesale context, Farm-scoped 6-hour snapshot cache and 48-hour stale fallback.
 
-- Actual wholesale or retail reference price, clearly labelled
-- Item/kind/grade/market/unit/base date mapping
-- Recent trend only where source explicitly supplies it
+- The Today card is labelled “전국 도매 참고가” and preserves the provider basis as `전체지역`, plus item/kind/grade/unit/base date.
+- It shows a preceding provider price only when the same response supplies one; it is not a price trend, Farm sale-price or revenue forecast.
+- Follow-up: Farm-configured local wholesale-market comparison after each Farm’s actual shipping context is explicitly collected and validated.
 
 ## Phase 9 — Pilot Hardening
 

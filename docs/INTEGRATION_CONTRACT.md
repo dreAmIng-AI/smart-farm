@@ -1,6 +1,6 @@
 # Integration Contract v0.2
 
-**Status: PARTIALLY IMPLEMENTED — KMA Weather, nationwide Nongsaro Disease/Pest occurrence bulletin and Crop Pack-mapped Nongsaro crop-reference links are implemented; cultivar/growth-stage Disease/Pest and Market remain target contracts**
+**Status: PARTIALLY IMPLEMENTED — KMA Weather, nationwide Nongsaro Disease/Pest occurrence bulletin and Crop Pack-mapped Nongsaro crop references are live; KAMIS nationwide wholesale adapter/UI/cache are implemented pending deployment credentials; cultivar/growth-stage Disease/Pest remains a target contract**
 
 ## 1. Purpose
 
@@ -50,7 +50,7 @@ The UI consumes this result, never HTTP/provider error strings. Credentials are 
 | Weather | Farm forecast location | temperature, daily high/low, humidity, precipitation probability/amount, wind, update time; alert when regional mapping is available | 오늘 날씨 |
 | Disease/Pest | CropCycle crop/cultivar/growth stage | name, crop relation, symptom, occurrence condition/period, inspection point, official reference | 현재 작기에서 확인할 병해충 정보 |
 | Crop Information | CropCycle crop/cultivar/growth stage | current-stage reference, management point, task/reference link, official reference | 재배 참고정보 |
-| Market | CropCycle crop and configured market context | item, market, price, unit, grade, base date, comparison when supplied | 시장 참고가격 |
+| Market | CropCycle crop and the Pilot’s whole-region wholesale default | item, market basis, price, unit, grade, base date, comparison when supplied | 시장 참고가격 |
 
 No module may infer diagnosis, prescription, predicted sale price or an automatic task.
 
@@ -79,6 +79,10 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 
 `GET /api/farms/{farmId}/information/crop?cropCycleId={uuid}` looks up the selected accessible CropCycle, then resolves its internal `cropCode` through a versioned Crop Pack profile. Only a profile explicitly registered with `verificationStatus: "evidence_checked"` can query Nongsaro `cropTechInfo`; an unregistered crop returns an honest unavailable state instead of using another crop's data. The adapter traverses the provider category tree and accepts only an exact official crop-name match before it reads its Disease/Pest technical-reference titles and original links. The result has no diagnosis, treatment, cultivar or growth-stage claim. It uses a 24-hour fresh TTL and can display a Farm-scoped normalized last-successful value as stale for 30 days.
 
+### Implemented KAMIS nationwide wholesale-reference slice
+
+`GET /api/farms/{farmId}/information/market?cropCycleId={uuid}` looks up the selected accessible CropCycle and resolves its internal `cropCode` through the same versioned Crop Pack profile. A profile must explicitly register the KAMIS item name, category and preferred grade; an unregistered crop returns an honest unavailable result and never substitutes another crop. The server-only adapter asks KAMIS `dailyPriceByCategoryList` for the `02` wholesale class without a region parameter, which is the KAMIS `전체지역` context. It accepts an exact provider item-name match and prefers the registered grade, then normalizes only item, provider-supplied kind, grade, unit, base date, current price and preceding available price. The card calls this “전국 도매 참고가” for product language, but retains `전체지역` as the provider market basis. It is not a Farm sale price, a farmer receipt price or a revenue forecast. It uses a 6-hour fresh TTL and can display a Farm-scoped normalized last-successful value as stale for 48 hours.
+
 ## 6. Security and Operations
 
 - Adapters run only in server Route Handlers or server modules.
@@ -91,6 +95,7 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 
 - [x] KMA account/key set in server-only Vercel environment variables
 - [x] Nongsaro `dbyhsCccrrncInfoList` and Crop Pack-mapped `cropTechInfo` endpoint mapping set in server-only environment variables
+- [x] KAMIS `dailyPriceByCategoryList` whole-region wholesale mapping, Crop Pack mapping and user-safe stale fallback implemented; deployment needs `KAMIS_CERT_KEY` and `KAMIS_CERT_ID`
 - [x] KMA current-observation and short-forecast endpoint/field mapping documented in `PUBLIC_DATA_SOURCES.md`
 - [x] Adapter unit tests for success, malformed response and stale fallback
 - [x] Provenance/freshness contract and Korean UI messages tested

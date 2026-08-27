@@ -458,6 +458,67 @@ p {
   font-weight: 700;
 }
 
+.today-home-market {
+  background: #f0f8f1;
+  border: 1px solid #bfddc7;
+  border-radius: 0.6rem;
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.8rem;
+}
+
+.today-home-market > h3,
+.today-home-market p {
+  margin: 0;
+}
+
+.today-home-market-unavailable {
+  background: #f7f7f5;
+  border-color: #d5dbd6;
+}
+
+.today-home-market .today-home-section-heading p,
+.market-reference-facts dt,
+.market-comparison {
+  color: #405248;
+  font-size: 0.82rem;
+}
+
+.today-home-market .today-home-section-heading strong {
+  color: #17643d;
+  font-size: 1.35rem;
+}
+
+.market-reference-facts {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.market-reference-facts div {
+  background: #ffffff;
+  border: 1px solid #d5e8d9;
+  border-radius: 0.45rem;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.5rem;
+}
+
+.market-reference-facts dd {
+  font-size: 0.94rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.market-safety-note {
+  background: #ffffff;
+  border-left: 3px solid #31724a;
+  color: #405248;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.55rem;
+}
+
 .weather-location-panel {
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 66%);
   border-color: #bdd1e8;

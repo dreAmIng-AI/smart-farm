@@ -24,6 +24,7 @@ type TodayHomeProps = {
   farm: TodayHomeFarm;
   issues: TodayHomeIssue[];
   loadingTaskId: string | null;
+  market: ReactNode;
   onTaskSelect: (taskId: string) => void;
   tasks: TodayHomeTask[];
   weather: ReactNode;
@@ -33,7 +34,7 @@ function taskKindLabel(task: TodayHomeTask) {
   return task.scheduleState === "overdue" ? "늦어진 작업" : "오늘 할 일";
 }
 
-export function TodayHome({ cropCycle, cropInformation, diseasePest, farm, issues, loadingTaskId, onTaskSelect, tasks, weather }: TodayHomeProps) {
+export function TodayHome({ cropCycle, cropInformation, diseasePest, farm, issues, loadingTaskId, market, onTaskSelect, tasks, weather }: TodayHomeProps) {
   const summary = summarizeTodayHome(tasks, issues);
   const cropName = [cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
   const stageName = cropCycle.growthStage ?? "생육 단계 미입력";
@@ -97,6 +98,8 @@ export function TodayHome({ cropCycle, cropInformation, diseasePest, farm, issue
       {diseasePest}
 
       {cropInformation}
+
+      {market}
 
       <div className="today-home-check">
         <div>

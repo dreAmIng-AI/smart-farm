@@ -1,8 +1,8 @@
 # Architecture
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement, KMA Weather, Nongsaro occurrence-bulletin and Crop Pack-mapped crop-reference v0.2 extensions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement and public-information v0.2 extensions implemented**
 
-> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea with optional CropCycle/FarmTask work context, standalone Observation, manual Measurement, KMA Weather, the nationwide Nongsaro Disease/Pest occurrence bulletin and Crop Pack-mapped Nongsaro crop-reference links with a focused durable snapshot cache are implemented v0.2 extensions. Cultivar/growth-stage-specific Disease/Pest and Market remain target contracts until their own migration and PR are merged.
+> The v0.1 routes, migrations and RLS documented here are implemented. FarmArea with optional CropCycle/FarmTask work context, standalone Observation, manual Measurement, KMA Weather and the nationwide Nongsaro Disease/Pest occurrence bulletin with a focused durable snapshot cache are implemented v0.2 extensions. Crop Pack-mapped Nongsaro crop-reference links are live; Crop Pack-mapped KAMIS nationwide-wholesale adapter/UI/cache and migration are implemented pending deployment credentials. Cultivar/growth-stage-specific Disease/Pest remains a target contract.
 
 ## 1. 아키텍처 목표
 
@@ -99,7 +99,7 @@ Crop Pack은 별도 런타임 서비스가 아니라 작업 템플릿 데이터�
 
 ## 7. Baseline Modules, Labs와 Integrations
 
-KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin과 Crop Pack-mapped Nongsaro crop-reference links는 server-only adapter·normalizer·snapshot fallback으로 구현되었다. Cultivar/growth-stage-specific Disease/Pest and Market은 각각 공식 Source, key, license, update cycle, field mapping과 failure mode를 검증한 뒤 같은 경계로 추가한다. Sensor, AI, Analytics, Automation, Prediction, advanced market intelligence와 Additional Crop Pack은 Lab에서 독립 실험한다.
+KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin, Crop Pack-mapped Nongsaro crop-reference links와 Crop Pack-mapped KAMIS 전체지역 도매 참고가격은 server-only adapter·normalizer·snapshot fallback으로 구현되었다. Cultivar/growth-stage-specific Disease/Pest와 지역별 출하시장 비교는 각각 공식 Source, key, license, update cycle, field mapping과 failure mode를 검증한 뒤 같은 경계로 추가한다. Sensor, AI, Analytics, Automation, Prediction, advanced market intelligence와 Additional Crop Pack은 Lab에서 독립 실험한다.
 
 외부 시스템을 도입할 때만 아래 경계를 검토합니다.
 
