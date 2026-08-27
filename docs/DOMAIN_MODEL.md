@@ -1,8 +1,8 @@
 # Domain Model
 
-**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement, KMA Weather and Nongsaro occurrence-bulletin v0.2 additions implemented**
+**Status: CURRENT PLATFORM CONTRACT — v0.1 implementation preserved, FarmArea work context, Observation, Measurement, KMA Weather, Nongsaro occurrence-bulletin and Crop Pack-mapped crop reference v0.2 additions implemented**
 
-> `FarmArea`와 작기·작업 문맥, `Observation`, `Measurement`, KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin은 각각 dedicated v0.2 migration으로 구현되었습니다. Crop-context Disease/Pest, Crop Information, Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
+> `FarmArea`와 작기·작업 문맥, `Observation`, `Measurement`, KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin, Crop Pack-mapped Nongsaro crop reference는 각각 dedicated v0.2 migration으로 구현되었습니다. cultivar/growth-stage-specific Disease/Pest와 Market external reference result는 dedicated migration 전까지 v0.2 design contract입니다.
 
 ## 1. 목적
 
@@ -80,7 +80,7 @@ FarmTask 수행 중 또는 Observation에서 사용자가 확인이 필요하다
 
 ### ExternalReference (v0.2 Weather implemented; other modules planned read model)
 
-Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. KMA Weather와 전국 단위 Nongsaro Disease/Pest occurrence bulletin은 `external_data_snapshots`와 typed response로 구현되며, 다른 Module은 같은 경계를 재사용한다.
+Weather, Disease/Pest, Crop Information, Market의 정규화된 참고정보 결과다. Core의 농장 사실이나 진단이 아니다. provider, source reference, published/observed/retrieved time, verification status, freshness를 반드시 가진다. KMA Weather, 전국 단위 Nongsaro Disease/Pest occurrence bulletin과 Crop Pack-mapped Nongsaro crop reference는 `external_data_snapshots`와 typed response로 구현되며, 다른 Module은 같은 경계를 재사용한다.
 
 ### Attachment
 

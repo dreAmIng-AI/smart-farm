@@ -261,13 +261,13 @@ Measurement begins as a manual field record. Sensor ingestion is not part of thi
 
 Existing v0.1 task-result IssueRecords remain valid. `observation_id uuid null references observations(id)` is added with a partial unique index, and an exactly-one-origin check permits either the existing ActionLog/FarmTask path or the new Observation path. This does not change or delete existing IssueRecords.
 
-### external_data_snapshots (implemented for Weather and Nongsaro Disease/Pest by dedicated migrations)
+### external_data_snapshots (implemented for Weather, Nongsaro Disease/Pest and Crop Reference by dedicated migrations)
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
 | id | uuid | Y | snapshot 식별자 |
 | farm_id | uuid FK | Y | 조회 문맥 Farm |
-| module | text | Y | `weather` 또는 `disease_pest`; 후속 Module은 별도 migration 검토 |
+| module | text | Y | `weather`, `disease_pest` 또는 `crop_information`; 후속 Module은 별도 migration 검토 |
 | context_key | text | Y | provider query와 정규화 버전의 cache key |
 | payload | jsonb | Y | 정규화된 공개 정보 payload, raw provider response 아님 |
 | provider / source_name / source_reference | text | Y | 출처 추적 정보 |
@@ -276,7 +276,7 @@ Existing v0.1 task-result IssueRecords remain valid. `observation_id uuid null r
 | verification_status | text | Y | official_source 또는 cached_official_source |
 | created_at / updated_at | timestamptz | Y/Y | snapshot 생성·갱신 시각 |
 
-KMA Weather와 Nongsaro Disease/Pest occurrence bulletin은 이 focused durable snapshot store를 마지막 정상 정보 fallback에 사용한다. 이는 raw-data warehouse, provider request log 또는 Redis 의존성을 도입하지 않는다.
+KMA Weather, Nongsaro Disease/Pest occurrence bulletin과 Crop Pack-mapped Nongsaro crop-reference는 이 focused durable snapshot store를 마지막 정상 정보 fallback에 사용한다. 이는 raw-data warehouse, provider request log 또는 Redis 의존성을 도입하지 않는다.
 
 ## 5. 검증 상태
 
