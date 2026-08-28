@@ -158,8 +158,39 @@ p {
 }
 
 .today-home-heading > div,
-.today-home-check > div {
+.today-home-check > div,
+.today-home-information-refresh > div {
   min-width: 0;
+}
+
+.today-home-information-refresh {
+  align-items: center;
+  background: #f3f7f4;
+  border: 1px solid #dbe6dc;
+  border-radius: 0.7rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.75rem;
+}
+
+.today-home-information-refresh h3,
+.today-home-information-refresh p {
+  margin: 0;
+}
+
+.today-home-information-refresh h3 {
+  font-size: 1rem;
+}
+
+.today-home-information-refresh p {
+  color: #405248;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.today-home-information-refresh button {
+  flex: 0 0 auto;
 }
 
 .today-home-context {

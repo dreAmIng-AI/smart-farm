@@ -374,6 +374,8 @@ export default function HomePage() {
   const [farms, setFarms] = useState<Farm[]>([]);
   const [canCreateFarm, setCanCreateFarm] = useState(false);
   const [farm, setFarm] = useState<Farm | null>(null);
+  const [informationRefreshVersion, setInformationRefreshVersion] = useState(0);
+  const [isRefreshingInformation, setIsRefreshingInformation] = useState(false);
   const [weatherRefreshVersion, setWeatherRefreshVersion] = useState(0);
   const [isUpdatingFarm, setIsUpdatingFarm] = useState(false);
   const [farmCollaboration, setFarmCollaboration] = useState<FarmCollaboration | null>(null);
@@ -1245,6 +1247,13 @@ export default function HomePage() {
     }
   }
 
+  function handleInformationRefresh() {
+    setIsRefreshingInformation(true);
+    setInformationRefreshVersion((value) => value + 1);
+    window.setTimeout(() => setIsRefreshingInformation(false), 400);
+    setMessage("참고정보를 다시 불러왔습니다. 각 카드의 확인 시각과 상태를 확인해 주세요.");
+  }
+
   function issueDraftFor(taskId: string): IssueDraft {
     return issueDrafts[taskId] ?? {
       observedSymptom: "",
@@ -1702,15 +1711,17 @@ export default function HomePage() {
       {userEmail && farm && cropCycle ? (
         <TodayHome
           cropCycle={cropCycle}
-          cropInformation={<CropReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:crop-reference`} />}
-          diseasePest={<DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest`} />}
+          cropInformation={<CropReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:crop-reference:${informationRefreshVersion}`} />}
+          diseasePest={<DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest:${informationRefreshVersion}`} />}
           farm={farm}
+          isRefreshingInformation={isRefreshingInformation}
           issues={dashboardIssues}
           loadingTaskId={loadingTaskDetailId}
-          market={<MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference`} />}
+          market={<MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference:${informationRefreshVersion}`} />}
+          onInformationRefresh={handleInformationRefresh}
           onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)}
           tasks={todayTasks}
-          weather={<WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}`} />}
+          weather={<WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}:${informationRefreshVersion}`} />}
         />
       ) : null}
 
