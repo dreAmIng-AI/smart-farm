@@ -213,7 +213,7 @@ No street address or silent browser GPS is stored. The user must explicitly requ
 | description | text | N | 짧은 운영 메모 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
 
-`unique (farm_id, name)` is sufficient for the Pilot. No GIS geometry, address or sensor fields are introduced.
+`unique (farm_id, name)` is sufficient for the Pilot. No GIS geometry, address or sensor fields are introduced. owner/admin may update a FarmArea. A FarmArea is deletable only when no `crop_cycles`, `farm_tasks`, `observations`, or `measurements` record references it; each relationship uses `on delete restrict` so existing operational history cannot be removed by deleting a label.
 
 ### crop_cycles / farm_tasks FarmArea link (implemented by `202608260001_platform_v02_farm_area_work_context.sql`)
 

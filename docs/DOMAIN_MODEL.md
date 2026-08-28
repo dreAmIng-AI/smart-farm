@@ -36,7 +36,7 @@ Farm → CropCycle → 작기 전체 작업계획 → Today → FarmTask
 
 ### FarmArea
 
-Farm 안의 실제 관리 공간이다. 예: `1동`, `2동`, `육묘장`, `노지 A구역`. GIS, 지도도형, 센서 연결을 전제하지 않는다. CropCycle, FarmTask, Observation, Measurement가 필요할 때 선택적으로 연결할 수 있다.
+Farm 안의 실제 관리 공간이다. 예: `1동`, `2동`, `육묘장`, `노지 A구역`. GIS, 지도도형, 센서 연결을 전제하지 않는다. CropCycle, FarmTask, Observation, Measurement가 필요할 때 선택적으로 연결할 수 있다. owner/admin은 이름과 메모를 수정할 수 있으며, 어떤 작기·작업·관찰·측정 기록에도 연결되지 않은 구역만 삭제할 수 있다. 연결된 기록의 구역 문맥은 보존한다.
 
 ### FarmCreatorPermission
 

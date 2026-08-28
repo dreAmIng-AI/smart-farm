@@ -27,6 +27,7 @@ async function fetchFarmAreas(farmId: string) {
 
 export function FarmAreaPanel({ canManageFarm, farmId, onAreasChanged }: FarmAreaPanelProps) {
   const [areas, setAreas] = useState<FarmArea[]>([]);
+  const [editingAreaId, setEditingAreaId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -88,6 +89,70 @@ export function FarmAreaPanel({ canManageFarm, farmId, onAreasChanged }: FarmAre
     }
   }
 
+  async function handleEdit(event: FormEvent<HTMLFormElement>, area: FarmArea) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setFeedback(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/farm-areas/${area.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          description: formData.get("description"),
+        }),
+      });
+      const result = (await response.json().catch(() => null)) as FarmArea | { error?: { message?: string } } | null;
+      if (!response.ok || !result || !("id" in result)) {
+        throw new Error(result && "error" in result ? result.error?.message : "Farm area update failed");
+      }
+
+      setAreas((current) =>
+        current
+          .map((currentArea) => (currentArea.id === result.id ? result : currentArea))
+          .sort((left, right) => left.name.localeCompare(right.name, "ko")),
+      );
+      onAreasChanged?.();
+      setEditingAreaId(null);
+      setFeedback(`${result.name} 재배 구역을 수정했습니다.`);
+    } catch {
+      setFeedback("재배 구역을 수정하지 못했습니다. 이름을 확인한 뒤 다시 시도해 주세요.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDelete(area: FarmArea) {
+    if (!window.confirm(`${area.name} 재배 구역을 삭제할까요? 연결된 작기·작업·기록이 있으면 삭제되지 않습니다.`)) {
+      return;
+    }
+
+    setFeedback(null);
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/farm-areas/${area.id}`, { method: "DELETE" });
+      if (response.status === 409) {
+        setFeedback("이 재배 구역은 작기·작업·관찰 또는 측정 기록과 연결되어 삭제할 수 없습니다.");
+        return;
+      }
+      if (!response.ok) {
+        throw new Error("Farm area delete failed");
+      }
+
+      setAreas((current) => current.filter((currentArea) => currentArea.id !== area.id));
+      onAreasChanged?.();
+      setEditingAreaId(null);
+      setFeedback(`${area.name} 재배 구역을 삭제했습니다.`);
+    } catch {
+      setFeedback("재배 구역을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <section className="card farm-area-panel stack" aria-labelledby="farm-area-heading">
       <div>
@@ -122,8 +187,33 @@ export function FarmAreaPanel({ canManageFarm, farmId, onAreasChanged }: FarmAre
           <ul>
             {areas.map((area) => (
               <li key={area.id}>
-                <strong>{area.name}</strong>
-                {area.description ? <span>{area.description}</span> : null}
+                {editingAreaId === area.id ? (
+                  <form className="farm-area-edit-form" onSubmit={(event) => void handleEdit(event, area)}>
+                    <label>
+                      재배 구역 이름
+                      <input defaultValue={area.name} disabled={isSaving} maxLength={100} name="name" required />
+                    </label>
+                    <label>
+                      메모 (선택)
+                      <input defaultValue={area.description ?? ""} disabled={isSaving} maxLength={1000} name="description" />
+                    </label>
+                    <div className="farm-area-actions">
+                      <button disabled={isSaving} type="submit">{isSaving ? "저장 중..." : "수정 저장"}</button>
+                      <button disabled={isSaving} onClick={() => setEditingAreaId(null)} type="button">취소</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <strong>{area.name}</strong>
+                    {area.description ? <span>{area.description}</span> : null}
+                    {canManageFarm ? (
+                      <div className="farm-area-actions">
+                        <button disabled={isSaving} onClick={() => setEditingAreaId(area.id)} type="button">수정</button>
+                        <button className="danger-button" disabled={isSaving} onClick={() => void handleDelete(area)} type="button">삭제</button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </li>
             ))}
           </ul>
