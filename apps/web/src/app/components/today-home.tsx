@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import {
   summarizeTodayHome,
   type TodayHomeIssue,
@@ -19,17 +17,13 @@ type TodayHomeCropCycle = {
 
 type TodayHomeProps = {
   cropCycle: TodayHomeCropCycle;
-  cropInformation: ReactNode;
-  diseasePest: ReactNode;
   farm: TodayHomeFarm;
-  isRefreshingInformation: boolean;
+  hasScheduledTasks: boolean;
   issues: TodayHomeIssue[];
   loadingTaskId: string | null;
-  market: ReactNode;
-  onInformationRefresh: () => void;
+  onNavigate: (section: "record" | "information" | "farm") => void;
   onTaskSelect: (taskId: string) => void;
   tasks: TodayHomeTask[];
-  weather: ReactNode;
 };
 
 function taskKindLabel(task: TodayHomeTask) {
@@ -38,73 +32,54 @@ function taskKindLabel(task: TodayHomeTask) {
 
 export function TodayHome({
   cropCycle,
-  cropInformation,
-  diseasePest,
   farm,
-  isRefreshingInformation,
+  hasScheduledTasks,
   issues,
   loadingTaskId,
-  market,
-  onInformationRefresh,
+  onNavigate,
   onTaskSelect,
   tasks,
-  weather,
 }: TodayHomeProps) {
   const summary = summarizeTodayHome(tasks, issues);
   const cropName = [cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
   const stageName = cropCycle.growthStage ?? "생육 단계 미입력";
 
   return (
-    <section className="card today-home stack" aria-labelledby="today-home-heading">
+    <section className="today-home stack" aria-labelledby="today-home-heading">
       <div className="today-home-heading">
         <div>
-          <p className="eyebrow">오늘의 농장 대시보드</p>
-          <h2 id="today-home-heading">{farm.name}</h2>
+          <p className="eyebrow">안녕하세요</p>
+          <h1 id="today-home-heading">{farm.name}</h1>
           <p className="today-home-context">
             {cropName} · 현재 {stageName}
           </p>
         </div>
-        <span className="today-home-region">{farm.regionCode}</span>
+        <button className="today-home-context-button" onClick={() => onNavigate("farm")} type="button">
+          농장 전환
+        </button>
       </div>
 
-      <div className="today-home-counts" aria-label="오늘의 농장 요약">
-        <a href="#today-heading">
-          <span>오늘 할 일</span>
-          <strong>{summary.todayTaskCount}개</strong>
-          <small>작업 열기</small>
-        </a>
-        <a className={summary.overdueTaskCount > 0 ? "today-home-count-warning" : undefined} href="#today-heading">
-          <span>늦어진 일</span>
-          <strong>{summary.overdueTaskCount}개</strong>
-          <small>바로 확인</small>
-        </a>
-        <a className={summary.activeIssueCount > 0 ? "today-home-count-warning" : undefined} href="#history-heading">
-          <span>확인할 문제</span>
-          <strong>{summary.activeIssueCount}개</strong>
-          <small>{summary.highSeverityIssueCount > 0 ? `중요 ${summary.highSeverityIssueCount}건 포함` : "기록 보기"}</small>
-        </a>
-      </div>
-
-      <div className="today-home-quick-actions" aria-label="빠른 실행">
-        <a className="today-home-primary-action" href="#today-heading">오늘 작업하기</a>
-        <a href="#observation-heading">관찰 기록</a>
-        <a href="#plan-heading">일정과 계획</a>
-      </div>
-
-      <div className="today-home-information-refresh">
+      <div className="today-home-primary" aria-label="오늘의 농장 요약">
         <div>
-          <h3>오늘 참고정보</h3>
-          <p>날씨·병해충·재배·시장 정보의 현재 표시를 다시 확인합니다.</p>
+          <span>{hasScheduledTasks ? "오늘 할 일" : "작업 계획"}</span>
+          <strong>{hasScheduledTasks ? `${summary.todayTaskCount}개` : "준비 필요"}</strong>
+          <p>
+            {!hasScheduledTasks
+              ? "검증용 작업 계획을 만들면 오늘 할 일을 확인할 수 있습니다."
+              : summary.overdueTaskCount > 0
+              ? `늦어진 일 ${summary.overdueTaskCount}개도 함께 확인해 주세요.`
+              : "필요한 작업부터 하나씩 기록해 보세요."}
+          </p>
         </div>
-        <button disabled={isRefreshingInformation} onClick={onInformationRefresh} type="button">
-          {isRefreshingInformation ? "확인 중..." : "참고정보 다시 확인"}
+        <button onClick={() => onNavigate("record")} type="button">
+          {hasScheduledTasks ? "오늘 작업 보기" : "작업 계획 만들기"}
         </button>
       </div>
 
       <div className="today-home-work stack">
-        <div className="today-home-section-heading">
-          <h3>지금 확인할 일</h3>
-          <a href="#today-heading">오늘 작업 전체 보기</a>
+        <div>
+          <h2>먼저 확인할 일</h2>
+          <p className="field-hint">오늘과 늦어진 작업만 보여 드립니다.</p>
         </div>
         {summary.selectedTasks.length > 0 ? (
           <ol className="today-home-task-list">
@@ -116,39 +91,42 @@ export function TodayHome({
                     {taskKindLabel(task)}
                   </span>
                 </div>
-                <a
-                  aria-label={`${task.title} 작업 열기`}
-                  href="#today-heading"
-                  onClick={() => onTaskSelect(task.id)}
+                <button
+                  aria-label={`${task.title} 작업 기록`}
+                  onClick={() => {
+                    onTaskSelect(task.id);
+                    onNavigate("record");
+                  }}
+                  type="button"
                 >
-                  {loadingTaskId === task.id ? "여는 중..." : "열기"}
-                </a>
+                  {loadingTaskId === task.id ? "여는 중..." : "기록"}
+                </button>
               </li>
             ))}
           </ol>
         ) : (
-          <p className="today-home-empty">오늘과 늦어진 작업이 없습니다. 전체 일정을 확인해 보세요.</p>
+          <p className="today-home-empty">오늘과 늦어진 작업이 없습니다. 필요한 관찰 기록을 남길 수 있습니다.</p>
         )}
       </div>
 
-      <div className="today-home-information-grid">
-        {weather}
-        {diseasePest}
-        {cropInformation}
-        {market}
-      </div>
-
-      <div className="today-home-check">
+      <div className="today-home-check" aria-label="확인이 필요한 문제">
         <div>
-          <h3>확인해 보세요</h3>
+          <h2>확인해 보세요</h2>
           <p>
             {summary.activeIssueCount > 0
               ? `확인이 필요한 현장 기록 ${summary.activeIssueCount}건${summary.highSeverityIssueCount > 0 ? ` · 중요 ${summary.highSeverityIssueCount}건` : ""}`
               : "확인이 필요한 현장 기록이 없습니다."}
           </p>
         </div>
-        <a href="#history-heading">기록 보기</a>
+        <button className="secondary compact" onClick={() => onNavigate("record")} type="button">
+          기록 보기
+        </button>
       </div>
+
+      <button className="today-home-information-link" onClick={() => onNavigate("information")} type="button">
+        <span>농장 참고정보</span>
+        <small>날씨 · 병해충 · 재배 · 시장 정보 보기</small>
+      </button>
     </section>
   );
 }

@@ -1773,3 +1773,353 @@ p {
     min-height: 13rem;
   }
 }
+
+/* Simple, action-first application shell. It deliberately uses neutral patterns rather than another product's brand assets. */
+:root {
+  background: #f2f4f6;
+  color: #191f28;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+}
+
+body {
+  background: #f2f4f6;
+}
+
+button {
+  background: #1f78e4;
+  border-radius: 0.8rem;
+  box-shadow: none;
+}
+
+button.secondary {
+  background: #e8f3ff;
+  color: #1f5fae;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #79b9ff;
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea {
+  border-color: #d0d7de;
+  border-radius: 0.8rem;
+}
+
+.page-shell {
+  gap: 1.25rem;
+  max-width: 44rem;
+  padding: 1.25rem 1rem;
+}
+
+.page-shell-with-navigation {
+  padding-bottom: 6.5rem;
+}
+
+.hero,
+.card,
+.today-home,
+.information-page {
+  border: 0;
+  border-radius: 1.25rem;
+}
+
+.hero {
+  background: #ffffff;
+  padding: 1.5rem;
+}
+
+.hero h1,
+.today-home h1,
+.information-page h1,
+.record-page > h1 {
+  font-size: clamp(1.65rem, 7vw, 2.2rem);
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+
+.card {
+  border: 1px solid #e5e8eb;
+  box-shadow: 0 0.2rem 1rem rgba(25, 31, 40, 0.035);
+}
+
+.today-home {
+  background: transparent;
+  border: 0;
+  gap: 1.15rem;
+  padding: 0.25rem 0;
+}
+
+.today-home-heading {
+  align-items: center;
+}
+
+.today-home-context {
+  color: #6b7684;
+  font-size: 1rem;
+}
+
+.today-home-context-button {
+  background: #eef4fb;
+  color: #3d6f9d;
+  flex: 0 0 auto;
+  font-size: 0.825rem;
+  min-height: 2.6rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.today-home-primary {
+  align-items: center;
+  background: linear-gradient(135deg, #286fc8 0%, #4493ee 100%);
+  border-radius: 1.25rem;
+  color: #ffffff;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.3rem;
+}
+
+.today-home-primary > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.today-home-primary span,
+.today-home-primary p {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.today-home-primary strong {
+  font-size: 2.35rem;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+}
+
+.today-home-primary button {
+  background: #ffffff;
+  color: #2468bc;
+  flex: 0 0 auto;
+  min-height: 3.1rem;
+}
+
+.today-home-work {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  border-radius: 1.25rem;
+  padding: 1.15rem;
+}
+
+.today-home-work h2,
+.today-home-check h2 {
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.today-home-task-list {
+  gap: 0;
+}
+
+.today-home-task-list li {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #edf0f2;
+  border-left: 0;
+  border-radius: 0;
+  padding: 0.85rem 0;
+}
+
+.today-home-task-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.today-home-task-list strong {
+  font-size: 1rem;
+}
+
+.today-home-task-list span {
+  color: #6b7684;
+  font-size: 0.8rem;
+}
+
+.today-home-task-list .today-home-overdue {
+  color: #d25c44;
+}
+
+.today-home-task-list button {
+  background: #e8f3ff;
+  border-radius: 0.7rem;
+  color: #1f5fae;
+  flex: none;
+  font-size: 0.85rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.today-home-empty {
+  background: #f7f8fa;
+  border: 0;
+  color: #6b7684;
+}
+
+.today-home-check {
+  background: #fffaf0;
+  border: 1px solid #f5dfb3;
+  border-radius: 1.1rem;
+  padding: 1rem 1.15rem;
+}
+
+.today-home-check p {
+  color: #6b5b3c;
+}
+
+.today-home-information-link {
+  align-items: flex-start;
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  color: #191f28;
+  display: grid;
+  gap: 0.2rem;
+  padding: 1.05rem 1.15rem;
+  text-align: left;
+}
+
+.today-home-information-link span {
+  font-size: 1rem;
+}
+
+.today-home-information-link small {
+  color: #6b7684;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.information-page {
+  background: transparent;
+  padding: 0.25rem 0;
+}
+
+.page-section-heading {
+  align-items: end;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.page-section-heading > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.page-section-heading p:not(.eyebrow) {
+  color: #6b7684;
+}
+
+.page-section-heading button {
+  flex: 0 0 auto;
+}
+
+.information-card-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.record-page {
+  background: #ffffff;
+}
+
+.record-next-action {
+  align-items: center;
+  background: #e8f3ff;
+  border-radius: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.record-next-action > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.record-next-action p {
+  color: #57708a;
+  font-size: 0.85rem;
+}
+
+.record-next-action button {
+  flex: 0 0 auto;
+}
+
+.record-plan-management,
+.record-history {
+  background: #f7f8fa;
+  border-radius: 0.9rem;
+  padding: 0.95rem;
+}
+
+.record-plan-management summary,
+.record-history summary {
+  color: #4e5968;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.record-plan-management[open] summary,
+.record-history[open] summary {
+  margin-bottom: 0.8rem;
+}
+
+.optional-measurement-entry {
+  background: #ffffff;
+  border-color: #e5e8eb;
+}
+
+.secondary-information {
+  background: #ffffff;
+  border-color: #e5e8eb;
+}
+
+.mobile-navigation {
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid #e5e8eb;
+  box-shadow: 0 -0.4rem 1.5rem rgba(25, 31, 40, 0.08);
+  gap: 0.2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-top: 0.45rem;
+}
+
+.mobile-navigation button {
+  background: transparent;
+  border-radius: 0.75rem;
+  color: #8b95a1;
+  font-size: 0.8rem;
+  min-height: 3.1rem;
+  padding: 0.5rem 0.25rem;
+}
+
+.mobile-navigation button.mobile-navigation-active {
+  background: #e8f3ff;
+  color: #1f6ed4;
+}
+
+@media (min-width: 42rem) {
+  .page-shell {
+    max-width: 58rem;
+    padding: 2rem;
+  }
+
+  .information-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
