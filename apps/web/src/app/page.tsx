@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import { FarmAreaPanel } from "@/app/components/farm-area-panel";
 import { MonthlyWorkCalendar } from "@/app/components/monthly-work-calendar";
-import { MobileNavigation } from "@/app/components/mobile-navigation";
+import { MobileNavigation, type AppSection } from "@/app/components/mobile-navigation";
 import { MeasurementPanel } from "@/app/components/measurement-panel";
 import { ObservationPanel } from "@/app/components/observation-panel";
 import { WeeklyWorkBoard } from "@/app/components/weekly-work-board";
@@ -410,9 +410,8 @@ export default function HomePage() {
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [isRestoringContext, setIsRestoringContext] = useState(false);
   const [isMeasurementExpanded, setIsMeasurementExpanded] = useState(false);
-  const [message, setMessage] = useState(
-    "Supabase 인증 세션과 .env.local 설정 후 첫 Slice를 실행할 수 있습니다.",
-  );
+  const [activeAppSection, setActiveAppSection] = useState<AppSection>("home");
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedFarmId = farm?.id;
   const canManageSelectedFarm =
@@ -708,6 +707,7 @@ export default function HomePage() {
         }),
       });
       setFarm(created);
+      setActiveAppSection("farm");
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
       setLatestInviteUrl(null);
@@ -948,6 +948,7 @@ export default function HomePage() {
         }),
       });
       setCropCycle(created);
+      setActiveAppSection("home");
       setCropCycles((items) => [created, ...items.filter((item) => item.id !== created.id)]);
       setGrowthStageDraft(created.growthStage ?? "");
       setSchedule([]);
@@ -1138,6 +1139,7 @@ export default function HomePage() {
 
     try {
       const cropCycleItems = await restoreFarmContext(selectedFarm);
+      setActiveAppSection("farm");
       setMessage(
         `${selectedFarm.name}을 열었습니다. ${cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."}`,
       );
@@ -1155,6 +1157,7 @@ export default function HomePage() {
 
     setIsRestoringContext(true);
     setCropCycle(selectedCropCycle);
+    setActiveAppSection("home");
     setGrowthStageDraft(selectedCropCycle.growthStage ?? "");
     setSchedule([]);
     setTaskDetail(null);
@@ -1522,16 +1525,21 @@ export default function HomePage() {
   );
   const hasSelectedWorkCycle = Boolean(userEmail && farm && cropCycle);
 
+  function handleAppNavigation(section: AppSection) {
+    setActiveAppSection(section);
+    window.scrollTo({ behavior: "smooth", top: 0 });
+  }
+
   return (
     <main className={hasSelectedWorkCycle ? "page-shell page-shell-with-navigation" : "page-shell"}>
-      <header className="hero stack">
+      {!hasSelectedWorkCycle ? <header className="hero stack">
         <p className="eyebrow">dreAmIng Smart Farm</p>
         <h1>{farm ? `${farm.name} 관리` : "농장 관리"}</h1>
         <p>{cropCycle ? "오늘 해야 할 일과 현장 기록을 먼저 확인하세요." : "농장과 작기를 선택해 오늘 해야 할 일을 확인하세요."}</p>
         <p className="draft-notice">
           현재 작업 계획은 개발·검증용 데이터이며 실제 농업 처방이 아닙니다.
         </p>
-      </header>
+      </header> : null}
 
       {isAuthLoading ? <p className="status">인증 상태를 확인하고 있습니다.</p> : null}
 
@@ -1630,7 +1638,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {!isAuthLoading && userEmail ? (
+      {!isAuthLoading && userEmail && (!hasSelectedWorkCycle || activeAppSection === "farm") ? (
         <div className="session-row">
           <span>{userEmail}로 로그인됨</span>
           <button className="secondary compact" disabled={isAuthenticating} onClick={handleSignOut} type="button">
@@ -1639,9 +1647,7 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      <p className="status" role="status">
-        {message}
-      </p>
+      {message ? <p className="status" role="status">{message}</p> : null}
 
       {userEmail && (!farm || !cropCycle) ? (
         <WorkCycleGuidance
@@ -1656,7 +1662,7 @@ export default function HomePage() {
         />
       ) : null}
 
-      {userEmail ? (
+      {userEmail && (!hasSelectedWorkCycle || activeAppSection === "farm") ? (
         <section className="card saved-context stack" aria-labelledby="saved-context-heading">
           <details className="dashboard-context-switcher" open={!cropCycle}>
             <summary id="saved-context-heading">{farm && cropCycle ? `${farm.name} · ${cropCycle.cropCode}${cropCycle.cultivar ? ` ${cropCycle.cultivar}` : ""} 전환` : "관리할 농장과 작기 선택"}</summary>
@@ -1710,24 +1716,41 @@ export default function HomePage() {
         />
       ) : null}
 
-      {userEmail && farm && cropCycle ? (
+      {userEmail && farm && cropCycle && activeAppSection === "home" ? (
         <TodayHome
           cropCycle={cropCycle}
-          cropInformation={<CropReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:crop-reference:${informationRefreshVersion}`} />}
-          diseasePest={<DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest:${informationRefreshVersion}`} />}
           farm={farm}
-          isRefreshingInformation={isRefreshingInformation}
+          hasScheduledTasks={schedule.length > 0}
           issues={dashboardIssues}
           loadingTaskId={loadingTaskDetailId}
-          market={<MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference:${informationRefreshVersion}`} />}
-          onInformationRefresh={handleInformationRefresh}
+          onNavigate={handleAppNavigation}
           onTaskSelect={(taskId) => void handleTaskDetailSelect(taskId)}
           tasks={todayTasks}
-          weather={<WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}:${informationRefreshVersion}`} />}
         />
       ) : null}
 
-      {userEmail && farm && cropCycle ? (
+      {userEmail && farm && cropCycle && activeAppSection === "information" ? (
+        <section className="information-page stack" aria-labelledby="information-heading">
+          <div className="page-section-heading">
+            <div>
+              <p className="eyebrow">농장 정보</p>
+              <h1 id="information-heading">오늘 참고정보</h1>
+              <p>날씨와 공개 참고자료를 한 곳에서 확인하세요.</p>
+            </div>
+            <button disabled={isRefreshingInformation} onClick={handleInformationRefresh} type="button">
+              {isRefreshingInformation ? "확인 중..." : "정보 다시 확인"}
+            </button>
+          </div>
+          <div className="information-card-grid">
+            <WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}:${informationRefreshVersion}`} />
+            <DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest:${informationRefreshVersion}`} />
+            <CropReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:crop-reference:${informationRefreshVersion}`} />
+            <MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference:${informationRefreshVersion}`} />
+          </div>
+        </section>
+      ) : null}
+
+      {userEmail && farm && cropCycle && activeAppSection === "farm" ? (
         <WorkCycleGuidance
           canCreateFarm={canCreateFarm}
           canManageFarm={canManageSelectedFarm}
@@ -1740,7 +1763,7 @@ export default function HomePage() {
         />
       ) : null}
 
-      {userEmail && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
+      {userEmail && activeAppSection === "farm" && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
         <h2 id="farm-heading">{farm ? "농장 정보" : "농장 만들기"}</h2>
         {canCreateFarm ? <details className="farm-create" open={shouldShowFarmCreation}>
         <summary>{farm ? "새 농장 추가" : "농장 기본정보 입력"}</summary>
@@ -1957,7 +1980,7 @@ export default function HomePage() {
         ) : null}
       </section> : null}
 
-      {userEmail && farm ? (
+      {userEmail && farm && activeAppSection === "farm" ? (
         <FarmAreaPanel
           canManageFarm={canManageSelectedFarm}
           farmId={farm.id}
@@ -1966,11 +1989,11 @@ export default function HomePage() {
         />
       ) : null}
 
-      {userEmail && farm && canManageSelectedFarm ? (
+      {userEmail && farm && canManageSelectedFarm && activeAppSection === "farm" ? (
         <WeatherLocationPanel farmId={farm.id} onSaved={() => setWeatherRefreshVersion((value) => value + 1)} />
       ) : null}
 
-      {userEmail && farm && canManageSelectedFarm ? (
+      {userEmail && farm && canManageSelectedFarm && activeAppSection === "farm" ? (
         <section className="card stack" aria-labelledby="cycle-heading">
           <h2 id="cycle-heading">작기 만들기</h2>
           <p className="muted">현재 농장: {farm.name}</p>
@@ -2015,7 +2038,7 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {userEmail && farm ? (
+      {userEmail && farm && activeAppSection === "record" ? (
         <ObservationPanel
           cropCycles={cropCycles}
           farmId={farm.id}
@@ -2023,7 +2046,7 @@ export default function HomePage() {
         />
       ) : null}
 
-      {userEmail && farm ? (
+      {userEmail && farm && activeAppSection === "record" ? (
         <details
           className="card optional-measurement-entry stack"
           onToggle={(event) => setIsMeasurementExpanded(event.currentTarget.open)}
@@ -2040,15 +2063,29 @@ export default function HomePage() {
         </details>
       ) : null}
 
-      {userEmail && cropCycle && farm ? (
-        <section className="card stack" aria-labelledby="plan-heading">
-          <h2 id="plan-heading">작업 계획과 기록</h2>
+      {userEmail && cropCycle && farm && activeAppSection === "record" ? (
+        <section className="card record-page stack" aria-labelledby="plan-heading">
+          <h1 id="plan-heading">오늘 기록하기</h1>
           <p className="muted">
-            {cropCycle.cropCode} / {cropCycle.cultivar ?? "작물 공통"} · 정식일 {cropCycle.transplantDate} · 상태 {cropCycleStatusLabel(cropCycle.status)} · 현재 생육 단계 {cropCycle.growthStage ?? "미설정"} · 주 재배 구역 {cropCycle.farmAreaId ? farmAreas.find((area) => area.id === cropCycle.farmAreaId)?.name ?? "선택한 구역" : "미지정"}
+            오늘 해야 할 일을 확인하고, 완료 또는 현장 관찰을 짧게 남기세요.
           </p>
+          {canManageSelectedFarm && cropCycle.status === "active" && schedule.length === 0 ? (
+            <div className="record-next-action">
+              <div>
+                <strong>오늘 할 일을 아직 만들지 않았습니다.</strong>
+                <p>개발·검증용 Draft Template을 적용해 첫 작업 계획을 만드세요.</p>
+              </div>
+              <button disabled={isSubmitting} onClick={handlePlanGeneration} type="button">
+                {isSubmitting ? "만드는 중..." : "초기 작업 만들기"}
+              </button>
+            </div>
+          ) : null}
           {!canManageSelectedFarm ? (
             <p className="field-hint">작업자는 일정과 오늘 작업을 확인하고 결과 또는 관찰한 문제를 기록합니다. 작기·생육 단계·계획 변경은 소유자 또는 관리자가 처리합니다.</p>
           ) : null}
+          <details className="record-plan-management">
+            <summary>일정과 작기 관리</summary>
+            <p className="field-hint">작기 상태, 생육 단계, 전체 일정과 새 작업 추가는 필요할 때만 여세요.</p>
           <section className="crop-cycle-lifecycle-entry stack" aria-labelledby="crop-cycle-status-heading">
             <h3 id="crop-cycle-status-heading">작기 상태</h3>
             {cropCycle.status === "active" ? (
@@ -2187,8 +2224,9 @@ export default function HomePage() {
               <p className="muted">아직 생성된 작업이 없습니다.</p>
             )}
           </div>
+          </details>
 
-          <div className="stack" aria-live="polite">
+          <div className="stack today-task-recording" aria-live="polite">
             <h3 id="today-heading">오늘 할 일</h3>
             {todayTasks.length > 0 ? (
               <ol className="task-list">
@@ -2496,8 +2534,9 @@ export default function HomePage() {
             </section>
           ) : null}
 
-          <div className="stack" aria-live="polite">
-            <h3 id="history-heading">이력</h3>
+          <details className="record-history" aria-live="polite">
+            <summary id="history-heading">지난 기록 보기</summary>
+            <p className="field-hint">이전 작업 결과와 문제 기록은 필요할 때만 확인하세요.</p>
             {history.length > 0 ? (
               <ol className="history-list">
                 {history.map((item) => (
@@ -2596,11 +2635,11 @@ export default function HomePage() {
             ) : (
               <p className="muted">아직 결과·문제·재확인 작업 이력이 없습니다.</p>
             )}
-          </div>
+          </details>
         </section>
       ) : null}
 
-      {userEmail && farm && cropCycle ? (
+      {userEmail && farm && cropCycle && activeAppSection === "farm" ? (
         <details className="secondary-information stack">
           <summary>일정과 농장 현황 자세히 보기</summary>
           <p className="field-hint">오늘 해야 할 일 외에 전체 일정, 주간 작업, 운영 현황을 확인할 수 있습니다.</p>
@@ -2616,7 +2655,7 @@ export default function HomePage() {
         </details>
       ) : null}
 
-      {hasSelectedWorkCycle ? <MobileNavigation /> : null}
+      {hasSelectedWorkCycle ? <MobileNavigation activeSection={activeAppSection} onNavigate={handleAppNavigation} /> : null}
     </main>
   );
 }

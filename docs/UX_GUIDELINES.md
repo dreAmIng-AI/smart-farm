@@ -72,17 +72,16 @@ When a Farm and current cultivation are selected, the first screen is a responsi
 
 ## 4. Mobile Navigation
 
-The target bottom navigation has at most five destinations:
+The target bottom navigation has at most five destinations. The current implementation uses four so that a farmer does not have to decide whether a task, a cultivation or a schedule belongs to a separate primary menu.
 
 | Destination | Purpose |
 |---|---|
-| 오늘 | Today tasks, urgent issues and reference-card summaries |
-| 작기 | Current cultivation, plan and schedule |
-| 기록 | Task result, observation, measurement and issue entry |
+| 오늘 | Today tasks, urgent issues and the next clear action |
+| 기록 | Task result, observation, optional measurement and issue entry; schedule and history are secondary disclosures |
 | 정보 | Weather, Disease/Pest, Crop Information and Market details |
-| 농장 | Farm, FarmArea, members and settings |
+| 농장 | Farm/CropCycle selection, FarmArea, members, location, cultivation and plan management |
 
-Navigation is introduced only when its route/state architecture is ready; it must not duplicate the same mutations across separate screens.
+Navigation is introduced only when its route/state architecture is ready; it must not duplicate the same mutations across separate screens. A visual reference may inform hierarchy, clarity and progressive disclosure, but another product's branding, copy, icons and layouts are never copied.
 
 ## 4. Pilot usability corrections
 
