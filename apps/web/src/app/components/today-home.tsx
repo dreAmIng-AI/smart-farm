@@ -22,9 +22,11 @@ type TodayHomeProps = {
   cropInformation: ReactNode;
   diseasePest: ReactNode;
   farm: TodayHomeFarm;
+  isRefreshingInformation: boolean;
   issues: TodayHomeIssue[];
   loadingTaskId: string | null;
   market: ReactNode;
+  onInformationRefresh: () => void;
   onTaskSelect: (taskId: string) => void;
   tasks: TodayHomeTask[];
   weather: ReactNode;
@@ -34,7 +36,20 @@ function taskKindLabel(task: TodayHomeTask) {
   return task.scheduleState === "overdue" ? "늦어진 작업" : "오늘 할 일";
 }
 
-export function TodayHome({ cropCycle, cropInformation, diseasePest, farm, issues, loadingTaskId, market, onTaskSelect, tasks, weather }: TodayHomeProps) {
+export function TodayHome({
+  cropCycle,
+  cropInformation,
+  diseasePest,
+  farm,
+  isRefreshingInformation,
+  issues,
+  loadingTaskId,
+  market,
+  onInformationRefresh,
+  onTaskSelect,
+  tasks,
+  weather,
+}: TodayHomeProps) {
   const summary = summarizeTodayHome(tasks, issues);
   const cropName = [cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
   const stageName = cropCycle.growthStage ?? "생육 단계 미입력";
@@ -50,6 +65,16 @@ export function TodayHome({ cropCycle, cropInformation, diseasePest, farm, issue
           </p>
         </div>
         <span className="today-home-region">{farm.regionCode}</span>
+      </div>
+
+      <div className="today-home-information-refresh">
+        <div>
+          <h3>오늘 참고정보</h3>
+          <p>날씨·병해충·재배·시장 정보의 현재 표시를 다시 확인합니다.</p>
+        </div>
+        <button disabled={isRefreshingInformation} onClick={onInformationRefresh} type="button">
+          {isRefreshingInformation ? "확인 중..." : "참고정보 다시 확인"}
+        </button>
       </div>
 
       <div className="today-home-counts" aria-label="오늘의 확인 항목">
