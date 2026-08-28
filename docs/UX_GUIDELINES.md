@@ -56,6 +56,10 @@ A농장 · 딸기 설향
 
 This is a layout and wording example, not permission to fabricate weather, issue or market values.
 
+### Dashboard implementation boundary
+
+When a Farm and current cultivation are selected, the first screen is a responsive dashboard: `오늘 할 일 / 늦어진 일 / 확인할 문제` leads, followed by text-labelled quick actions for work, observation and schedule. Weather, nationwide Disease/Pest material, crop reference and market reference appear in a consistent information grid. Farm/CropCycle switching is available as a compact disclosure panel rather than competing with the Today summary. On larger screens the summary and information cards may use columns; on a phone they remain large, readable stacked controls. This reorders presentation only and does not change work, record, permission or provider behavior.
+
 ## 3. Senior-Friendly Requirements
 
 - Use a readable mobile body size and larger size for task count, task title and important warnings.

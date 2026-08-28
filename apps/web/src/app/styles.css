@@ -79,7 +79,7 @@ p {
   display: grid;
   gap: 1rem;
   margin: 0 auto;
-  max-width: 46rem;
+  max-width: 48rem;
   padding: 1rem;
 }
 
@@ -215,13 +215,19 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.today-home-counts > div {
+.today-home-counts a {
   background: #ffffff;
   border: 1px solid #dbe6dc;
   border-radius: 0.6rem;
+  color: #18332a;
   display: grid;
   gap: 0.25rem;
   padding: 0.8rem;
+  text-decoration: none;
+}
+
+.today-home-counts a:last-child {
+  grid-column: 1 / -1;
 }
 
 .today-home-counts span {
@@ -232,12 +238,52 @@ p {
 
 .today-home-counts strong {
   color: #18332a;
-  font-size: 1.75rem;
+  font-size: 1.55rem;
 }
 
 .today-home-counts .today-home-count-warning {
   background: #fff8e8;
   border-color: #d9ac4d;
+}
+
+.today-home-counts small {
+  color: #547064;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.today-home-quick-actions {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.today-home-quick-actions a {
+  align-items: center;
+  background: #e3ece5;
+  border: 1px solid #c7dbc9;
+  border-radius: 0.55rem;
+  color: #18332a;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 3.1rem;
+  padding: 0.55rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.today-home-quick-actions .today-home-primary-action {
+  background: #20613f;
+  border-color: #20613f;
+  color: #ffffff;
+  grid-column: 1 / -1;
+}
+
+.today-home-information-grid {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .today-home-work {
@@ -1020,6 +1066,22 @@ p {
   border-color: #b9d9c1;
 }
 
+.dashboard-context-switcher {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.dashboard-context-switcher summary {
+  color: #18332a;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dashboard-context-switcher[open] summary {
+  margin-bottom: 0.15rem;
+}
+
 .operations-dashboard {
   background: linear-gradient(135deg, #f4fbf5 0%, #ffffff 58%);
   border-color: #a9cbb2;
@@ -1665,6 +1727,24 @@ p {
 @media (min-width: 42rem) {
   .page-shell {
     padding: 2rem;
+  }
+
+  .page-shell-with-navigation {
+    max-width: 72rem;
+  }
+
+  .today-home-counts,
+  .today-home-quick-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .today-home-counts a:last-child,
+  .today-home-quick-actions .today-home-primary-action {
+    grid-column: auto;
+  }
+
+  .today-home-information-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .button-row {
