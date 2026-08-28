@@ -1658,10 +1658,11 @@ export default function HomePage() {
 
       {userEmail ? (
         <section className="card saved-context stack" aria-labelledby="saved-context-heading">
-          <h2 id="saved-context-heading">관리할 농장과 작기 선택</h2>
-          <p className="field-hint">
-            이전에 만든 농장과 작기를 선택하면 오늘 작업, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
-          </p>
+          <details className="dashboard-context-switcher" open={!cropCycle}>
+            <summary id="saved-context-heading">{farm && cropCycle ? `${farm.name} · ${cropCycle.cropCode}${cropCycle.cultivar ? ` ${cropCycle.cultivar}` : ""} 전환` : "관리할 농장과 작기 선택"}</summary>
+            <p className="field-hint">
+              이전에 만든 농장과 작기를 선택하면 오늘 작업, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
+            </p>
           <label>
             농장 선택
             <select
@@ -1696,6 +1697,7 @@ export default function HomePage() {
             </label>
           ) : null}
           {isRestoringContext ? <small className="field-hint">저장된 데이터를 불러오는 중입니다.</small> : null}
+          </details>
         </section>
       ) : null}
 

@@ -58,13 +58,37 @@ export function TodayHome({
     <section className="card today-home stack" aria-labelledby="today-home-heading">
       <div className="today-home-heading">
         <div>
-          <p className="eyebrow">오늘의 농장</p>
+          <p className="eyebrow">오늘의 농장 대시보드</p>
           <h2 id="today-home-heading">{farm.name}</h2>
           <p className="today-home-context">
             {cropName} · 현재 {stageName}
           </p>
         </div>
         <span className="today-home-region">{farm.regionCode}</span>
+      </div>
+
+      <div className="today-home-counts" aria-label="오늘의 농장 요약">
+        <a href="#today-heading">
+          <span>오늘 할 일</span>
+          <strong>{summary.todayTaskCount}개</strong>
+          <small>작업 열기</small>
+        </a>
+        <a className={summary.overdueTaskCount > 0 ? "today-home-count-warning" : undefined} href="#today-heading">
+          <span>늦어진 일</span>
+          <strong>{summary.overdueTaskCount}개</strong>
+          <small>바로 확인</small>
+        </a>
+        <a className={summary.activeIssueCount > 0 ? "today-home-count-warning" : undefined} href="#history-heading">
+          <span>확인할 문제</span>
+          <strong>{summary.activeIssueCount}개</strong>
+          <small>{summary.highSeverityIssueCount > 0 ? `중요 ${summary.highSeverityIssueCount}건 포함` : "기록 보기"}</small>
+        </a>
+      </div>
+
+      <div className="today-home-quick-actions" aria-label="빠른 실행">
+        <a className="today-home-primary-action" href="#today-heading">오늘 작업하기</a>
+        <a href="#observation-heading">관찰 기록</a>
+        <a href="#plan-heading">일정과 계획</a>
       </div>
 
       <div className="today-home-information-refresh">
@@ -75,17 +99,6 @@ export function TodayHome({
         <button disabled={isRefreshingInformation} onClick={onInformationRefresh} type="button">
           {isRefreshingInformation ? "확인 중..." : "참고정보 다시 확인"}
         </button>
-      </div>
-
-      <div className="today-home-counts" aria-label="오늘의 확인 항목">
-        <div>
-          <span>오늘 할 일</span>
-          <strong>{summary.todayTaskCount}개</strong>
-        </div>
-        <div className={summary.overdueTaskCount > 0 ? "today-home-count-warning" : undefined}>
-          <span>늦어진 일</span>
-          <strong>{summary.overdueTaskCount}개</strong>
-        </div>
       </div>
 
       <div className="today-home-work stack">
@@ -118,13 +131,12 @@ export function TodayHome({
         )}
       </div>
 
-      {weather}
-
-      {diseasePest}
-
-      {cropInformation}
-
-      {market}
+      <div className="today-home-information-grid">
+        {weather}
+        {diseasePest}
+        {cropInformation}
+        {market}
+      </div>
 
       <div className="today-home-check">
         <div>
