@@ -631,6 +631,30 @@ p {
   font-size: 0.9rem;
 }
 
+.farm-area-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.farm-area-actions button {
+  min-height: 2.5rem;
+}
+
+.farm-area-edit-form {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.danger-button {
+  background: #a53a2a;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #812b20;
+}
+
 .observation-panel {
   background: linear-gradient(135deg, #f5faf5 0%, #ffffff 66%);
   border-color: #bfd9bd;

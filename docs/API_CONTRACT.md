@@ -359,7 +359,7 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 - `TASK_NOT_FOUND`, `TASK_LOOKUP_FAILED`, `TASK_ASSIGNMENT_UPDATE_FAILED`, `ACTION_LOG_RECORD_FAILED`, `ISSUE_RECORD_FAILED`, `ISSUE_NOT_FOUND`, `ISSUE_LOOKUP_FAILED`, `ISSUE_UPDATE_FAILED`
 - `FOLLOW_UP_TASK_CREATE_FAILED`, `DUPLICATE_FOLLOW_UP_TASK`, `HISTORY_LOOKUP_FAILED`
 - `ACTION_LOG_NOT_FOUND`, `ATTACHMENT_LOOKUP_FAILED`, `ATTACHMENT_CREATE_FAILED`, `STORAGE_UPLOAD_FAILED`
-- `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_CREATE_FAILED`
+- `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`, `FARM_AREA_DELETE_FAILED`, `FARM_AREA_REFERENCE_LOOKUP_FAILED`, `FARM_AREA_IN_USE`
 - `ACTIVE_CROP_CYCLE_EXISTS`, `DUPLICATE_TASK_GENERATION`
 - `INVALID_STATUS_TRANSITION`, `VALIDATION_ERROR`
 - `STORAGE_UPLOAD_FAILED`, `INTERNAL_ERROR`
@@ -368,7 +368,9 @@ file: <JPEG | PNG | WebP, maximum 10 MB>
 
 ### Implemented FarmArea, Observation, Measurement and Weather routes
 
-`GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`. FarmArea update and delete are not exposed in this Slice.
+`GET /api/farms/{farmId}/areas` returns the accessible Farm's named FarmAreas in name order. Every Farm member may read it; only owner/admin may use `POST` to create `{ name, description }`.
+
+`PATCH /api/farm-areas/{farmAreaId}` lets an owner/admin of the accessible Farm replace a FarmArea's `{ name, description }`. `DELETE /api/farm-areas/{farmAreaId}` lets the same roles remove only an unused FarmArea and returns `204`. It returns `409 FARM_AREA_IN_USE` when a CropCycle, FarmTask, Observation, or Measurement references the FarmArea; the existing record is never reassigned or deleted. RLS remains the final access protection.
 
 `GET /api/farms/{farmId}/observations` returns newest-first standalone Observation facts for the accessible Farm, with its optional linked Issue summary. Every Farm member may use `POST` with `{ farmAreaId, cropCycleId, observedAt, content }`; the two context IDs are optional, but if supplied must belong to the same Farm. Observations are append-only: no update or delete endpoint exists.
 
@@ -394,7 +396,6 @@ The first Nongsaro occurrence-bulletin endpoint is nationwide and does not relia
 
 | Resource / action | Intent | Access |
 |---|---|---|
-| `PATCH/DELETE /api/farm-areas/{farmAreaId}` | FarmArea 수정·삭제 | owner/admin |
 | `GET /api/farms/{farmId}/today-context` | 현재 작기·Today·문제와 Baseline Module summary를 함께 읽기 | member |
 
 The route names are a target contract. The first UI Slice may use only the route(s) it needs, but it may not expose provider-specific payloads or bypass RLS.
@@ -453,7 +454,7 @@ The exact metric catalogue stays open in the Pilot; a Measurement is not an auto
 
 ### Weather, Measurement and planned error family
 
-- `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`
+- `FARM_AREA_NOT_FOUND`, `FARM_AREA_CREATE_FAILED`, `FARM_AREA_UPDATE_FAILED`, `FARM_AREA_DELETE_FAILED`, `FARM_AREA_REFERENCE_LOOKUP_FAILED`, `FARM_AREA_IN_USE`
 - Implemented Measurement: `MEASUREMENT_CREATE_FAILED`, `MEASUREMENT_LOOKUP_FAILED`
 - Implemented Weather location: `WEATHER_LOCATION_UPDATE_FAILED`
 - Implemented Observation: `OBSERVATION_CREATE_FAILED`, `OBSERVATION_LOOKUP_FAILED`, `OBSERVATION_NOT_FOUND`, `OBSERVATION_ALREADY_HAS_ISSUE`, `FARM_AREA_LOOKUP_FAILED`, `FARM_AREA_NOT_FOUND`, `CROP_CYCLE_LOOKUP_FAILED`, `CROP_CYCLE_NOT_FOUND`
