@@ -3,6 +3,7 @@ import {
   type TodayHomeIssue,
   type TodayHomeTask,
 } from "@/lib/core/today-home";
+import { getPublicReferenceCropProfile } from "@/lib/crop-packs/public-reference-profiles";
 
 type TodayHomeFarm = {
   name: string;
@@ -41,7 +42,8 @@ export function TodayHome({
   tasks,
 }: TodayHomeProps) {
   const summary = summarizeTodayHome(tasks, issues);
-  const cropName = [cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
+  const cropProfile = getPublicReferenceCropProfile(cropCycle.cropCode);
+  const cropName = [cropProfile?.nongsaroCropName ?? cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ");
   const stageName = cropCycle.growthStage ?? "생육 단계 미입력";
 
   return (
@@ -76,10 +78,28 @@ export function TodayHome({
         </button>
       </div>
 
+      <dl className="today-home-summary-list" aria-label="오늘 운영 요약">
+        <div>
+          <dt>오늘 할 일</dt>
+          <dd>{summary.todayTaskCount}</dd>
+          <small>오늘</small>
+        </div>
+        <div className={summary.overdueTaskCount > 0 ? "today-home-summary-warning" : undefined}>
+          <dt>늦어진 일</dt>
+          <dd>{summary.overdueTaskCount}</dd>
+          <small>{summary.overdueTaskCount > 0 ? "확인 필요" : "없음"}</small>
+        </div>
+        <div className={summary.activeIssueCount > 0 ? "today-home-summary-warning" : undefined}>
+          <dt>확인할 기록</dt>
+          <dd>{summary.activeIssueCount}</dd>
+          <small>{summary.highSeverityIssueCount > 0 ? "중요 포함" : "현장 기록"}</small>
+        </div>
+      </dl>
+
       <div className="today-home-work stack">
         <div>
-          <h2>먼저 확인할 일</h2>
-          <p className="field-hint">오늘과 늦어진 작업만 보여 드립니다.</p>
+          <h2>지금 할 일</h2>
+          <p className="field-hint">늦어진 일과 오늘 할 일 중 세 가지만 먼저 보여 드립니다.</p>
         </div>
         {summary.selectedTasks.length > 0 ? (
           <ol className="today-home-task-list">
@@ -124,8 +144,8 @@ export function TodayHome({
       </div>
 
       <button className="today-home-information-link" onClick={() => onNavigate("information")} type="button">
-        <span>농장 참고정보</span>
-        <small>날씨 · 병해충 · 재배 · 시장 정보 보기</small>
+        <span>오늘 참고정보 보기</span>
+        <small>날씨 · 병해충 · 재배 정보 · 전국 도매 참고가</small>
       </button>
     </section>
   );
