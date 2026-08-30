@@ -87,7 +87,7 @@ Crop context is the active CropCycle. Missing crop, cultivar or growth stage pro
 
 - Adapters run only in server Route Handlers or server modules.
 - API keys are stored only in local and Vercel server environment variables.
-- Provider timeout, status code, request ID and cache update result are logged without keys or raw Farm PII.
+- Provider timeout, HTTP status, provider error-code classification, request ID and cache update result may be logged without keys, provider response bodies, request URLs or raw Farm PII. The KAMIS market route records only a sanitized failure classification so Pilot operators can distinguish missing deployment credentials, provider rejection, network/timeout and malformed data while the user continues to see a Korean unavailable/stale state.
 - Each cache/snapshot record is Farm-scoped where it contains Farm context and protected by existing membership RLS.
 - An integration failure must return an `IntegrationResult`, not make the Today API fail.
 

@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
-import { fetchKamisNationalWholesaleReference } from "@/lib/integrations/kamis-market";
+import {
+  fetchKamisNationalWholesaleReference,
+  getKamisMarketFailureDetails,
+} from "@/lib/integrations/kamis-market";
 
 import { GET } from "./route";
 
@@ -13,10 +16,16 @@ vi.mock("@/lib/integrations/kamis-market", () => ({
     sourceReference: "https://example.test/kamis",
   },
   fetchKamisNationalWholesaleReference: vi.fn(),
+  getKamisMarketFailureDetails: vi.fn(() => ({ code: "KAMIS_UNKNOWN_ERROR" })),
 }));
 
 const requireAuthenticatedUser = vi.mocked(requireAuthenticatedSupabaseUser);
 const fetchMarketReference = vi.mocked(fetchKamisNationalWholesaleReference);
+const getMarketFailureDetails = vi.mocked(getKamisMarketFailureDetails);
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("GET /api/farms/:farmId/information/market", () => {
   const farmId = "11111111-1111-4111-8111-111111111111";
@@ -125,6 +134,7 @@ describe("GET /api/farms/:farmId/information/market", () => {
       error: null,
     });
     fetchMarketReference.mockRejectedValue(new Error("provider unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await GET(request(), { params: Promise.resolve({ farmId }) });
 
@@ -133,6 +143,23 @@ describe("GET /api/farms/:farmId/information/market", () => {
       data: payload,
       provenance: { freshness: "stale", verificationStatus: "cached_official_source" },
     });
+  });
+
+  it("logs only a sanitized KAMIS failure classification", async () => {
+    fetchMarketReference.mockRejectedValue(new Error("raw provider payload must not be logged"));
+    getMarketFailureDetails.mockReturnValue({ code: "KAMIS_RESPONSE_ERROR", providerErrorCode: "901" });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(request(), { params: Promise.resolve({ farmId }) });
+
+    expect(response.status).toBe(200);
+    expect(consoleError).toHaveBeenCalledWith(JSON.stringify({
+      event: "integration.market.failed",
+      provider: "KAMIS",
+      code: "KAMIS_RESPONSE_ERROR",
+      providerErrorCode: "901",
+    }));
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("raw provider payload"));
   });
 
   it("stores a Crop Pack-mapped nationwide wholesale reference", async () => {

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchKamisNationalWholesaleReference } from "@/lib/integrations/kamis-market";
+import {
+  fetchKamisNationalWholesaleReference,
+  getKamisMarketFailureDetails,
+} from "@/lib/integrations/kamis-market";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -56,5 +59,48 @@ describe("KAMIS market adapter", () => {
 
   it("requires server-only KAMIS credentials", async () => {
     await expect(fetchKamisNationalWholesaleReference({ categoryCode: "400", grade: "상품", itemName: "딸기" })).rejects.toThrow("KAMIS_CERT_ID_NOT_CONFIGURED");
+  });
+
+  it("classifies an official provider error code without retaining the provider response body", async () => {
+    vi.stubEnv("KAMIS_CERT_KEY", "test-key");
+    vi.stubEnv("KAMIS_CERT_ID", "test-requester");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: { error_code: "901" },
+    }), { status: 200 })));
+
+    const error = await fetchKamisNationalWholesaleReference({
+      categoryCode: "400",
+      grade: "상품",
+      itemName: "딸기",
+    }).catch((reason) => reason);
+
+    expect(getKamisMarketFailureDetails(error)).toEqual({
+      code: "KAMIS_RESPONSE_ERROR",
+      providerErrorCode: "901",
+    });
+  });
+
+  it("classifies a provider HTTP failure without exposing its response body", async () => {
+    vi.stubEnv("KAMIS_CERT_KEY", "test-key");
+    vi.stubEnv("KAMIS_CERT_ID", "test-requester");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 403 })));
+
+    const error = await fetchKamisNationalWholesaleReference({
+      categoryCode: "400",
+      grade: "상품",
+      itemName: "딸기",
+    }).catch((reason) => reason);
+
+    expect(getKamisMarketFailureDetails(error)).toEqual({
+      code: "KAMIS_REQUEST_FAILED",
+      httpStatus: 403,
+    });
+  });
+
+  it("classifies a network timeout without retaining its runtime error message", () => {
+    const timeout = new Error("provider request timed out");
+    timeout.name = "TimeoutError";
+
+    expect(getKamisMarketFailureDetails(timeout)).toEqual({ code: "KAMIS_TIMEOUT" });
   });
 });

@@ -24,6 +24,37 @@ export type MarketReferenceData = {
   unit: string;
 };
 
+const KAMIS_FAILURE_CODES = [
+  "KAMIS_CERT_ID_NOT_CONFIGURED",
+  "KAMIS_CERT_KEY_NOT_CONFIGURED",
+  "KAMIS_EMPTY_RESPONSE",
+  "KAMIS_ITEM_NOT_FOUND",
+  "KAMIS_MALFORMED_RESPONSE",
+  "KAMIS_NETWORK_FAILED",
+  "KAMIS_REQUEST_FAILED",
+  "KAMIS_RESPONSE_ERROR",
+  "KAMIS_TIMEOUT",
+  "KAMIS_UNKNOWN_ERROR",
+] as const;
+
+export type KamisMarketFailureCode = (typeof KAMIS_FAILURE_CODES)[number];
+
+export type KamisMarketFailureDetails = {
+  code: KamisMarketFailureCode;
+  httpStatus?: number;
+  providerErrorCode?: string;
+};
+
+class KamisMarketIntegrationError extends Error {
+  readonly details: KamisMarketFailureDetails;
+
+  constructor(code: KamisMarketFailureCode, details: Omit<KamisMarketFailureDetails, "code"> = {}) {
+    super(code);
+    this.name = "KamisMarketIntegrationError";
+    this.details = { code, ...details };
+  }
+}
+
 type KamisItem = Record<string, unknown>;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -60,11 +91,20 @@ function kstDate(now: Date) {
   return shifted.toISOString().slice(0, 10);
 }
 
+function safeProviderErrorCode(value: unknown) {
+  const code = asText(value);
+  return /^[A-Za-z0-9_-]{1,32}$/.test(code) ? code : undefined;
+}
+
 function responseItems(payload: unknown): KamisItem[] {
   const root = asRecord(payload);
   const data = asRecord(root?.data);
   const errorCode = asText(data?.error_code ?? root?.error_code);
-  if (errorCode && errorCode !== "000") throw new Error("KAMIS_RESPONSE_ERROR");
+  if (errorCode && errorCode !== "000") {
+    throw new KamisMarketIntegrationError("KAMIS_RESPONSE_ERROR", {
+      providerErrorCode: safeProviderErrorCode(errorCode),
+    });
+  }
 
   const rawItems = data?.item;
   const items = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
@@ -72,7 +112,7 @@ function responseItems(payload: unknown): KamisItem[] {
     const record = asRecord(item);
     return record ? [record] : [];
   });
-  if (records.length === 0) throw new Error("KAMIS_EMPTY_RESPONSE");
+  if (records.length === 0) throw new KamisMarketIntegrationError("KAMIS_EMPTY_RESPONSE");
   return records;
 }
 
@@ -104,8 +144,26 @@ function selectedItem(items: KamisItem[], input: KamisMarketReferenceInput) {
 
 function requiredCredential(name: "key" | "requesterId") {
   const value = name === "key" ? process.env.KAMIS_CERT_KEY : process.env.KAMIS_CERT_ID;
-  if (!value) throw new Error(name === "key" ? "KAMIS_CERT_KEY_NOT_CONFIGURED" : "KAMIS_CERT_ID_NOT_CONFIGURED");
+  if (!value) {
+    throw new KamisMarketIntegrationError(name === "key" ? "KAMIS_CERT_KEY_NOT_CONFIGURED" : "KAMIS_CERT_ID_NOT_CONFIGURED");
+  }
   return value;
+}
+
+function isKamisMarketFailureCode(value: string): value is KamisMarketFailureCode {
+  return (KAMIS_FAILURE_CODES as readonly string[]).includes(value);
+}
+
+export function getKamisMarketFailureDetails(error: unknown): KamisMarketFailureDetails {
+  if (error instanceof KamisMarketIntegrationError) return error.details;
+
+  if (error instanceof Error) {
+    if (isKamisMarketFailureCode(error.message)) return { code: error.message };
+    if (error.name === "AbortError" || error.name === "TimeoutError") return { code: "KAMIS_TIMEOUT" };
+    if (error instanceof TypeError) return { code: "KAMIS_NETWORK_FAILED" };
+  }
+
+  return { code: "KAMIS_UNKNOWN_ERROR" };
 }
 
 export async function fetchKamisNationalWholesaleReference(input: KamisMarketReferenceInput): Promise<MarketReferenceData> {
@@ -121,15 +179,23 @@ export async function fetchKamisNationalWholesaleReference(input: KamisMarketRef
     p_returntype: "json",
   }).toString();
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
-  if (!response.ok) throw new Error("KAMIS_REQUEST_FAILED");
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  } catch (error) {
+    const { code, ...details } = getKamisMarketFailureDetails(error);
+    throw new KamisMarketIntegrationError(code, details);
+  }
+  if (!response.ok) {
+    throw new KamisMarketIntegrationError("KAMIS_REQUEST_FAILED", { httpStatus: response.status });
+  }
 
   const item = selectedItem(responseItems(await response.json().catch(() => null)), input);
   const point = item ? pricePoint(item) : null;
-  if (!item || !point) throw new Error("KAMIS_ITEM_NOT_FOUND");
+  if (!item || !point) throw new KamisMarketIntegrationError("KAMIS_ITEM_NOT_FOUND");
 
   const unit = asText(item.unit);
-  if (!unit) throw new Error("KAMIS_MALFORMED_RESPONSE");
+  if (!unit) throw new KamisMarketIntegrationError("KAMIS_MALFORMED_RESPONSE");
 
   return {
     itemName: asText(item.item_name) || input.itemName,
