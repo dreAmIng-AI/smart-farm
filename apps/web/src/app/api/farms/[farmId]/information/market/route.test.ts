@@ -162,6 +162,20 @@ describe("GET /api/farms/:farmId/information/market", () => {
     expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("raw provider payload"));
   });
 
+  it("explains when the recent official wholesale list has no exact Crop Pack item", async () => {
+    fetchMarketReference.mockRejectedValue(new Error("provider item not found"));
+    getMarketFailureDetails.mockReturnValue({ code: "KAMIS_ITEM_NOT_FOUND" });
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(request(), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "최근 7일 안에 현재 작물의 전국 도매 참고가격이 공식 집계에서 확인되지 않았습니다. 출하 시기 또는 공식 집계 여부를 나중에 다시 확인해 주세요.",
+    });
+  });
+
   it("stores a Crop Pack-mapped nationwide wholesale reference", async () => {
     fetchMarketReference.mockResolvedValue(payload);
 
