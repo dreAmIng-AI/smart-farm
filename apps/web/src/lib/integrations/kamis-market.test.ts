@@ -57,6 +57,47 @@ describe("KAMIS market adapter", () => {
     await expect(fetchKamisNationalWholesaleReference({ categoryCode: "400", grade: "상품", itemName: "딸기" })).rejects.toThrow("KAMIS_ITEM_NOT_FOUND");
   });
 
+  it("uses the most recent provider date when a non-market day has no category rows", async () => {
+    vi.stubEnv("KAMIS_CERT_KEY", "test-key");
+    vi.stubEnv("KAMIS_CERT_ID", "test-requester");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: { error_code: "000", item: [] } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        data: {
+          error_code: "000",
+          item: [{ item_name: "딸기", kind_name: "설향", rank: "상품", unit: "2kg", day1: "20260828", dpr1: "20,000" }],
+        },
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchKamisNationalWholesaleReference({
+      categoryCode: "400",
+      grade: "상품",
+      itemName: "딸기",
+      now: new Date("2026-08-29T01:00:00.000Z"),
+    })).resolves.toMatchObject({
+      baseDate: "2026-08-27T15:00:00.000Z",
+      priceWon: 20000,
+    });
+    expect(String(fetchMock.mock.calls[0][0])).toContain("p_regday=2026-08-29");
+    expect(String(fetchMock.mock.calls[1][0])).toContain("p_regday=2026-08-28");
+  });
+
+  it("keeps the existing unavailable or stale path after seven empty provider dates", async () => {
+    vi.stubEnv("KAMIS_CERT_KEY", "test-key");
+    vi.stubEnv("KAMIS_CERT_ID", "test-requester");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: { error_code: "000", item: [] } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchKamisNationalWholesaleReference({
+      categoryCode: "400",
+      grade: "상품",
+      itemName: "딸기",
+      now: new Date("2026-08-30T01:00:00.000Z"),
+    })).rejects.toThrow("KAMIS_EMPTY_RESPONSE");
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+  });
+
   it("requires server-only KAMIS credentials", async () => {
     await expect(fetchKamisNationalWholesaleReference({ categoryCode: "400", grade: "상품", itemName: "딸기" })).rejects.toThrow("KAMIS_CERT_ID_NOT_CONFIGURED");
   });
