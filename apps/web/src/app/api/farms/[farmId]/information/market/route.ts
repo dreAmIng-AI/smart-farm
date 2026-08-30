@@ -7,6 +7,7 @@ import {
   fetchKamisNationalWholesaleReference,
   getKamisMarketFailureDetails,
   KAMIS_MARKET_SOURCE,
+  type KamisMarketFailureCode,
   type MarketReferenceData,
 } from "@/lib/integrations/kamis-market";
 
@@ -107,6 +108,17 @@ function logMarketReferenceFailure(error: unknown) {
     ...(httpStatus === undefined ? {} : { httpStatus }),
     ...(providerErrorCode === undefined ? {} : { providerErrorCode }),
   }));
+  return code;
+}
+
+function unavailableMarketMessage(code: KamisMarketFailureCode) {
+  if (code === "KAMIS_ITEM_NOT_FOUND") {
+    return "최근 7일 안에 현재 작물의 전국 도매 참고가격이 공식 집계에서 확인되지 않았습니다. 출하 시기 또는 공식 집계 여부를 나중에 다시 확인해 주세요.";
+  }
+  if (code === "KAMIS_EMPTY_RESPONSE") {
+    return "최근 7일 안에 전국 도매 참고가격이 공식 집계에서 확인되지 않았습니다. 잠시 후 다시 확인해 주세요.";
+  }
+  return "시장정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.";
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -208,14 +220,14 @@ export async function GET(request: Request, context: RouteContext) {
     };
     return NextResponse.json(result);
   } catch (error) {
-    logMarketReferenceFailure(error);
+    const failureCode = logMarketReferenceFailure(error);
     const staleResult = resultFromStaleSnapshot(snapshot);
     if (staleResult) return NextResponse.json(staleResult);
 
     const result: MarketReferenceIntegrationResult = {
       status: "unavailable",
       data: null,
-      message: "시장정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.",
+      message: unavailableMarketMessage(failureCode),
     };
     return NextResponse.json(result);
   }
