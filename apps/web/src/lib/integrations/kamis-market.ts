@@ -1,4 +1,5 @@
 const KAMIS_DAILY_PRICE_ENDPOINT = "https://www.kamis.or.kr/service/price/xml.do";
+const KAMIS_MAX_LOOKBACK_DAYS = 7;
 
 export const KAMIS_MARKET_SOURCE = {
   provider: "KAMIS",
@@ -91,6 +92,10 @@ function kstDate(now: Date) {
   return shifted.toISOString().slice(0, 10);
 }
 
+function kstDateAtLookback(now: Date, lookbackDays: number) {
+  return kstDate(new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000));
+}
+
 function safeProviderErrorCode(value: unknown) {
   const code = asText(value);
   return /^[A-Za-z0-9_-]{1,32}$/.test(code) ? code : undefined;
@@ -166,7 +171,7 @@ export function getKamisMarketFailureDetails(error: unknown): KamisMarketFailure
   return { code: "KAMIS_UNKNOWN_ERROR" };
 }
 
-export async function fetchKamisNationalWholesaleReference(input: KamisMarketReferenceInput): Promise<MarketReferenceData> {
+function requestUrl(input: KamisMarketReferenceInput, requestedDate: string) {
   const url = new URL(KAMIS_DAILY_PRICE_ENDPOINT);
   url.search = new URLSearchParams({
     action: "dailyPriceByCategoryList",
@@ -175,9 +180,14 @@ export async function fetchKamisNationalWholesaleReference(input: KamisMarketRef
     p_convert_kg_yn: "N",
     p_item_category_code: input.categoryCode,
     p_product_cls_code: "02",
-    p_regday: kstDate(input.now ?? new Date()),
+    p_regday: requestedDate,
     p_returntype: "json",
   }).toString();
+  return url;
+}
+
+async function requestMarketReference(input: KamisMarketReferenceInput, requestedDate: string): Promise<MarketReferenceData> {
+  const url = requestUrl(input, requestedDate);
 
   let response: Response;
   try {
@@ -205,4 +215,22 @@ export async function fetchKamisNationalWholesaleReference(input: KamisMarketRef
     marketName: "전체지역",
     ...point,
   };
+}
+
+export async function fetchKamisNationalWholesaleReference(input: KamisMarketReferenceInput): Promise<MarketReferenceData> {
+  const now = input.now ?? new Date();
+  let lastEmptyResponse: unknown = null;
+
+  // KAMIS can omit the category list on weekends and other non-market days.
+  // Retry only that honest "no rows" condition; credential, provider and network failures must remain visible to operations.
+  for (let lookbackDays = 0; lookbackDays < KAMIS_MAX_LOOKBACK_DAYS; lookbackDays += 1) {
+    try {
+      return await requestMarketReference(input, kstDateAtLookback(now, lookbackDays));
+    } catch (error) {
+      if (getKamisMarketFailureDetails(error).code !== "KAMIS_EMPTY_RESPONSE") throw error;
+      lastEmptyResponse = error;
+    }
+  }
+
+  throw lastEmptyResponse;
 }
