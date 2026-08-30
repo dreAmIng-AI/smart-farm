@@ -16,7 +16,7 @@ const baseInput = {
 describe("work cycle guidance", () => {
   it("guides an owner without a Farm to Farm registration", () => {
     expect(getWorkCycleGuidance({ ...baseInput, hasFarm: false })).toMatchObject({
-      actionLabel: "Farm 등록하기",
+      actionLabel: "농장 등록하기",
       targetId: "farm-heading",
     });
   });
@@ -25,7 +25,7 @@ describe("work cycle guidance", () => {
     expect(
       getWorkCycleGuidance({ ...baseInput, canCreateFarm: false, hasFarm: false }),
     ).toMatchObject({
-      actionLabel: "공유 Farm 선택하기",
+      actionLabel: "공유 농장 선택하기",
       targetId: "saved-context-heading",
     });
   });
@@ -34,14 +34,14 @@ describe("work cycle guidance", () => {
     expect(
       getWorkCycleGuidance({ ...baseInput, hasAvailableFarm: true, hasFarm: false }),
     ).toMatchObject({
-      actionLabel: "Farm 선택하기",
+      actionLabel: "농장 선택하기",
       targetId: "saved-context-heading",
     });
   });
 
   it("guides a Farm manager without a selected CropCycle to its setup", () => {
     expect(getWorkCycleGuidance({ ...baseInput, cropCycleStatus: null })).toMatchObject({
-      actionLabel: "CropCycle 등록 또는 선택",
+      actionLabel: "작기 등록 또는 선택",
       targetId: "cycle-heading",
     });
   });

@@ -2123,3 +2123,239 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Information hierarchy for the Today dashboard and the guided farm setup. */
+.today-home-summary-list {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.today-home-summary-list div {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  padding: 0.85rem 0.75rem;
+}
+
+.today-home-summary-list dt,
+.today-home-summary-list small {
+  color: #6b7684;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.today-home-summary-list dd {
+  color: #191f28;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0.25rem 0;
+}
+
+.today-home-summary-list .today-home-summary-warning {
+  background: #fffaf0;
+  border-color: #f5dfb3;
+}
+
+.today-home-summary-list .today-home-summary-warning dd {
+  color: #b45309;
+}
+
+.farm-setup-progress {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  border-radius: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  order: 1;
+  padding: 1.2rem;
+}
+
+.farm-setup-progress-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.farm-setup-progress-heading > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.farm-setup-progress h1 {
+  font-size: clamp(1.35rem, 5vw, 1.75rem);
+  letter-spacing: -0.04em;
+  line-height: 1.3;
+}
+
+.farm-setup-progress-heading > span {
+  background: #e8f3ff;
+  border-radius: 999px;
+  color: #1f5fae;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
+}
+
+.farm-setup-progress-list {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.farm-setup-progress-list a {
+  align-items: center;
+  border-radius: 0.9rem;
+  color: #191f28;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 0.65rem;
+  text-decoration: none;
+}
+
+.farm-setup-progress-list a:hover {
+  background: #f7f8fa;
+}
+
+.farm-setup-progress-number {
+  align-items: center;
+  background: #eef1f5;
+  border-radius: 50%;
+  color: #6b7684;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  height: 1.75rem;
+  justify-content: center;
+  width: 1.75rem;
+}
+
+.farm-setup-progress-list a > span:nth-child(2) {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.farm-setup-progress-list strong {
+  font-size: 0.93rem;
+}
+
+.farm-setup-progress-list small {
+  color: #6b7684;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.farm-setup-progress-list em {
+  color: #6b7684;
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.farm-setup-progress-complete .farm-setup-progress-number {
+  background: #e2f5e9;
+  color: #1c7c46;
+}
+
+.farm-setup-progress-complete em {
+  color: #1c7c46;
+}
+
+.farm-setup-progress-current a {
+  background: #e8f3ff;
+}
+
+.farm-setup-progress-current .farm-setup-progress-number {
+  background: #1f78e4;
+  color: #ffffff;
+}
+
+.farm-setup-progress-current em {
+  color: #1f5fae;
+}
+
+.saved-context {
+  order: 2;
+}
+
+.farm-management-card {
+  order: 3;
+}
+
+.farm-management-heading {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.farm-management-heading > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.farm-management-heading > span {
+  background: #f2f4f6;
+  border-radius: 0.7rem;
+  color: #6b7684;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.6rem;
+}
+
+.farm-settings-disclosure {
+  background: #ffffff;
+  border: 1px solid #e5e8eb;
+  border-radius: 1.1rem;
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+}
+
+.farm-settings-disclosure summary,
+.record-secondary-entry summary {
+  color: #191f28;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.farm-settings-disclosure[open] summary,
+.record-secondary-entry[open] summary {
+  margin-bottom: 0.1rem;
+}
+
+.farm-settings-disclosure > .card {
+  box-shadow: none;
+}
+
+.crop-cycle-settings {
+  order: 4;
+}
+
+.farm-area-settings {
+  order: 5;
+}
+
+.weather-settings {
+  order: 6;
+}
+
+.record-secondary-entry {
+  background: #ffffff;
+  border-color: #e5e8eb;
+}
+
+.record-secondary-entry .observation-panel {
+  box-shadow: none;
+}

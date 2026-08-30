@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import { FarmAreaPanel } from "@/app/components/farm-area-panel";
+import { FarmSetupProgress } from "@/app/components/farm-setup-progress";
 import { MonthlyWorkCalendar } from "@/app/components/monthly-work-calendar";
 import { MobileNavigation, type AppSection } from "@/app/components/mobile-navigation";
 import { MeasurementPanel } from "@/app/components/measurement-panel";
@@ -1664,10 +1665,10 @@ export default function HomePage() {
 
       {userEmail && (!hasSelectedWorkCycle || activeAppSection === "farm") ? (
         <section className="card saved-context stack" aria-labelledby="saved-context-heading">
-          <details className="dashboard-context-switcher" open={!cropCycle}>
-            <summary id="saved-context-heading">{farm && cropCycle ? `${farm.name} · ${cropCycle.cropCode}${cropCycle.cultivar ? ` ${cropCycle.cultivar}` : ""} 전환` : "관리할 농장과 작기 선택"}</summary>
+          <details className="dashboard-context-switcher" open={!farm || !cropCycle}>
+            <summary id="saved-context-heading">{farm && cropCycle ? `${farm.name} · ${cropCycle.cropCode}${cropCycle.cultivar ? ` ${cropCycle.cultivar}` : ""} 바꾸기` : "관리할 농장과 작기 선택"}</summary>
             <p className="field-hint">
-              이전에 만든 농장과 작기를 선택하면 오늘 작업, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
+              이전에 만든 농장과 작기를 선택하면 오늘 할 일, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
             </p>
           <label>
             농장 선택
@@ -1750,21 +1751,23 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {userEmail && farm && cropCycle && activeAppSection === "farm" ? (
-        <WorkCycleGuidance
-          canCreateFarm={canCreateFarm}
+      {userEmail && activeAppSection === "farm" ? (
+        <FarmSetupProgress
           canManageFarm={canManageSelectedFarm}
-          cropCycleStatus={cropCycle.status}
-          hasAvailableFarm={farms.length > 0}
           hasFarm={Boolean(farm)}
           hasScheduledTasks={schedule.length > 0}
-          overdueTaskCount={todayTasks.filter((task) => task.scheduleState === "overdue").length}
-          todayTaskCount={todayTasks.filter((task) => task.scheduleState !== "overdue").length}
+          hasSelectedCropCycle={Boolean(cropCycle)}
         />
       ) : null}
 
-      {userEmail && activeAppSection === "farm" && (canCreateFarm || farm) ? <section className="card stack" aria-labelledby="farm-heading">
-        <h2 id="farm-heading">{farm ? "농장 정보" : "농장 만들기"}</h2>
+      {userEmail && activeAppSection === "farm" && (canCreateFarm || farm) ? <section className="card farm-management-card stack" aria-labelledby="farm-heading">
+        <div className="farm-management-heading">
+          <div>
+            <p className="eyebrow">기본 설정</p>
+            <h2 id="farm-heading">{farm ? "농장 기본정보" : "농장 만들기"}</h2>
+          </div>
+          {farm ? <span>{farm.regionCode}</span> : null}
+        </div>
         {canCreateFarm ? <details className="farm-create" open={shouldShowFarmCreation}>
         <summary>{farm ? "새 농장 추가" : "농장 기본정보 입력"}</summary>
         {farm ? <p className="field-hint">현재 선택한 농장과 별도로 새 농장을 등록합니다.</p> : null}
@@ -1774,7 +1777,7 @@ export default function HomePage() {
             <input name="name" required defaultValue="개발용 농장" />
           </label>
           <label>
-            지역 코드
+            농장 지역 구분
             <input name="regionCode" required defaultValue="KR-DEMO" />
           </label>
           <label>
@@ -1810,7 +1813,7 @@ export default function HomePage() {
                 <input defaultValue={farm.name} name="name" required />
               </label>
               <label>
-                지역 코드
+              농장 지역 구분
                 <input defaultValue={farm.regionCode} name="regionCode" required />
               </label>
               <label>
@@ -1981,29 +1984,39 @@ export default function HomePage() {
       </section> : null}
 
       {userEmail && farm && activeAppSection === "farm" ? (
-        <FarmAreaPanel
-          canManageFarm={canManageSelectedFarm}
-          farmId={farm.id}
-          key={farm.id}
-          onAreasChanged={() => void loadFarmAreas(farm.id)}
-        />
+        <details className="farm-settings-disclosure farm-area-settings">
+          <summary>재배 구역 관리 (선택)</summary>
+          <p className="field-hint">동·하우스처럼 작업을 나눠 볼 재배 구역이 있을 때만 설정하세요.</p>
+          <FarmAreaPanel
+            canManageFarm={canManageSelectedFarm}
+            farmId={farm.id}
+            key={farm.id}
+            onAreasChanged={() => void loadFarmAreas(farm.id)}
+          />
+        </details>
       ) : null}
 
       {userEmail && farm && canManageSelectedFarm && activeAppSection === "farm" ? (
-        <WeatherLocationPanel farmId={farm.id} onSaved={() => setWeatherRefreshVersion((value) => value + 1)} />
+        <details className="farm-settings-disclosure weather-settings">
+          <summary>농장 날씨 위치 설정 (선택)</summary>
+          <p className="field-hint">오늘 날씨를 보려면 한 번만 설정하면 됩니다.</p>
+          <WeatherLocationPanel farmId={farm.id} onSaved={() => setWeatherRefreshVersion((value) => value + 1)} />
+        </details>
       ) : null}
 
       {userEmail && farm && canManageSelectedFarm && activeAppSection === "farm" ? (
-        <section className="card stack" aria-labelledby="cycle-heading">
-          <h2 id="cycle-heading">작기 만들기</h2>
-          <p className="muted">현재 농장: {farm.name}</p>
-          <details className="crop-cycle-create" open={!cropCycle}>
-            <summary>{cropCycle ? "새 작기 만들기" : "작기 기본정보 입력"}</summary>
-            {cropCycle ? <p className="field-hint">현재 선택한 작기와 별도로 새 CropCycle을 등록합니다.</p> : null}
-          <form className="stack" onSubmit={handleCropCycleCreate}>
+        <details className="farm-settings-disclosure crop-cycle-settings" open={!cropCycle}>
+          <summary>재배 작물과 작기 설정</summary>
+          <section className="card stack" aria-labelledby="cycle-heading">
+            <h2 id="cycle-heading">{cropCycle ? "새 작기 추가" : "재배 작물 입력"}</h2>
+            <p className="muted">현재 농장: {farm.name}</p>
+            <details className="crop-cycle-create" open={!cropCycle}>
+              <summary>{cropCycle ? "새 작기 만들기" : "작기 기본정보 입력"}</summary>
+              {cropCycle ? <p className="field-hint">현재 선택한 작기와 별도로 새 작기를 등록합니다.</p> : null}
+            <form className="stack" onSubmit={handleCropCycleCreate}>
             <label>
-              작물 코드
-              <input name="cropCode" required defaultValue="strawberry" />
+              재배 작물
+              <input name="cropCode" required defaultValue="strawberry" placeholder="예: strawberry" />
             </label>
             <label>
               품종 (선택)
@@ -2018,48 +2031,24 @@ export default function HomePage() {
                 ))}
               </select>
             </label>
-            <p className="field-hint">주 재배 구역을 정하면 이후 새로 적용하는 Template 작업에 같은 구역이 연결됩니다.</p>
+            <p className="field-hint">주 재배 구역을 정하면 이후 새로 만드는 기본 작업에 같은 구역이 연결됩니다.</p>
             <label>
               정식일
               <input name="transplantDate" required type="date" defaultValue={transplantDate} />
             </label>
           <label>
             생육 단계 (선택 사항)
-            <input name="growthStage" defaultValue="establishment" placeholder="예: establishment" />
+            <input name="growthStage" placeholder="예: 개화기" />
           </label>
           <p className="field-hint">
             현재는 직접 입력하거나 비워 둘 수 있습니다. 생육 단계별 선택 목록은 Crop Pack 데이터가 준비된 뒤 제공합니다.
           </p>
             <button disabled={isSubmitting} type="submit">
-              작기 만들기
+              재배 작물 등록
             </button>
-          </form>
-          </details>
-        </section>
-      ) : null}
-
-      {userEmail && farm && activeAppSection === "record" ? (
-        <ObservationPanel
-          cropCycles={cropCycles}
-          farmId={farm.id}
-          selectedCropCycleId={cropCycle?.id ?? null}
-        />
-      ) : null}
-
-      {userEmail && farm && activeAppSection === "record" ? (
-        <details
-          className="card optional-measurement-entry stack"
-          onToggle={(event) => setIsMeasurementExpanded(event.currentTarget.open)}
-        >
-          <summary>수치 기록은 필요할 때만 열기</summary>
-          <p className="field-hint">온도계·습도계처럼 직접 확인한 수치가 있을 때만 남기세요. 오늘의 기본 작업이나 관찰 기록에 필요한 단계는 아닙니다.</p>
-          {isMeasurementExpanded ? (
-            <MeasurementPanel
-              cropCycles={cropCycles}
-              farmId={farm.id}
-              selectedCropCycleId={cropCycle?.id ?? null}
-            />
-          ) : null}
+            </form>
+            </details>
+          </section>
         </details>
       ) : null}
 
@@ -2637,6 +2626,35 @@ export default function HomePage() {
             )}
           </details>
         </section>
+      ) : null}
+
+      {userEmail && farm && activeAppSection === "record" ? (
+        <details className="card record-secondary-entry stack">
+          <summary>새 관찰 기록 남기기</summary>
+          <p className="field-hint">오늘 작업과 별도로 현장에서 본 사실을 남길 때만 여세요.</p>
+          <ObservationPanel
+            cropCycles={cropCycles}
+            farmId={farm.id}
+            selectedCropCycleId={cropCycle?.id ?? null}
+          />
+        </details>
+      ) : null}
+
+      {userEmail && farm && activeAppSection === "record" ? (
+        <details
+          className="card optional-measurement-entry stack"
+          onToggle={(event) => setIsMeasurementExpanded(event.currentTarget.open)}
+        >
+          <summary>수치 기록은 필요할 때만 열기</summary>
+          <p className="field-hint">온도계·습도계처럼 직접 확인한 수치가 있을 때만 남기세요. 오늘의 기본 작업이나 관찰 기록에 필요한 단계는 아닙니다.</p>
+          {isMeasurementExpanded ? (
+            <MeasurementPanel
+              cropCycles={cropCycles}
+              farmId={farm.id}
+              selectedCropCycleId={cropCycle?.id ?? null}
+            />
+          ) : null}
+        </details>
       ) : null}
 
       {userEmail && farm && cropCycle && activeAppSection === "farm" ? (

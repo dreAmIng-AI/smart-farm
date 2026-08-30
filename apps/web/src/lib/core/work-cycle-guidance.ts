@@ -30,29 +30,29 @@ export function getWorkCycleGuidance({
   if (!hasFarm) {
     if (hasAvailableFarm) {
       return {
-        actionLabel: "Farm 선택하기",
-        description: "저장된 Farm을 선택하면 현재 작기와 Today 작업을 이어서 볼 수 있습니다.",
+        actionLabel: "농장 선택하기",
+        description: "저장된 농장을 선택하면 현재 작기와 오늘 할 일을 이어서 볼 수 있습니다.",
         targetId: "saved-context-heading",
-        title: "작업할 Farm을 선택하세요",
+        title: "작업할 농장을 선택하세요",
         tone: "default",
       };
     }
 
     if (canCreateFarm) {
       return {
-        actionLabel: "Farm 등록하기",
-        description: "작업을 시작할 Farm의 기본정보를 먼저 등록하세요.",
+        actionLabel: "농장 등록하기",
+        description: "작업을 시작할 농장 기본정보를 먼저 등록하세요.",
         targetId: "farm-heading",
-        title: "먼저 Farm을 등록하세요",
+        title: "먼저 농장을 등록하세요",
         tone: "default",
       };
     }
 
     return {
-      actionLabel: "공유 Farm 선택하기",
-      description: "초대받은 Farm을 선택하면 Today와 작업 이력을 이어서 볼 수 있습니다.",
+      actionLabel: "공유 농장 선택하기",
+      description: "초대받은 농장을 선택하면 오늘 할 일과 작업 이력을 이어서 볼 수 있습니다.",
       targetId: "saved-context-heading",
-      title: "공유 Farm을 선택하세요",
+      title: "공유 농장을 선택하세요",
       tone: "default",
     };
   }
@@ -60,15 +60,15 @@ export function getWorkCycleGuidance({
   if (!cropCycleStatus) {
     return canManageFarm
       ? {
-          actionLabel: "CropCycle 등록 또는 선택",
-          description: "현재 Farm에서 관리할 작기를 선택하거나 새로 등록하세요.",
+          actionLabel: "작기 등록 또는 선택",
+          description: "현재 농장에서 관리할 작기를 선택하거나 새로 등록하세요.",
           targetId: "cycle-heading",
-          title: "다음으로 작기를 정하세요",
+          title: "다음으로 재배 작물을 정하세요",
           tone: "default",
         }
       : {
-          actionLabel: "CropCycle 선택하기",
-          description: "공유 Farm의 작기를 선택하면 오늘 해야 할 작업을 확인할 수 있습니다.",
+          actionLabel: "작기 선택하기",
+          description: "공유 농장의 작기를 선택하면 오늘 해야 할 일을 확인할 수 있습니다.",
           targetId: "saved-context-heading",
           title: "진행할 작기를 선택하세요",
           tone: "default",
