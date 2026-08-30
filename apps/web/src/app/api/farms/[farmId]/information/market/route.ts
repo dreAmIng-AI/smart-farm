@@ -5,6 +5,7 @@ import { isUuid } from "@/lib/api/validation";
 import { getPublicReferenceCropProfile } from "@/lib/crop-packs/public-reference-profiles";
 import {
   fetchKamisNationalWholesaleReference,
+  getKamisMarketFailureDetails,
   KAMIS_MARKET_SOURCE,
   type MarketReferenceData,
 } from "@/lib/integrations/kamis-market";
@@ -94,6 +95,18 @@ function resultFromStaleSnapshot(snapshot: SnapshotRow | null): MarketReferenceI
     provenance: snapshotProvenance(snapshot, "stale"),
     message: "최신 시장정보를 불러오지 못했습니다. 마지막으로 확인한 공식 참고가격을 보여드립니다.",
   };
+}
+
+function logMarketReferenceFailure(error: unknown) {
+  const { code, httpStatus, providerErrorCode } = getKamisMarketFailureDetails(error);
+  // Do not include the request URL, credentials, response body or Farm context in logs.
+  console.error(JSON.stringify({
+    event: "integration.market.failed",
+    provider: "KAMIS",
+    code,
+    ...(httpStatus === undefined ? {} : { httpStatus }),
+    ...(providerErrorCode === undefined ? {} : { providerErrorCode }),
+  }));
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -194,7 +207,8 @@ export async function GET(request: Request, context: RouteContext) {
       },
     };
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    logMarketReferenceFailure(error);
     const staleResult = resultFromStaleSnapshot(snapshot);
     if (staleResult) return NextResponse.json(staleResult);
 
