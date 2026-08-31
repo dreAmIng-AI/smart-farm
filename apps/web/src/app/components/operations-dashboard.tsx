@@ -60,8 +60,8 @@ export function OperationsDashboard({
           </div>
           <span className="dashboard-context">{farm.regionCode}</span>
         </div>
-        <p className="muted">현재 Farm의 작기를 선택하면 오늘의 작업, 지연 작업, 문제 기록, 다음 일정을 한눈에 확인할 수 있습니다.</p>
-        <a className="dashboard-link" href="#saved-context-heading">CropCycle 선택으로 이동</a>
+        <p className="muted">현재 농장의 재배 작물을 선택하면 오늘 할 일, 지연 작업, 문제 기록, 다음 일정을 한눈에 확인할 수 있습니다.</p>
+        <a className="dashboard-link" href="#saved-context-heading">재배 작물 선택으로 이동</a>
       </section>
     );
   }
@@ -83,7 +83,7 @@ export function OperationsDashboard({
       </div>
 
       <p className="field-hint">
-        현재 생육 단계: {cropCycle.growthStage ?? "미설정"}. 아래 값은 저장된 FarmTask와 IssueRecord를 요약한 것입니다.
+        현재 생육 단계: {cropCycle.growthStage ?? "미설정"}. 아래 값은 저장된 작업과 문제 기록을 요약한 것입니다.
       </p>
 
       <dl className="dashboard-metrics">
@@ -109,7 +109,7 @@ export function OperationsDashboard({
       <div className="dashboard-next-tasks stack">
         <div className="dashboard-list-heading">
           <h3>다음 예정 작업</h3>
-          <a href="#plan-heading">전체 일정과 Today 보기</a>
+          <a href="#plan-heading">전체 일정과 오늘 할 일 보기</a>
         </div>
         {summary.nextTasks.length > 0 ? (
           <ol className="dashboard-task-list">
@@ -128,7 +128,7 @@ export function OperationsDashboard({
 
       <div className="dashboard-links">
         <a className="dashboard-link" href="#plan-heading">오늘 작업 기록하기</a>
-        <a className="dashboard-link dashboard-link-secondary" href="#farm-heading">Farm 정보와 구성원 보기</a>
+        <a className="dashboard-link dashboard-link-secondary" href="#farm-heading">농장 정보와 구성원 보기</a>
       </div>
     </section>
   );

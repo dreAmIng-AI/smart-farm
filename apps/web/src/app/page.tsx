@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { OperationsDashboard } from "@/app/components/operations-dashboard";
 import { FarmAreaPanel } from "@/app/components/farm-area-panel";
@@ -26,6 +26,11 @@ import {
   shareFarmInvitationLink,
 } from "@/lib/invitation-sharing";
 import { parseInvitationAccountSetupInput, removeFarmInvitationToken } from "@/lib/invitation-acceptance";
+import {
+  parseSelectedContext,
+  selectedContextStorageKey,
+  type SelectedContext,
+} from "@/lib/core/selected-context";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Farm = {
@@ -35,6 +40,21 @@ type Farm = {
   cultivationEnvironment: "facility" | "open_field";
   cultivationMethod: string | null;
 };
+
+function readSelectedContext(userId: string) {
+  if (typeof window === "undefined") return null;
+  return parseSelectedContext(window.sessionStorage.getItem(selectedContextStorageKey(userId)));
+}
+
+function saveSelectedContext(userId: string | null, farmId: string, cropCycleId: string | null) {
+  if (typeof window === "undefined" || !userId) return;
+  window.sessionStorage.setItem(selectedContextStorageKey(userId), JSON.stringify({ farmId, cropCycleId }));
+}
+
+function clearSelectedContext(userId: string | null) {
+  if (typeof window === "undefined" || !userId) return;
+  window.sessionStorage.removeItem(selectedContextStorageKey(userId));
+}
 
 type FarmListResponse = {
   items: Farm[];
@@ -407,6 +427,7 @@ export default function HomePage() {
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const invitationAcceptanceAttempted = useRef(false);
   const farmListRequestVersion = useRef(0);
+  const selectedContextRestorationAttempted = useRef<string | null>(null);
   const restoreFarmContextRef = useRef<((selectedFarm: Farm) => Promise<CropCycle[]>) | null>(null);
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false);
   const [isRestoringContext, setIsRestoringContext] = useState(false);
@@ -426,6 +447,38 @@ export default function HomePage() {
           recipientEmail: latestInviteEmail,
         })
       : null;
+  const restoreSavedContext = useEffectEvent(
+    async ({
+      isActive,
+      savedContext,
+      savedFarm,
+      userId: restoringUserId,
+    }: {
+      isActive: () => boolean;
+      savedContext: SelectedContext;
+      savedFarm: Farm;
+      userId: string;
+    }) => {
+      const cropCycleItems = await restoreFarmContext(savedFarm);
+      if (!isActive()) return;
+
+      const savedCropCycle = savedContext.cropCycleId
+        ? cropCycleItems.find((item) => item.id === savedContext.cropCycleId)
+        : null;
+
+      if (!savedCropCycle) {
+        saveSelectedContext(restoringUserId, savedFarm.id, null);
+        setActiveAppSection("farm");
+        setMessage(`${savedFarm.name}을 다시 열었습니다. 재배 중인 작물을 선택해 주세요.`);
+        return;
+      }
+
+      await restoreCropCycleContext(savedCropCycle, savedFarm);
+      if (isActive()) {
+        setMessage(`${savedFarm.name}의 이전 화면을 이어서 열었습니다.`);
+      }
+    },
+  );
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -473,7 +526,7 @@ export default function HomePage() {
         }
       } catch (error) {
         if (isMounted) {
-          setMessage(error instanceof Error ? error.message : "Farm 목록을 불러오지 못했습니다.");
+          setMessage(error instanceof Error ? error.message : "농장 목록을 불러오지 못했습니다.");
         }
       }
     }
@@ -484,6 +537,56 @@ export default function HomePage() {
       isMounted = false;
     };
   }, [userEmail]);
+
+  useEffect(() => {
+    if (!userId || farms.length === 0 || farm) {
+      return;
+    }
+
+    const storageKey = selectedContextStorageKey(userId);
+    if (selectedContextRestorationAttempted.current === storageKey) {
+      return;
+    }
+    selectedContextRestorationAttempted.current = storageKey;
+
+    const savedContext = readSelectedContext(userId);
+    if (!savedContext) {
+      return;
+    }
+
+    const savedFarm = farms.find((item) => item.id === savedContext.farmId);
+    if (!savedFarm) {
+      clearSelectedContext(userId);
+      return;
+    }
+
+    const contextToRestore = savedContext;
+    const farmToRestore = savedFarm;
+    const restoringUserId = userId;
+    let active = true;
+
+    async function restoreSelectedContext() {
+      try {
+        await restoreSavedContext({
+          isActive: () => active,
+          savedContext: contextToRestore,
+          savedFarm: farmToRestore,
+          userId: restoringUserId,
+        });
+      } catch {
+        if (active) {
+          clearSelectedContext(userId);
+          setMessage("이전에 열었던 농장을 불러오지 못했습니다. 목록에서 다시 선택해 주세요.");
+        }
+      }
+    }
+
+    void restoreSelectedContext();
+
+    return () => {
+      active = false;
+    };
+  }, [farm, farms, userId]);
 
   useEffect(() => {
     restoreFarmContextRef.current = restoreFarmContext;
@@ -509,7 +612,7 @@ export default function HomePage() {
         );
       } catch (error) {
         invitationAcceptanceAttempted.current = false;
-        const errorMessage = error instanceof Error ? error.message : "Farm 초대를 수락하지 못했습니다.";
+        const errorMessage = error instanceof Error ? error.message : "농장 초대를 수락하지 못했습니다.";
         setMessage(`${errorMessage} 초대받은 이메일로 다시 로그인한 뒤 이 링크를 다시 열어 주세요.`);
         return;
       }
@@ -528,29 +631,30 @@ export default function HomePage() {
         setCanCreateFarm(farmsResult.permissions.canCreateFarm);
         const acceptedFarm = farmsResult.items.find((item) => item.id === accepted.farmId);
         if (!acceptedFarm) {
-          setMessage(`Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 Farm 목록에서 선택해 시작하세요.`);
+          setMessage(`농장 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 농장 목록에서 선택해 시작하세요.`);
           return;
         }
 
         const restoreFarmContext = restoreFarmContextRef.current;
         if (!restoreFarmContext) {
-          throw new Error("Farm context could not be restored.");
+          throw new Error("농장 정보를 다시 불러오지 못했습니다.");
         }
 
         const cropCycleItems = await restoreFarmContext(acceptedFarm);
+        saveSelectedContext(userId, acceptedFarm.id, null);
         setMessage(
-          `Farm 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 ${acceptedFarm.name}을 열었습니다. ${
-            cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."
+          `농장 초대를 수락했습니다. ${farmRoleLabel(accepted.role)} 역할로 ${acceptedFarm.name}을 열었습니다. ${
+            cropCycleItems.length > 0 ? "재배 중인 작물을 선택해 일정을 이어서 보세요." : "새 작기를 만들 수 있습니다."
           }`,
         );
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Farm 정보를 불러오지 못했습니다.";
-        setMessage(`Farm 초대는 수락했습니다. ${errorMessage} 새로고침한 뒤 Farm을 선택해 주세요.`);
+        const errorMessage = error instanceof Error ? error.message : "농장 정보를 불러오지 못했습니다.";
+        setMessage(`농장 초대는 수락했습니다. ${errorMessage} 새로고침한 뒤 농장을 선택해 주세요.`);
       }
     }
 
     void acceptInvitation();
-  }, [invitationToken, userEmail]);
+  }, [invitationToken, userEmail, userId]);
 
   useEffect(() => {
     if (!selectedFarmId || !userEmail) {
@@ -574,7 +678,7 @@ export default function HomePage() {
         if (isMounted) {
           setFarmCollaboration(null);
           setFarmCollaborationFeedback(
-            error instanceof Error ? error.message : "Farm 구성원 정보를 불러오지 못했습니다.",
+            error instanceof Error ? error.message : "농장 구성원 정보를 불러오지 못했습니다.",
           );
         }
       } finally {
@@ -607,7 +711,7 @@ export default function HomePage() {
       if (error) {
         throw error;
       }
-      setMessage("로그인되었습니다. Farm 생성부터 시작하세요.");
+      setMessage("로그인되었습니다. 농장을 선택하거나 새로 만들어 시작하세요.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "로그인에 실패했습니다.");
     } finally {
@@ -643,7 +747,7 @@ export default function HomePage() {
       setEmail(parsed.data.email);
       setMessage(
         data.session
-          ? "계정을 설정했습니다. Farm 초대를 수락하는 중입니다."
+          ? "계정을 설정했습니다. 농장 초대를 수락하는 중입니다."
           : "계정 설정 요청을 받았습니다. 이메일 인증이 켜져 있다면 인증을 완료한 뒤 이 초대 링크를 다시 열어 주세요. 이미 계정이 있다면 아래 로그인으로 진행하세요.",
       );
     } catch (error) {
@@ -660,6 +764,7 @@ export default function HomePage() {
       if (error) {
         throw error;
       }
+      clearSelectedContext(userId);
       setFarms([]);
       setCanCreateFarm(false);
       setFarm(null);
@@ -695,7 +800,7 @@ export default function HomePage() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setIsSubmitting(true);
-    setFarmFeedback("Farm을 생성하고 있습니다.");
+    setFarmFeedback("농장을 만들고 있습니다.");
 
     try {
       const created = await apiRequest<Farm>("/api/farms", {
@@ -708,6 +813,7 @@ export default function HomePage() {
         }),
       });
       setFarm(created);
+      saveSelectedContext(userId, created.id, null);
       setActiveAppSection("farm");
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
@@ -727,10 +833,10 @@ export default function HomePage() {
       setIssueStatusDrafts({});
       setAttachmentTarget(null);
       setAttachmentFile(null);
-      setMessage(`Farm “${created.name}”을 만들었습니다.`);
-      setFarmFeedback(`Farm “${created.name}”이 생성되었습니다.`);
+      setMessage(`농장 “${created.name}”을 만들었습니다.`);
+      setFarmFeedback(`농장 “${created.name}”이 생성되었습니다.`);
     } catch (error) {
-      const errorText = error instanceof Error ? error.message : "Farm 생성에 실패했습니다.";
+      const errorText = error instanceof Error ? error.message : "농장 생성에 실패했습니다.";
       setMessage(errorText);
       setFarmFeedback(errorText);
     } finally {
@@ -758,9 +864,9 @@ export default function HomePage() {
       });
       setFarm(updated);
       setFarms((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-      setMessage(`Farm “${updated.name}” 기본정보를 저장했습니다.`);
+      setMessage(`농장 “${updated.name}” 기본정보를 저장했습니다.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Farm 기본정보 저장에 실패했습니다.");
+      setMessage(error instanceof Error ? error.message : "농장 기본정보 저장에 실패했습니다.");
     } finally {
       setIsUpdatingFarm(false);
     }
@@ -798,7 +904,7 @@ export default function HomePage() {
       );
     } catch (error) {
       setFarmCollaborationFeedback(
-        error instanceof Error ? error.message : "Farm 초대 링크를 만들지 못했습니다.",
+        error instanceof Error ? error.message : "농장 초대 링크를 만들지 못했습니다.",
       );
     } finally {
       setIsSavingFarmCollaboration(false);
@@ -949,6 +1055,7 @@ export default function HomePage() {
         }),
       });
       setCropCycle(created);
+      saveSelectedContext(userId, farm.id, created.id);
       setActiveAppSection("home");
       setCropCycles((items) => [created, ...items.filter((item) => item.id !== created.id)]);
       setGrowthStageDraft(created.growthStage ?? "");
@@ -961,9 +1068,9 @@ export default function HomePage() {
       setIssueStatusDrafts({});
       setAttachmentTarget(null);
       setAttachmentFile(null);
-      setMessage("CropCycle을 만들었습니다. Draft Template을 적용해 계획을 생성하세요.");
+      setMessage("재배 작기를 만들었습니다. 기본 작업을 만들어 계획을 시작하세요.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "CropCycle 생성에 실패했습니다.");
+      setMessage(error instanceof Error ? error.message : "재배 작기 생성에 실패했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1008,7 +1115,7 @@ export default function HomePage() {
     }
 
     const statusLabel = status === "completed" ? "완료" : "취소";
-    if (!window.confirm(`이 CropCycle을 ${statusLabel} 처리할까요? 종료된 작기에는 새 작업 계획을 생성할 수 없습니다.`)) {
+    if (!window.confirm(`이 작기를 ${statusLabel} 처리할까요? 종료한 작기에는 새 작업 계획을 만들 수 없습니다.`)) {
       return;
     }
 
@@ -1020,9 +1127,9 @@ export default function HomePage() {
       });
       setCropCycle(updated);
       setCropCycles((items) => items.map((item) => (item.id === updated.id ? updated : item)));
-      setMessage(`CropCycle을 ${statusLabel} 처리했습니다. 기존 일정과 이력은 보존됩니다.`);
+      setMessage(`작기를 ${statusLabel} 처리했습니다. 기존 일정과 기록은 그대로 보관됩니다.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "CropCycle 상태 저장에 실패했습니다.");
+      setMessage(error instanceof Error ? error.message : "작기 상태 저장에 실패했습니다.");
     } finally {
       setIsEndingCropCycle(false);
     }
@@ -1125,6 +1232,7 @@ export default function HomePage() {
   async function handleSavedFarmSelect(farmId: string) {
     const selectedFarm = farms.find((item) => item.id === farmId);
     if (!selectedFarm) {
+      clearSelectedContext(userId);
       setFarm(null);
       setFarmCollaboration(null);
       setFarmCollaborationFeedback(null);
@@ -1140,22 +1248,17 @@ export default function HomePage() {
 
     try {
       const cropCycleItems = await restoreFarmContext(selectedFarm);
+      saveSelectedContext(userId, selectedFarm.id, null);
       setActiveAppSection("farm");
       setMessage(
-        `${selectedFarm.name}을 열었습니다. ${cropCycleItems.length > 0 ? "CropCycle을 선택해 일정을 이어서 보세요." : "새 CropCycle을 만들 수 있습니다."}`,
+        `${selectedFarm.name}을 열었습니다. ${cropCycleItems.length > 0 ? "재배 중인 작물을 선택해 일정을 이어서 보세요." : "새 작기를 만들 수 있습니다."}`,
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "저장된 Farm 정보를 불러오지 못했습니다.");
+      setMessage(error instanceof Error ? error.message : "저장된 농장 정보를 불러오지 못했습니다.");
     }
   }
 
-  async function handleSavedCropCycleSelect(cropCycleId: string) {
-    const selectedCropCycle = cropCycles.find((item) => item.id === cropCycleId);
-    if (!selectedCropCycle) {
-      clearCropCycleContext();
-      return;
-    }
-
+  async function restoreCropCycleContext(selectedCropCycle: CropCycle, selectedFarm: Farm) {
     setIsRestoringContext(true);
     setCropCycle(selectedCropCycle);
     setActiveAppSection("home");
@@ -1170,14 +1273,30 @@ export default function HomePage() {
     try {
       await Promise.all([
         loadSchedule(selectedCropCycle.id),
-        farm ? loadTodayTasks(farm.id) : Promise.resolve(),
-        farm ? loadHistory(farm.id) : Promise.resolve(),
+        loadTodayTasks(selectedFarm.id),
+        loadHistory(selectedFarm.id),
       ]);
-      setMessage(`${selectedCropCycle.cropCode} CropCycle의 기존 일정과 기록을 불러왔습니다.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "저장된 CropCycle 정보를 불러오지 못했습니다.");
+      throw error instanceof Error ? error : new Error("저장된 작기 정보를 불러오지 못했습니다.");
     } finally {
       setIsRestoringContext(false);
+    }
+  }
+
+  async function handleSavedCropCycleSelect(cropCycleId: string) {
+    const selectedCropCycle = cropCycles.find((item) => item.id === cropCycleId);
+    if (!selectedCropCycle || !farm) {
+      clearCropCycleContext();
+      if (farm) saveSelectedContext(userId, farm.id, null);
+      return;
+    }
+
+    try {
+      await restoreCropCycleContext(selectedCropCycle, farm);
+      saveSelectedContext(userId, farm.id, selectedCropCycle.id);
+      setMessage(`${selectedCropCycle.cropCode} 작기의 기존 일정과 기록을 불러왔습니다.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "저장된 작기 정보를 불러오지 못했습니다.");
     }
   }
 
@@ -1195,8 +1314,8 @@ export default function HomePage() {
       await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
       setMessage(
         generated.generatedCount > 0
-          ? `${generated.generatedCount}개의 Draft FarmTask를 생성했습니다.`
-          : "생성할 새 Task가 없습니다. 기존 계획은 그대로 유지됩니다.",
+          ? `작기 전체에 기본 작업 ${generated.generatedCount}개를 만들었습니다.`
+          : "새로 만들 작업이 없습니다. 기존 작업 계획은 그대로 유지됩니다.",
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "작업계획 생성에 실패했습니다.");
@@ -1243,7 +1362,7 @@ export default function HomePage() {
     setIsSubmitting(true);
     try {
       await Promise.all([loadSchedule(cropCycle.id), loadTodayTasks(farm.id), loadHistory(farm.id)]);
-      setMessage("일정, Today, 이력을 새로고침했습니다.");
+      setMessage("일정, 오늘 할 일, 이력을 새로고침했습니다.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "조회에 실패했습니다.");
     } finally {
@@ -1355,11 +1474,11 @@ export default function HomePage() {
       }
       setMessage(
         actionType === "started"
-          ? "작업을 시작했습니다. Today에서 진행 중 상태로 계속 확인할 수 있습니다."
+          ? "작업을 시작했습니다. 오늘 화면에서 진행 중 상태를 계속 확인할 수 있습니다."
           : actionType === "completed"
-          ? "완료 결과를 기록했습니다. 작업이 Today에서 제외되었습니다."
+          ? "완료 결과를 기록했습니다. 작업이 오늘 목록에서 제외되었습니다."
           : actionType === "not_checked"
-            ? "확인하지 못함 결과를 기록했습니다. 작업은 재확인을 위해 Today에 남아 있습니다."
+            ? "확인하지 못함을 기록했습니다. 작업은 다시 확인할 수 있도록 오늘 목록에 남아 있습니다."
             : "관찰한 문제를 기록했습니다. 원본 작업은 문제 기록 상태가 되었고, 필요하면 재확인 작업을 만드세요.",
       );
     } catch (error) {
@@ -1546,7 +1665,7 @@ export default function HomePage() {
 
       {!isAuthLoading && !userEmail && invitationToken ? (
         <section className="card stack" aria-labelledby="invitation-account-heading">
-          <h2 id="invitation-account-heading">Farm 초대 수락</h2>
+          <h2 id="invitation-account-heading">농장 초대 수락</h2>
           <p className="muted">처음 참여한다면 이 화면에서 초대받은 이메일과 본인 비밀번호로 계정을 설정하세요.</p>
           <p className="field-hint">관리자에게 비밀번호를 받거나 전달할 필요가 없습니다. 초대받은 이메일과 정확히 같아야 합니다.</p>
           <form className="stack" onSubmit={handleInvitationAccountSetup}>
@@ -1582,12 +1701,12 @@ export default function HomePage() {
               />
             </label>
             <button disabled={isAuthenticating} type="submit">
-              {isAuthenticating ? "계정 설정 중..." : "계정 설정 후 Farm 참여"}
+              {isAuthenticating ? "계정 설정 중..." : "계정 설정 후 농장 참여"}
             </button>
           </form>
           <details className="stack">
             <summary>이미 계정이 있나요?</summary>
-            <p className="field-hint">초대받은 동일 이메일로 로그인하면 Farm 초대가 자동 수락됩니다.</p>
+            <p className="field-hint">초대받은 동일 이메일로 로그인하면 농장 초대가 자동 수락됩니다.</p>
             <form className="stack" onSubmit={handleSignIn}>
               <label>
                 이메일
@@ -1668,7 +1787,7 @@ export default function HomePage() {
           <details className="dashboard-context-switcher" open={!farm || !cropCycle}>
             <summary id="saved-context-heading">{farm && cropCycle ? `${farm.name} · ${cropCycle.cropCode}${cropCycle.cultivar ? ` ${cropCycle.cultivar}` : ""} 바꾸기` : "관리할 농장과 작기 선택"}</summary>
             <p className="field-hint">
-              이전에 만든 농장과 작기를 선택하면 오늘 할 일, 일정, 기록을 다시 불러옵니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
+              선택한 농장과 작기는 이 탭을 새로고침해도 다시 열립니다. 작업 계획은 자동으로 다시 생성하지 않습니다.
             </p>
           <label>
             농장 선택
@@ -1845,7 +1964,7 @@ export default function HomePage() {
               <>
                 <p className="muted">내 역할: {farmRoleLabel(farmCollaboration.actorRole)}</p>
                 {farmCollaboration.actorRole === "farmer" ? (
-                  <p className="field-hint">작업자는 Farm 운영 데이터를 사용할 수 있지만 구성원과 초대는 관리할 수 없습니다.</p>
+                  <p className="field-hint">작업자는 공유된 농장 정보를 보고 작업을 기록할 수 있지만, 구성원과 초대는 관리할 수 없습니다.</p>
                 ) : (
                   <>
                     <form className="stack" onSubmit={handleFarmInvitationCreate}>
@@ -2062,7 +2181,7 @@ export default function HomePage() {
             <div className="record-next-action">
               <div>
                 <strong>오늘 할 일을 아직 만들지 않았습니다.</strong>
-                <p>개발·검증용 Draft Template을 적용해 첫 작업 계획을 만드세요.</p>
+                <p>개발·검증용 기본 작업을 만들어 첫 작업 계획을 시작하세요.</p>
               </div>
               <button disabled={isSubmitting} onClick={handlePlanGeneration} type="button">
                 {isSubmitting ? "만드는 중..." : "초기 작업 만들기"}
@@ -2132,7 +2251,7 @@ export default function HomePage() {
           </section>
           <div className="button-row">
             {canManageSelectedFarm ? <button disabled={isSubmitting || cropCycle.status !== "active"} onClick={handlePlanGeneration} type="button">
-              Draft TaskTemplate 적용
+              기본 작업 계획 만들기
             </button> : null}
             <button className="secondary" disabled={isSubmitting} onClick={handleRefresh} type="button">
               일정과 기록 새로고침
@@ -2419,7 +2538,7 @@ export default function HomePage() {
                       ))}
                     </select>
                   </label>
-                  <p className="field-hint">담당자는 작업 조율용 표시이며, 다른 Farm 구성원의 작업 기록을 제한하지 않습니다.</p>
+                  <p className="field-hint">담당자 표시는 작업을 나누기 위한 용도이며, 다른 구성원의 작업 기록을 막지 않습니다.</p>
                   <div className="button-row">
                     <button disabled={isSubmitting || farmCollaboration === null} type="submit">
                       {updatingTaskAssigneeId === taskDetail.id ? "저장 중..." : "담당자 저장"}

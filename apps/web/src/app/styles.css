@@ -44,7 +44,7 @@ button.danger {
 }
 
 button.compact {
-  min-height: auto;
+  min-height: 2.75rem;
   padding: 0.45rem 0.7rem;
 }
 
@@ -1870,7 +1870,7 @@ textarea {
   background: #eef4fb;
   color: #3d6f9d;
   flex: 0 0 auto;
-  font-size: 0.825rem;
+  font-size: 0.875rem;
   min-height: 2.6rem;
   padding: 0.45rem 0.65rem;
 }
@@ -1894,7 +1894,7 @@ textarea {
 .today-home-primary span,
 .today-home-primary p {
   color: rgba(255, 255, 255, 0.84);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   margin: 0;
 }
 
@@ -1948,7 +1948,7 @@ textarea {
 
 .today-home-task-list span {
   color: #6b7684;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .today-home-task-list .today-home-overdue {
@@ -1999,7 +1999,7 @@ textarea {
 
 .today-home-information-link small {
   color: #6b7684;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -2103,7 +2103,7 @@ textarea {
   background: transparent;
   border-radius: 0.75rem;
   color: #8b95a1;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   min-height: 3.1rem;
   padding: 0.5rem 0.25rem;
 }
@@ -2145,7 +2145,7 @@ textarea {
 .today-home-summary-list dt,
 .today-home-summary-list small {
   color: #6b7684;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -2252,13 +2252,13 @@ textarea {
 
 .farm-setup-progress-list small {
   color: #6b7684;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   line-height: 1.35;
 }
 
 .farm-setup-progress-list em {
   color: #6b7684;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-style: normal;
   font-weight: 700;
 }

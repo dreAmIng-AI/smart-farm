@@ -89,14 +89,14 @@ export function getWorkCycleGuidance({
     return canManageFarm
       ? {
           actionLabel: "작기 계획 만들기",
-          description: "Draft TaskTemplate을 적용해 작기 전체의 예정 작업을 먼저 만드세요.",
+          description: "개발·검증용 기본 작업을 만들어 작기 전체의 예정 일을 먼저 준비하세요.",
           targetId: "plan-heading",
           title: "작기 계획을 만들 차례입니다",
           tone: "default",
         }
       : {
           actionLabel: "작업 일정 확인",
-          description: "아직 공유된 작기 계획이 없습니다. owner 또는 admin이 계획을 만들면 Today에 표시됩니다.",
+          description: "아직 공유된 작기 계획이 없습니다. 농장 관리자에게 계획을 요청하면 오늘 할 일에 표시됩니다.",
           targetId: "plan-heading",
           title: "작기 계획을 기다리고 있습니다",
           tone: "default",
