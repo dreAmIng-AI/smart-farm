@@ -24,6 +24,7 @@ async function fetchDiseasePest(farmId: string) {
 }
 
 export function DiseasePestCard({ cropLabel, farmId }: DiseasePestCardProps) {
+  const [openBulletin, setOpenBulletin] = useState<{ attachmentUrl: string; title: string } | null>(null);
   const [result, setResult] = useState<DiseasePestIntegrationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadDiseasePest = useCallback(() => fetchDiseasePest(farmId), [farmId]);
@@ -87,12 +88,36 @@ export function DiseasePestCard({ cropLabel, farmId }: DiseasePestCardProps) {
               <strong>{bulletin.title}</strong>
               <span>{formatDate(bulletin.publishedAt)} 발행</span>
             </div>
-            {bulletin.attachmentUrl ? <a href={bulletin.attachmentUrl} rel="noreferrer" target="_blank">원문 보기</a> : null}
+            {bulletin.attachmentUrl ? (
+              <button onClick={() => setOpenBulletin({ attachmentUrl: bulletin.attachmentUrl as string, title: bulletin.title })} type="button">
+                내용 읽기
+              </button>
+            ) : <span className="reference-bulletin-unavailable">원문 준비 중</span>}
           </li>
         ))}
       </ul>
       {result.status === "stale" ? <p className="weather-stale">{result.message}</p> : null}
       <p className="weather-source"><a href={provenance.sourceReference} rel="noreferrer" target="_blank">{provenance.sourceName}</a> · {formatTime(provenance.retrievedAt)} 확인</p>
+      {openBulletin ? (
+        <div aria-label={`${openBulletin.title} 내용 읽기`} aria-modal="true" className="reference-document-modal" role="dialog">
+          <div className="reference-document-dialog">
+            <div className="reference-document-heading">
+              <div>
+                <p className="eyebrow">공식 원문</p>
+                <h4>{openBulletin.title}</h4>
+              </div>
+              <button aria-label="원문 닫기" className="secondary compact" onClick={() => setOpenBulletin(null)} type="button">닫기</button>
+            </div>
+            <p className="field-hint">농사로에서 발행한 원문을 서비스 안에서 바로 보여드립니다. 병해충 발생 진단이나 방제 지시가 아닙니다.</p>
+            <iframe
+              className="reference-document-frame"
+              src={`/api/farms/${farmId}/information/disease-pest/document?${new URLSearchParams({ attachment: openBulletin.attachmentUrl }).toString()}`}
+              title={`${openBulletin.title} 공식 원문`}
+            />
+            <a href={openBulletin.attachmentUrl} rel="noreferrer" target="_blank">공식 사이트에서 열기</a>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

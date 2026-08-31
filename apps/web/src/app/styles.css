@@ -528,11 +528,66 @@ p {
   overflow-wrap: anywhere;
 }
 
-.reference-bulletin-list a {
+.reference-bulletin-list a,
+.reference-bulletin-list button {
+  background: transparent;
+  border: 0;
   color: #553582;
   flex: 0 0 auto;
   font-size: 0.88rem;
   font-weight: 700;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.2rem;
+}
+
+.reference-bulletin-unavailable {
+  color: #6b7684;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.reference-document-modal {
+  align-items: center;
+  background: rgba(18, 29, 38, 0.58);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 30;
+}
+
+.reference-document-dialog {
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 1.2rem 3rem rgba(18, 29, 38, 0.28);
+  display: grid;
+  gap: 0.85rem;
+  max-height: calc(100vh - 2rem);
+  max-width: 52rem;
+  overflow: auto;
+  padding: 1rem;
+  width: 100%;
+}
+
+.reference-document-heading {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.reference-document-heading h4,
+.reference-document-heading p {
+  margin: 0;
+}
+
+.reference-document-frame {
+  border: 1px solid #d7dfe5;
+  border-radius: 0.65rem;
+  min-height: min(62vh, 42rem);
+  width: 100%;
 }
 
 .today-home-market {

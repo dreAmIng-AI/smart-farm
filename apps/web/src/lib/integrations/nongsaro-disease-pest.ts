@@ -45,7 +45,7 @@ function toPublishedAt(value: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-function toOfficialAttachmentUrl(value: string | null) {
+export function toOfficialNongsaroAttachmentUrl(value: string | null) {
   if (!value) return null;
 
   try {
@@ -74,7 +74,7 @@ function readBulletins(xml: string): DiseasePestBulletin[] {
       return {
         title,
         publishedAt,
-        attachmentUrl: toOfficialAttachmentUrl(xmlTag(item, "downFile")),
+        attachmentUrl: toOfficialNongsaroAttachmentUrl(xmlTag(item, "downFile")),
       };
     })
     .filter((item): item is DiseasePestBulletin => item !== null)
