@@ -151,7 +151,14 @@ describe("GET /api/farms/:farmId/information/crop", () => {
     const response = await GET(request(), { params: Promise.resolve({ farmId }) });
 
     expect(response.status).toBe(200);
-    expect(fetchCropReference).toHaveBeenCalledWith("딸기");
+    expect(fetchCropReference).toHaveBeenCalledWith("딸기", {
+      mainCategoryCode: "VC",
+      middleCategoryCode: "VC01",
+      subCategoryCode: "VC010804",
+      diseasePestMainTechCode: "GP",
+      diseasePestSubTechCodes: ["GP01", "GP02"],
+    });
+    expect(snapshotContextEq).toHaveBeenCalledWith("context_key", "nongsaro-crop-tech-v2:strawberry");
     expect(snapshotUpsert).toHaveBeenCalledWith(expect.objectContaining({
       farm_id: farmId,
       module: "crop_information",

@@ -149,7 +149,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   const cropCycle = cropCycleData as CropCycleRow;
   const profile = getPublicReferenceCropProfile(cropCycle.crop_code);
-  if (!profile) {
+  if (!profile?.nongsaroCropTechReference) {
     const result: CropReferenceIntegrationResult = {
       status: "unavailable",
       data: null,
@@ -158,7 +158,9 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json(result);
   }
 
-  const contextKey = `nongsaro-crop-tech-v1:${profile.cropCode}`;
+  // Provider category lookup changed from inferred traversal to verified Crop Pack codes.
+  // Version the cache key so an old reference can never mask the corrected mapping.
+  const contextKey = `nongsaro-crop-tech-v2:${profile.cropCode}`;
   const { data: snapshotData } = await auth.supabase
     .from("external_data_snapshots")
     .select("expires_at, observed_at, payload, provider, published_at, retrieved_at, source_name, source_reference, verification_status")
@@ -171,7 +173,7 @@ export async function GET(request: Request, context: RouteContext) {
   if (cachedResult) return NextResponse.json(cachedResult);
 
   try {
-    const data = await fetchNongsaroCropReference(profile.nongsaroCropName);
+    const data = await fetchNongsaroCropReference(profile.nongsaroCropName, profile.nongsaroCropTechReference);
     const now = new Date();
     const retrievedAt = now.toISOString();
     const expiresAt = new Date(now.getTime() + CROP_INFORMATION_FRESH_TTL_MS).toISOString();

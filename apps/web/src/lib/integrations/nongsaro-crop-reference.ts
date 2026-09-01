@@ -17,6 +17,14 @@ export type CropReferenceData = {
   officialCropName: string;
 };
 
+export type NongsaroCropTechReference = {
+  diseasePestMainTechCode: string;
+  diseasePestSubTechCodes: string[];
+  mainCategoryCode: string;
+  middleCategoryCode: string;
+  subCategoryCode: string;
+};
+
 type XmlItem = Record<string, string | null>;
 
 function decodeXmlText(value: string) {
@@ -81,65 +89,24 @@ async function requestItems(operation: string, params: Record<string, string>, f
   return xmlItems(xml, fields);
 }
 
-function firstCode(items: XmlItem[], codeField: string) {
-  const code = items[0]?.[codeField];
-  if (!code) throw new Error("NONGSARO_CROP_NOT_FOUND");
-  return code;
-}
+export async function fetchNongsaroCropReference(
+  officialCropName: string,
+  reference: NongsaroCropTechReference,
+): Promise<CropReferenceData> {
+  if (reference.diseasePestSubTechCodes.length === 0) {
+    throw new Error("NONGSARO_DISEASE_PEST_CATEGORY_NOT_FOUND");
+  }
 
-function normalizedName(value: string) {
-  return value.replaceAll(/\s+/g, "").trim();
-}
-
-function exactCropCode(items: XmlItem[], officialCropName: string) {
-  const selected = items.find((item) => normalizedName(item.subCategoryNm ?? "") === normalizedName(officialCropName));
-  if (!selected?.subCategoryCode) throw new Error("NONGSARO_CROP_NOT_FOUND");
-  return selected.subCategoryCode;
-}
-
-function diseasePestMainTechCode(items: XmlItem[]) {
-  const selected = items.find((item) => (item.mainTechNm ?? "").includes("병해충"));
-  if (!selected?.mainTechCode) throw new Error("NONGSARO_DISEASE_PEST_CATEGORY_NOT_FOUND");
-  return selected.mainTechCode;
-}
-
-function diseasePestSubTechCodes(items: XmlItem[]) {
-  const codes = items
-    .filter((item) => /병|충/.test(item.subTechNm ?? ""))
-    .map((item) => item.subTechCode)
-    .filter((code): code is string => Boolean(code));
-  if (codes.length === 0) throw new Error("NONGSARO_DISEASE_PEST_CATEGORY_NOT_FOUND");
-  return [...new Set(codes)].slice(0, 2);
-}
-
-async function resolveCropReferenceCodes(officialCropName: string) {
-  const mainCategoryCode = firstCode(
-    await requestItems("mainCategoryList", { subCategoryNm: officialCropName }, ["mainCategoryCode"]),
-    "mainCategoryCode",
-  );
-  const middleCategoryCode = firstCode(
-    await requestItems("middleCategoryList", { mainCategoryCode, subCategoryNm: officialCropName }, ["middleCategoryCode"]),
-    "middleCategoryCode",
-  );
-  const subCategoryCode = exactCropCode(
-    await requestItems("subCategoryList", { middleCategoryCode, subCategoryNm: officialCropName }, ["subCategoryCode", "subCategoryNm"]),
-    officialCropName,
-  );
-  const mainTechCode = diseasePestMainTechCode(
-    await requestItems("mainTechList", { subCategoryCode }, ["mainTechCode", "mainTechNm"]),
-  );
-  const subTechCodes = diseasePestSubTechCodes(
-    await requestItems("subTechList", { mainCategoryCode, mainTechCode, middleCategoryCode, subCategoryCode }, ["subTechCode", "subTechNm"]),
-  );
-
-  return { subCategoryCode, subTechCodes };
-}
-
-export async function fetchNongsaroCropReference(officialCropName: string): Promise<CropReferenceData> {
-  const { subCategoryCode, subTechCodes } = await resolveCropReferenceCodes(officialCropName);
-  const itemLists = await Promise.all(subTechCodes.map((subTechCode) => requestItems(
+  const itemLists = await Promise.all(reference.diseasePestSubTechCodes.map((subTechCode) => requestItems(
     "techInfoList",
-    { pageNo: "1", subCategoryCode, subTechCode },
+    {
+      mainCategoryCode: reference.mainCategoryCode,
+      middleCategoryCode: reference.middleCategoryCode,
+      subCategoryCode: reference.subCategoryCode,
+      mainTechCode: reference.diseasePestMainTechCode,
+      pageNo: "1",
+      subTechCode,
+    },
     ["fileDownUrl", "regDt", "techNm"],
   )));
   const seenTitles = new Set<string>();

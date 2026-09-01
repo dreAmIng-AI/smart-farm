@@ -26,7 +26,7 @@ This register records the official candidates selected for the Pilot. Before imp
 |---|---|---|---|
 | Account/key | KMA API Hub `authKey` | `dbyhsCccrrncInfoList` and `cropTechInfo` use the server-only Nongsaro key; provider access is isolated by unavailable state | `KAMIS_CERT_KEY` and `KAMIS_CERT_ID` |
 | Exact endpoint | Implemented current/short forecast; warning regional mapping pending | `dbyhsCccrrncInfoList` nationwide bulletin and `cropTechInfo` exact-crop title/link reference implemented | Implemented `dailyPriceByCategoryList`, wholesale `02`, entire-region default |
-| Mapping | Farm area → KMA grid / forecast point | nationwide bulletin has no crop mapping; Crop Pack `crop_code` → registered Korean crop name → exact provider category implemented; cultivar/growth stage remains pending | Crop Pack `crop_code` → KAMIS category/item/preferred grade → exact provider item name |
+| Mapping | Farm area → KMA grid / forecast point | nationwide bulletin has no crop mapping; Crop Pack `crop_code` → registered Korean crop name and verified `cropTechInfo` category codes; cultivar/growth stage remains pending | Crop Pack `crop_code` → KAMIS category/item/preferred grade → exact provider item name |
 | Legal/operational review | attribution, rate limit, update schedule | attribution, reuse conditions, update schedule | attribution, rate limit, price meaning and update schedule |
 | Environment | server-only key | server-only key | server-only key |
 
