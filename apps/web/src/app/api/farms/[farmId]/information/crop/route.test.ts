@@ -120,6 +120,7 @@ describe("GET /api/farms/:farmId/information/crop", () => {
       error: null,
     });
     fetchCropReference.mockRejectedValue(new Error("provider unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await GET(request(), { params: Promise.resolve({ farmId }) });
 
@@ -128,6 +129,19 @@ describe("GET /api/farms/:farmId/information/crop", () => {
       status: "stale",
       data: payload,
       provenance: { freshness: "stale", verificationStatus: "cached_official_source" },
+    });
+  });
+
+  it("does not replace an exact crop match with unrelated material when Nongsaro cannot find it", async () => {
+    fetchCropReference.mockRejectedValue(new Error("NONGSARO_CROP_NOT_FOUND"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(request(), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "현재 작물에 맞는 공식 재배 참고자료를 아직 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.",
     });
   });
 

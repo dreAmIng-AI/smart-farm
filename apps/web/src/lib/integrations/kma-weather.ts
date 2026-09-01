@@ -23,6 +23,34 @@ export type WeatherData = {
 
 type KmaItem = Record<string, unknown>;
 
+const KMA_FAILURE_CODES = [
+  "KMA_FORECAST_API_KEY_NOT_CONFIGURED",
+  "KMA_MALFORMED_RESPONSE",
+  "KMA_NETWORK_FAILED",
+  "KMA_OBSERVATION_API_KEY_NOT_CONFIGURED",
+  "KMA_REQUEST_FAILED",
+  "KMA_RESPONSE_ERROR",
+  "KMA_TIMEOUT",
+  "KMA_UNKNOWN_ERROR",
+] as const;
+
+export type KmaWeatherFailureCode = (typeof KMA_FAILURE_CODES)[number];
+
+function isKmaWeatherFailureCode(value: string): value is KmaWeatherFailureCode {
+  return (KMA_FAILURE_CODES as readonly string[]).includes(value);
+}
+
+/** Returns a fixed, log-safe cause for an operator without exposing provider data. */
+export function getKmaWeatherFailureCode(error: unknown): KmaWeatherFailureCode {
+  if (error instanceof Error) {
+    if (isKmaWeatherFailureCode(error.message)) return error.message;
+    if (error.name === "AbortError" || error.name === "TimeoutError") return "KMA_TIMEOUT";
+    if (error instanceof TypeError) return "KMA_NETWORK_FAILED";
+  }
+
+  return "KMA_UNKNOWN_ERROR";
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? value as Record<string, unknown>
@@ -102,12 +130,20 @@ async function requestKmaItems(
 ): Promise<KmaItem[]> {
   const url = new URL(`${KMA_API_BASE_URL}/${endpoint}`);
   url.search = new URLSearchParams({ dataType: "JSON", numOfRows: "1000", pageNo: "1", authKey: apiKey, ...params }).toString();
-  const response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+  } catch (error) {
+    const code = getKmaWeatherFailureCode(error);
+    throw new Error(code);
+  }
   if (!response.ok) {
     throw new Error("KMA_REQUEST_FAILED");
   }
 
-  return readKmaItems(await response.json().catch(() => null));
+  return readKmaItems(await response.json().catch(() => {
+    throw new Error("KMA_MALFORMED_RESPONSE");
+  }));
 }
 
 function itemValue(items: KmaItem[], category: string, valueField: "obsrValue" | "fcstValue") {
@@ -148,7 +184,7 @@ function requiredApiKey(name: "forecast" | "observation") {
     ? process.env.KMA_FORECAST_API_KEY ?? process.env.KMA_API_KEY
     : process.env.KMA_OBSERVATION_API_KEY ?? process.env.KMA_API_KEY;
   if (!value) {
-    throw new Error("KMA_API_KEY_NOT_CONFIGURED");
+    throw new Error(name === "forecast" ? "KMA_FORECAST_API_KEY_NOT_CONFIGURED" : "KMA_OBSERVATION_API_KEY_NOT_CONFIGURED");
   }
   return value;
 }

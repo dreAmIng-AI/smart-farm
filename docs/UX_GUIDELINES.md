@@ -112,6 +112,8 @@ After completion, take the user to Today. The exact Farm location field must pro
 
 Never show `500 Internal Server Error`, `Fetch failed`, `Provider unavailable`, raw API codes or keys in the UI.
 
+An in-service official-document reader that cannot load its PDF must stay inside the reader dialog and explain the next safe action in Korean. It may offer the already-validated official source link as a fallback, but must not render the route's JSON error payload inside an iframe.
+
 Today shows a text-labelled `참고정보 다시 확인` action for Weather, Disease/Pest, Crop Information and Market cards. It re-requests the normalized server result after a user saves location context or changes an external setup, but it does not bypass the provider's cache TTL or promise a newer provider publication. Each card remains responsible for its own source, retrieved time and unavailable/stale wording.
 
 ## 7. Acceptance Checklist
