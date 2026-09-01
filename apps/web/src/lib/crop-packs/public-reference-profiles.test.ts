@@ -12,6 +12,13 @@ describe("public reference Crop Pack profiles", () => {
         itemName: "딸기",
       },
       nongsaroCropName: "딸기",
+      nongsaroCropTechReference: {
+        mainCategoryCode: "VC",
+        middleCategoryCode: "VC01",
+        subCategoryCode: "VC010804",
+        diseasePestMainTechCode: "GP",
+        diseasePestSubTechCodes: ["GP01", "GP02"],
+      },
       verificationStatus: "evidence_checked",
     });
   });
