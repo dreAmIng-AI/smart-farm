@@ -7,6 +7,7 @@ import {
   NONGSARO_DISEASE_PEST_SOURCE,
   type DiseasePestData,
 } from "@/lib/integrations/nongsaro-disease-pest";
+import { getNongsaroFailureCode, type NongsaroFailureCode } from "@/lib/integrations/nongsaro-failure";
 
 type RouteContext = { params: Promise<{ farmId: string }> };
 
@@ -44,6 +45,20 @@ const DISEASE_PEST_MAX_STALE_MS = 7 * 24 * 60 * 60 * 1000;
 
 function errorResponse(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
+}
+
+function logDiseasePestFailure(error: unknown) {
+  const code = getNongsaroFailureCode(error);
+  // Do not include the request URL, credentials, response body or Farm context in logs.
+  console.error(JSON.stringify({ event: "integration.disease_pest.failed", provider: "Nongsaro", code }));
+  return code;
+}
+
+function unavailableDiseasePestMessage(code: NongsaroFailureCode) {
+  if (code === "NONGSARO_API_KEY_NOT_CONFIGURED") {
+    return "공식 병해충 발생정보 연결을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있습니다.";
+  }
+  return "현재 확인 가능한 공식 병해충 발생정보가 없습니다. 잠시 후 다시 확인해 주세요.";
 }
 
 function isDiseasePestData(value: unknown): value is DiseasePestData {
@@ -161,14 +176,15 @@ export async function GET(_request: Request, context: RouteContext) {
       },
     };
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    const failureCode = logDiseasePestFailure(error);
     const staleResult = resultFromStaleSnapshot(snapshot);
     if (staleResult) return NextResponse.json(staleResult);
 
     const result: DiseasePestIntegrationResult = {
       status: "unavailable",
       data: null,
-      message: "공식 병해충 발생정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.",
+      message: unavailableDiseasePestMessage(failureCode),
     };
     return NextResponse.json(result);
   }

@@ -71,6 +71,19 @@ describe("GET /api/farms/:farmId/information/disease-pest/document", () => {
     expect(response.status).toBe(502);
   });
 
+  it("renders a safe in-service fallback instead of raw error JSON when the embedded reader cannot load a PDF", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not found", { status: 404 })));
+
+    const query = new URLSearchParams({ attachment: officialAttachment, view: "embed" });
+    const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/disease-pest/document?${query}`), {
+      params: Promise.resolve({ farmId }),
+    });
+
+    expect(response.status).toBe(502);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    await expect(response.text()).resolves.toContain("농사로에서 원문 열기");
+  });
+
   it("does not fetch a document when the farm is not accessible", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

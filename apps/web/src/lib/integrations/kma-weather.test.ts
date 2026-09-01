@@ -49,7 +49,9 @@ describe("KMA weather adapter", () => {
 
   it("fails safely when KMA reports an error payload", async () => {
     vi.stubEnv("KMA_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ response: { header: { resultCode: "30" } } }), { status: 200 })));
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ response: { header: { resultCode: "30" } } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ response: { header: { resultCode: "30" } } }), { status: 200 })));
 
     await expect(fetchKmaWeather({ gridX: 60, gridY: 127, locationLabel: "서울 예보 위치" })).rejects.toThrow("KMA_RESPONSE_ERROR");
   });

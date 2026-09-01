@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
 import { isUuid } from "@/lib/api/validation";
-import { fetchKmaWeather, KMA_WEATHER_SOURCE, type WeatherData } from "@/lib/integrations/kma-weather";
+import {
+  fetchKmaWeather,
+  getKmaWeatherFailureCode,
+  KMA_WEATHER_SOURCE,
+  type KmaWeatherFailureCode,
+  type WeatherData,
+} from "@/lib/integrations/kma-weather";
 
 type RouteContext = { params: Promise<{ farmId: string }> };
 
@@ -47,6 +53,20 @@ const WEATHER_MAX_STALE_MS = 6 * 60 * 60 * 1000;
 
 function errorResponse(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
+}
+
+function logWeatherFailure(error: unknown) {
+  const code = getKmaWeatherFailureCode(error);
+  // Do not include the request URL, credentials, provider response or Farm context in logs.
+  console.error(JSON.stringify({ event: "integration.weather.failed", provider: "KMA", code }));
+  return code;
+}
+
+function unavailableWeatherMessage(code: KmaWeatherFailureCode) {
+  if (code === "KMA_FORECAST_API_KEY_NOT_CONFIGURED" || code === "KMA_OBSERVATION_API_KEY_NOT_CONFIGURED") {
+    return "기상청 연결 설정을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있으며, 관리자에게 연결 상태를 확인해 달라고 알려 주세요.";
+  }
+  return "현재 확인 가능한 날씨 정보가 없습니다. 잠시 후 다시 확인해 주세요.";
 }
 
 function isWeatherData(value: unknown): value is WeatherData {
@@ -182,14 +202,15 @@ export async function GET(_request: Request, context: RouteContext) {
       },
     };
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    const failureCode = logWeatherFailure(error);
     const staleResult = resultFromStaleSnapshot(snapshot);
     if (staleResult) return NextResponse.json(staleResult);
 
     const result: WeatherIntegrationResult = {
       status: "unavailable",
       data: null,
-      message: "최신 날씨 정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.",
+      message: unavailableWeatherMessage(failureCode),
     };
     return NextResponse.json(result);
   }

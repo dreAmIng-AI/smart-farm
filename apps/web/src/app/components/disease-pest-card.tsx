@@ -111,7 +111,7 @@ export function DiseasePestCard({ cropLabel, farmId }: DiseasePestCardProps) {
             <p className="field-hint">농사로에서 발행한 원문을 서비스 안에서 바로 보여드립니다. 병해충 발생 진단이나 방제 지시가 아닙니다.</p>
             <iframe
               className="reference-document-frame"
-              src={`/api/farms/${farmId}/information/disease-pest/document?${new URLSearchParams({ attachment: openBulletin.attachmentUrl }).toString()}`}
+              src={`/api/farms/${farmId}/information/disease-pest/document?${new URLSearchParams({ attachment: openBulletin.attachmentUrl, view: "embed" }).toString()}`}
               title={`${openBulletin.title} 공식 원문`}
             />
             <a href={openBulletin.attachmentUrl} rel="noreferrer" target="_blank">공식 사이트에서 열기</a>

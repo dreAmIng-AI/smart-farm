@@ -90,6 +90,7 @@ describe("GET /api/farms/:farmId/information/disease-pest", () => {
       error: null,
     });
     fetchDiseasePest.mockRejectedValue(new Error("provider unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/disease-pest`), { params: Promise.resolve({ farmId }) });
 
@@ -99,6 +100,24 @@ describe("GET /api/farms/:farmId/information/disease-pest", () => {
       data: payload,
       provenance: { freshness: "stale", verificationStatus: "cached_official_source" },
     });
+  });
+
+  it("keeps a provider failure out of the user message and logs only its safe classification", async () => {
+    fetchDiseasePest.mockRejectedValue(new Error("NONGSARO_API_KEY_NOT_CONFIGURED"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/disease-pest`), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "공식 병해충 발생정보 연결을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있습니다.",
+    });
+    expect(consoleError).toHaveBeenCalledWith(JSON.stringify({
+      event: "integration.disease_pest.failed",
+      provider: "Nongsaro",
+      code: "NONGSARO_API_KEY_NOT_CONFIGURED",
+    }));
   });
 
   it("stores a normalized official result and does not require crop-specific core data", async () => {

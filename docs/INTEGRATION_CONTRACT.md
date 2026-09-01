@@ -89,7 +89,7 @@ When an official attachment is available, the Today card opens it in an in-servi
 
 - Adapters run only in server Route Handlers or server modules.
 - API keys are stored only in local and Vercel server environment variables.
-- Provider timeout, HTTP status, provider error-code classification, request ID and cache update result may be logged without keys, provider response bodies, request URLs or raw Farm PII. The KAMIS market route records only a sanitized failure classification so Pilot operators can distinguish missing deployment credentials, provider rejection, network/timeout and malformed data while the user continues to see a Korean unavailable/stale state.
+- Provider timeout, HTTP status, provider error-code classification, request ID and cache update result may be logged without keys, provider response bodies, request URLs or raw Farm PII. KMA Weather, Nongsaro Disease/Pest/Crop Information and KAMIS Market routes record only a fixed sanitized failure classification so Pilot operators can distinguish missing deployment credentials, provider rejection, network/timeout and malformed data while the user continues to see a Korean unavailable/stale state.
 - Each cache/snapshot record is Farm-scoped where it contains Farm context and protected by existing membership RLS.
 - An integration failure must return an `IntegrationResult`, not make the Today API fail.
 

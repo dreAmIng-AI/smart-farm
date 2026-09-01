@@ -8,6 +8,7 @@ import {
   NONGSARO_CROP_REFERENCE_SOURCE,
   type CropReferenceData,
 } from "@/lib/integrations/nongsaro-crop-reference";
+import { getNongsaroFailureCode, type NongsaroFailureCode } from "@/lib/integrations/nongsaro-failure";
 
 type RouteContext = { params: Promise<{ farmId: string }> };
 
@@ -50,6 +51,23 @@ const CROP_INFORMATION_MAX_STALE_MS = 30 * 24 * 60 * 60 * 1000;
 
 function errorResponse(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
+}
+
+function logCropReferenceFailure(error: unknown) {
+  const code = getNongsaroFailureCode(error);
+  // Do not include the request URL, credentials, response body or Farm context in logs.
+  console.error(JSON.stringify({ event: "integration.crop_information.failed", provider: "Nongsaro", code }));
+  return code;
+}
+
+function unavailableCropReferenceMessage(code: NongsaroFailureCode) {
+  if (code === "NONGSARO_API_KEY_NOT_CONFIGURED") {
+    return "공식 재배 참고자료 연결을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있습니다.";
+  }
+  if (code === "NONGSARO_CROP_NOT_FOUND" || code === "NONGSARO_DISEASE_PEST_CATEGORY_NOT_FOUND") {
+    return "현재 작물에 맞는 공식 재배 참고자료를 아직 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.";
+  }
+  return "현재 확인 가능한 공식 재배 참고자료가 없습니다. 잠시 후 다시 확인해 주세요.";
 }
 
 function isCropReferenceData(value: unknown): value is CropReferenceData {
@@ -193,14 +211,15 @@ export async function GET(request: Request, context: RouteContext) {
       },
     };
     return NextResponse.json(result);
-  } catch {
+  } catch (error) {
+    const failureCode = logCropReferenceFailure(error);
     const staleResult = resultFromStaleSnapshot(snapshot);
     if (staleResult) return NextResponse.json(staleResult);
 
     const result: CropReferenceIntegrationResult = {
       status: "unavailable",
       data: null,
-      message: "공식 재배 참고자료를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.",
+      message: unavailableCropReferenceMessage(failureCode),
     };
     return NextResponse.json(result);
   }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAuthenticatedSupabaseUser } from "@/lib/api/auth";
-import { fetchKmaWeather } from "@/lib/integrations/kma-weather";
+import { fetchKmaWeather, getKmaWeatherFailureCode } from "@/lib/integrations/kma-weather";
 
 import { GET } from "./route";
 
@@ -13,10 +13,12 @@ vi.mock("@/lib/integrations/kma-weather", () => ({
     sourceReference: "https://example.test/kma",
   },
   fetchKmaWeather: vi.fn(),
+  getKmaWeatherFailureCode: vi.fn(() => "KMA_UNKNOWN_ERROR"),
 }));
 
 const requireAuthenticatedUser = vi.mocked(requireAuthenticatedSupabaseUser);
 const fetchWeather = vi.mocked(fetchKmaWeather);
+const getWeatherFailureCode = vi.mocked(getKmaWeatherFailureCode);
 
 describe("GET /api/farms/:farmId/information/weather", () => {
   const farmId = "11111111-1111-4111-8111-111111111111";
@@ -98,6 +100,7 @@ describe("GET /api/farms/:farmId/information/weather", () => {
       error: null,
     });
     fetchWeather.mockRejectedValue(new Error("provider unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
 
     const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/weather`), { params: Promise.resolve({ farmId }) });
 
@@ -107,6 +110,27 @@ describe("GET /api/farms/:farmId/information/weather", () => {
       data: { temperatureC: 27 },
       provenance: { freshness: "stale", verificationStatus: "cached_official_source" },
     });
+  });
+
+  it("logs a safe KMA cause while returning a Korean unavailable message", async () => {
+    farmMaybeSingle.mockResolvedValue({ data: { id: farmId, weather_location_label: "서울", weather_grid_x: 60, weather_grid_y: 127 }, error: null });
+    fetchWeather.mockRejectedValue(new Error("raw provider payload must not be logged"));
+    getWeatherFailureCode.mockReturnValue("KMA_FORECAST_API_KEY_NOT_CONFIGURED");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/weather`), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "기상청 연결 설정을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있으며, 관리자에게 연결 상태를 확인해 달라고 알려 주세요.",
+    });
+    expect(consoleError).toHaveBeenCalledWith(JSON.stringify({
+      event: "integration.weather.failed",
+      provider: "KMA",
+      code: "KMA_FORECAST_API_KEY_NOT_CONFIGURED",
+    }));
+    expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("raw provider payload"));
   });
 
   it("stores a normalized official response without exposing the KMA request", async () => {
