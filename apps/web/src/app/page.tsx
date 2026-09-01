@@ -433,8 +433,11 @@ export default function HomePage() {
   const [isRestoringContext, setIsRestoringContext] = useState(false);
   const [isMeasurementExpanded, setIsMeasurementExpanded] = useState(false);
   const [activeAppSection, setActiveAppSection] = useState<AppSection>("home");
+  const [isWeatherLocationSettingsOpen, setIsWeatherLocationSettingsOpen] = useState(false);
+  const [shouldFocusWeatherLocationSettings, setShouldFocusWeatherLocationSettings] = useState(false);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const weatherLocationSettingsRef = useRef<HTMLDetailsElement>(null);
   const selectedFarmId = farm?.id;
   const canManageSelectedFarm =
     farmCollaboration?.actorRole === "owner" || farmCollaboration?.actorRole === "admin";
@@ -1650,6 +1653,31 @@ export default function HomePage() {
     window.scrollTo({ behavior: "smooth", top: 0 });
   }
 
+  function handleWeatherLocationConfigure() {
+    setActiveAppSection("farm");
+    setIsWeatherLocationSettingsOpen(true);
+    setShouldFocusWeatherLocationSettings(true);
+  }
+
+  function handleWeatherLocationSaved() {
+    setWeatherRefreshVersion((value) => value + 1);
+    setInformationRefreshVersion((value) => value + 1);
+    setActiveAppSection("information");
+    window.scrollTo({ behavior: "smooth", top: 0 });
+    setMessage("농장 날씨 위치를 저장했습니다. 오늘 날씨를 확인하세요.");
+  }
+
+  useEffect(() => {
+    if (!shouldFocusWeatherLocationSettings || activeAppSection !== "farm") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      weatherLocationSettingsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setShouldFocusWeatherLocationSettings(false);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeAppSection, shouldFocusWeatherLocationSettings]);
+
   return (
     <main className={hasSelectedWorkCycle ? "page-shell page-shell-with-navigation" : "page-shell"}>
       {!hasSelectedWorkCycle ? <header className="hero stack">
@@ -1832,6 +1860,7 @@ export default function HomePage() {
           canConfigure={canManageSelectedFarm}
           farmId={farm.id}
           key={`${farm.id}:${weatherRefreshVersion}`}
+          onConfigure={handleWeatherLocationConfigure}
           standalone
         />
       ) : null}
@@ -1862,7 +1891,12 @@ export default function HomePage() {
             </button>
           </div>
           <div className="information-card-grid">
-            <WeatherCard canConfigure={canManageSelectedFarm} farmId={farm.id} key={`${farm.id}:${weatherRefreshVersion}:${informationRefreshVersion}`} />
+            <WeatherCard
+              canConfigure={canManageSelectedFarm}
+              farmId={farm.id}
+              key={`${farm.id}:${weatherRefreshVersion}:${informationRefreshVersion}`}
+              onConfigure={handleWeatherLocationConfigure}
+            />
             <DiseasePestCard cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:disease-pest:${informationRefreshVersion}`} />
             <CropReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:crop-reference:${informationRefreshVersion}`} />
             <MarketReferenceCard cropCycleId={cropCycle.id} cropLabel={[cropCycle.cropCode, cropCycle.cultivar].filter(Boolean).join(" · ")} farmId={farm.id} key={`${farm.id}:${cropCycle.id}:market-reference:${informationRefreshVersion}`} />
@@ -2116,10 +2150,15 @@ export default function HomePage() {
       ) : null}
 
       {userEmail && farm && canManageSelectedFarm && activeAppSection === "farm" ? (
-        <details className="farm-settings-disclosure weather-settings">
+        <details
+          className="farm-settings-disclosure weather-settings"
+          onToggle={(event) => setIsWeatherLocationSettingsOpen(event.currentTarget.open)}
+          open={isWeatherLocationSettingsOpen}
+          ref={weatherLocationSettingsRef}
+        >
           <summary>농장 날씨 위치 설정 (선택)</summary>
           <p className="field-hint">오늘 날씨를 보려면 한 번만 설정하면 됩니다.</p>
-          <WeatherLocationPanel farmId={farm.id} onSaved={() => setWeatherRefreshVersion((value) => value + 1)} />
+          <WeatherLocationPanel farmId={farm.id} onSaved={handleWeatherLocationSaved} />
         </details>
       ) : null}
 
