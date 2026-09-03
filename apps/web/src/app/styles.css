@@ -462,9 +462,28 @@ p {
 }
 
 .weather-source a,
-.today-home-weather-unavailable a {
+.today-home-weather-unavailable a,
+.today-home-weather-unavailable .weather-configuration-button {
   color: #17643d;
   font-weight: 700;
+}
+
+.weather-configuration-button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.weather-configuration-button:focus-visible {
+  border-radius: 0.25rem;
+  outline: 0.18rem solid #17643d;
+  outline-offset: 0.2rem;
 }
 
 .today-home-reference {

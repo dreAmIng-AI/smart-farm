@@ -7,6 +7,7 @@ import type { WeatherIntegrationResult } from "@/app/api/farms/[farmId]/informat
 type WeatherCardProps = {
   canConfigure: boolean;
   farmId: string;
+  onConfigure?: () => void;
   standalone?: boolean;
 };
 
@@ -25,7 +26,7 @@ async function fetchWeather(farmId: string) {
   return response.json() as Promise<WeatherIntegrationResult>;
 }
 
-export function WeatherCard({ canConfigure, farmId, standalone = false }: WeatherCardProps) {
+export function WeatherCard({ canConfigure, farmId, onConfigure, standalone = false }: WeatherCardProps) {
   const [result, setResult] = useState<WeatherIntegrationResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadWeather = useCallback(() => fetchWeather(farmId), [farmId]);
@@ -68,7 +69,13 @@ export function WeatherCard({ canConfigure, farmId, standalone = false }: Weathe
       <section className={`${standalone ? "today-home-weather today-home-weather-standalone" : "today-home-weather"} today-home-weather-unavailable`} aria-labelledby="today-weather-heading">
         {standalone ? <h2 id="today-weather-heading">오늘 날씨</h2> : <h3 id="today-weather-heading">오늘 날씨</h3>}
         <p>{result.message}</p>
-        {canConfigure ? <a href="#weather-location-heading">날씨 위치 설정</a> : null}
+        {canConfigure ? (
+          onConfigure ? (
+            <button className="weather-configuration-button" onClick={onConfigure} type="button">
+              날씨 위치 설정
+            </button>
+          ) : <a href="#weather-location-heading">날씨 위치 설정</a>
+        ) : null}
       </section>
     );
   }
