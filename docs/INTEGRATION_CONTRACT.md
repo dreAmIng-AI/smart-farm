@@ -67,7 +67,7 @@ TTL values are initial Pilot defaults and must be reviewed against each provider
 
 ## 5. Location and Context
 
-Weather requires a reproducible forecast location. The implemented Pilot asks an owner/admin for a location label and only uses browser location after that person explicitly presses the confirmation button. It requests a fresh, high-accuracy device location for up to 30 seconds. If the browser cannot provide it, an owner/admin may one-time enter a map-derived latitude/longitude; the browser converts either source locally to the KMA 5km grid, clears the typed fallback values, and sends only the label and grid to the server. Neither original coordinate source nor a street address is stored, logged or sent to the API. FarmArea overrides and special-alert regional mapping are later work.
+Weather requires a reproducible forecast location. The standard Pilot flow lets an owner/admin search a browser-bundled city, county or district catalogue derived from KMA’s official 동네예보 지점 좌표(위경도) table (source update: 2026-07-01). Selecting one representative point fills the human-readable label and KMA 5km grid; the typed search term never leaves the browser, and the existing API receives only the selected label and grid. This is a regional forecast reference, not an exact Farm coordinate or an on-farm observation. If a search does not find the intended region, explicit device location is a single optional advanced path: the browser converts it locally to the KMA grid and sends only a friendly label and grid to the server. Neither the original coordinate source nor a street address is stored, logged or sent to the API. FarmArea overrides and special-alert regional mapping are later work.
 
 Crop context is the active CropCycle. Missing crop, cultivar or growth stage produces a clear prompt to complete the current-cultivation setup; it must not select a different crop’s information.
 
@@ -95,7 +95,7 @@ When an official attachment is available, the Today card opens it in an in-servi
 
 ## 7. Implementation Checklist
 
-- [x] KMA account/key set in server-only Vercel environment variables
+- [x] KMA account/key set in server-only Vercel environment variables; section 4.1 current observation and 4.3 short forecast access live-verified on 2026-09-08
 - [x] Nongsaro `dbyhsCccrrncInfoList` and Crop Pack-mapped `cropTechInfo` endpoint mapping set in server-only environment variables
 - [x] KAMIS `dailyPriceByCategoryList` whole-region wholesale mapping, Crop Pack mapping and user-safe stale fallback implemented; deployment needs `KAMIS_CERT_KEY` and `KAMIS_CERT_ID`
 - [x] KMA current-observation and short-forecast endpoint/field mapping documented in `PUBLIC_DATA_SOURCES.md`

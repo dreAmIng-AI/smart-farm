@@ -133,6 +133,21 @@ describe("GET /api/farms/:farmId/information/weather", () => {
     expect(consoleError).not.toHaveBeenCalledWith(expect.stringContaining("raw provider payload"));
   });
 
+  it("explains a KMA API access denial without exposing provider details", async () => {
+    farmMaybeSingle.mockResolvedValue({ data: { id: farmId, weather_location_label: "서울", weather_grid_x: 60, weather_grid_y: 127 }, error: null });
+    fetchWeather.mockRejectedValue(new Error("provider response must stay private"));
+    getWeatherFailureCode.mockReturnValue("KMA_API_ACCESS_DENIED");
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(new Request(`http://localhost/api/farms/${farmId}/information/weather`), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "기상청 인증키는 확인되었지만, 현재 날씨 조회 권한이 준비되지 않았습니다. 기상청 API Hub에서 ‘동네예보 조회’의 초단기실황과 단기예보 이용 신청 상태를 확인해 주세요.",
+    });
+  });
+
   it("stores a normalized official response without exposing the KMA request", async () => {
     farmMaybeSingle.mockResolvedValue({ data: { id: farmId, weather_location_label: "서울", weather_grid_x: 60, weather_grid_y: 127 }, error: null });
     fetchWeather.mockResolvedValue({
