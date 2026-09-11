@@ -66,6 +66,9 @@ function unavailableWeatherMessage(code: KmaWeatherFailureCode) {
   if (code === "KMA_FORECAST_API_KEY_NOT_CONFIGURED" || code === "KMA_OBSERVATION_API_KEY_NOT_CONFIGURED") {
     return "기상청 연결 설정을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있으며, 관리자에게 연결 상태를 확인해 달라고 알려 주세요.";
   }
+  if (code === "KMA_API_ACCESS_DENIED") {
+    return "기상청 인증키는 확인되었지만, 현재 날씨 조회 권한이 준비되지 않았습니다. 기상청 API Hub에서 ‘동네예보 조회’의 초단기실황과 단기예보 이용 신청 상태를 확인해 주세요.";
+  }
   return "현재 확인 가능한 날씨 정보가 없습니다. 잠시 후 다시 확인해 주세요.";
 }
 

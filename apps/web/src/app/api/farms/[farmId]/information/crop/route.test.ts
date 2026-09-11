@@ -141,7 +141,20 @@ describe("GET /api/farms/:farmId/information/crop", () => {
     await expect(response.json()).resolves.toEqual({
       status: "unavailable",
       data: null,
-      message: "현재 작물에 맞는 공식 재배 참고자료를 아직 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.",
+      message: "현재 농사로 공식자료에서 ‘딸기’에 맞는 항목을 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.",
+    });
+  });
+
+  it("does not present a provider failure as if the crop itself has no official material", async () => {
+    fetchCropReference.mockRejectedValue(new Error("NONGSARO_RESPONSE_ERROR"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(request(), { params: Promise.resolve({ farmId }) });
+
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      data: null,
+      message: "‘딸기’의 검증된 공식 재배 참고자료를 준비 중입니다. 확인되지 않았거나 다른 작물의 자료는 대신 보여 주지 않습니다.",
     });
   });
 

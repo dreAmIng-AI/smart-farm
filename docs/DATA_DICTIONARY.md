@@ -39,7 +39,7 @@ Farm → FarmArea → optional CropCycle / FarmTask / Observation / Measurement
 | region_code | text | Y | 지역 식별값 |
 | cultivation_environment | text | Y | facility, open_field 등 |
 | cultivation_method | text | N | 재배방식 |
-| weather_location_label | text | N | 사용자가 확인한 예보 위치 이름; 상세 주소 아님 |
+| weather_location_label | text | N | 사용자가 선택·확인한 시·군·구 예보 기준 지역 이름; 상세 주소 아님 |
 | weather_grid_x / weather_grid_y | integer | N/N | 기상청 5km 동네예보 격자; 원래 GPS 좌표 아님 |
 | weather_location_updated_at | timestamptz | N | 예보 위치를 마지막으로 확인·저장한 시각 |
 | created_at / updated_at | timestamptz | Y | 생성·수정 시각 |
@@ -197,11 +197,11 @@ These are minimal extension candidates, not a migration backlog to apply at once
 
 | Field | Type | Required | Meaning |
 |---|---|---:|---|
-| weather_location_label | text | N | 사용자가 확인한 예보 위치 이름; 상세 주소 아님 |
+| weather_location_label | text | N | 사용자가 선택·확인한 시·군·구 예보 기준 지역 이름; 상세 주소 아님 |
 | weather_grid_x / weather_grid_y | integer | N/N | 선택한 기상청 5km 예보 격자 |
 | weather_location_updated_at | timestamptz | N | 마지막 위치 확인·저장 시각 |
 
-No street address or silent browser GPS is stored. The user must explicitly request browser location, which is converted locally to grid X/Y before the API request; the existing `region_code` is not assumed to be a valid KMA grid.
+No street address or silent browser GPS is stored. The normal selector uses a browser-bundled official KMA city/county/district representative-grid catalogue and sends only the chosen label and grid; its search input is not transmitted. A user may explicitly request browser location, which is converted locally to grid X/Y before the API request; the existing region_code is not assumed to be a valid KMA grid.
 
 ### farm_areas (implemented in `202608240001_platform_v02_farm_areas.sql`)
 

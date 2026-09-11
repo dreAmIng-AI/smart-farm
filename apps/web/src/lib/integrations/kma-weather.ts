@@ -24,6 +24,7 @@ export type WeatherData = {
 type KmaItem = Record<string, unknown>;
 
 const KMA_FAILURE_CODES = [
+  "KMA_API_ACCESS_DENIED",
   "KMA_FORECAST_API_KEY_NOT_CONFIGURED",
   "KMA_MALFORMED_RESPONSE",
   "KMA_NETWORK_FAILED",
@@ -86,7 +87,9 @@ function kstDateTimeToIso(dateValue: unknown, timeValue: unknown): string | null
 function latestCurrentBase(now: Date) {
   const target = new Date(now.getTime() - 40 * 60 * 1000);
   const parts = kstParts(target);
-  return { baseDate: parts.date, baseTime: `${String(parts.hour).padStart(2, "0")}${String(Math.floor(parts.minute / 10) * 10).padStart(2, "0")}` };
+  // The KMA 동네예보 초단기실황 endpoint takes an hourly base time (HH00).
+  // Allowing forty minutes for publication avoids requesting the still-pending hour.
+  return { baseDate: parts.date, baseTime: `${String(parts.hour).padStart(2, "0")}00` };
 }
 
 function latestForecastBase(now: Date) {
@@ -138,6 +141,9 @@ async function requestKmaItems(
     throw new Error(code);
   }
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("KMA_API_ACCESS_DENIED");
+    }
     throw new Error("KMA_REQUEST_FAILED");
   }
 

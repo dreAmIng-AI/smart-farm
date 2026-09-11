@@ -60,14 +60,14 @@ function logCropReferenceFailure(error: unknown) {
   return code;
 }
 
-function unavailableCropReferenceMessage(code: NongsaroFailureCode) {
+function unavailableCropReferenceMessage(code: NongsaroFailureCode, officialCropName: string) {
   if (code === "NONGSARO_API_KEY_NOT_CONFIGURED") {
     return "공식 재배 참고자료 연결을 아직 마치지 못했습니다. 농장 작업과 기록은 계속 사용할 수 있습니다.";
   }
   if (code === "NONGSARO_CROP_NOT_FOUND" || code === "NONGSARO_DISEASE_PEST_CATEGORY_NOT_FOUND") {
-    return "현재 작물에 맞는 공식 재배 참고자료를 아직 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.";
+    return `현재 농사로 공식자료에서 ‘${officialCropName}’에 맞는 항목을 확인하지 못했습니다. 다른 작물의 자료를 대신 보여 주지는 않습니다.`;
   }
-  return "현재 확인 가능한 공식 재배 참고자료가 없습니다. 잠시 후 다시 확인해 주세요.";
+  return `‘${officialCropName}’의 검증된 공식 재배 참고자료를 준비 중입니다. 확인되지 않았거나 다른 작물의 자료는 대신 보여 주지 않습니다.`;
 }
 
 function isCropReferenceData(value: unknown): value is CropReferenceData {
@@ -221,7 +221,7 @@ export async function GET(request: Request, context: RouteContext) {
     const result: CropReferenceIntegrationResult = {
       status: "unavailable",
       data: null,
-      message: unavailableCropReferenceMessage(failureCode),
+      message: unavailableCropReferenceMessage(failureCode, profile.nongsaroCropName),
     };
     return NextResponse.json(result);
   }

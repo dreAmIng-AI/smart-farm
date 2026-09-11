@@ -172,7 +172,7 @@ describe("GET /api/farms/:farmId/information/market", () => {
     await expect(response.json()).resolves.toEqual({
       status: "unavailable",
       data: null,
-      message: "최근 7일 안에 현재 작물의 전국 도매 참고가격이 공식 집계에서 확인되지 않았습니다. 출하 시기 또는 공식 집계 여부를 나중에 다시 확인해 주세요.",
+      message: "현재 KAMIS 전국 도매 목록에 ‘딸기’ 가격 항목이 없습니다. 가격을 임의로 표시하지 않으며, 공식 항목이 제공되면 다시 보여 드립니다.",
     });
   });
 

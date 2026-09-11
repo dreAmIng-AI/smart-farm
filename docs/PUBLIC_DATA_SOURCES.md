@@ -8,7 +8,7 @@ This register records the official candidates selected for the Pilot. Before imp
 
 | Module | Candidate | Official provider | Access status | Pilot use |
 |---|---|---|---|---|
-| Weather | [기상청 API Hub 동네예보 격자자료](https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286) | 기상청 API Hub | KMA server-only `authKey` registered | `getUltraSrtNcst` current observations and `getVilageFcst` short forecast by Farm grid |
+| Weather | [기상청 API Hub 동네예보 격자자료](https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286) and its 동네예보 지점 좌표(위경도) table | 기상청 API Hub | server-only `authKey`; section 4.1 and 4.3 approved and live-verified on 2026-09-08 | `getUltraSrtNcst` current observations and `getVilageFcst` short forecast by Farm grid; bundled city/county/district representative-point selector |
 | Weather alert | [기상청 API Hub 특보현황](https://apihub.kma.go.kr/apiList.do?apiMov=%ED%8A%B9.%EC%A0%95%EB%B3%B4+%EC%9E%90%EB%A3%8C+%EC%A1%B0%ED%9A%8C&seqApi=10&seqApiSub=288) | 기상청 API Hub | `wrn_now_data_new.php` access issued; regional mapping remains pending | Later Farm-grid to warning-area mapping |
 | Disease/Pest | [농사로 OpenAPI](https://www.nongsaro.go.kr/portal/ps/psz/psza/contentMain.ps?menuId=PS00191) and [병해충 발생정보](https://api.nongsaro.go.kr/sample/rest/dbyhsCccrrncInfo/dbyhsCccrrncInfo.jsp) | 농촌진흥청 / 농사로 | server-only key configured for `dbyhsCccrrncInfoList` | nationwide occurrence bulletin metadata with official attachment; never Farm diagnosis |
 | Crop Information | [농사로 작목기술 서비스](https://api.nongsaro.go.kr/sample/rest/cropTechInfo/cropTechInfo.jsp) | 농촌진흥청 / 농사로 | server-only `cropTechInfo` use with Crop Pack profile mapping | exact-crop technical Disease/Pest title and official original link; no diagnosis or advice |
@@ -18,14 +18,14 @@ This register records the official candidates selected for the Pilot. Before imp
 
 - KAMIS documents daily item/category price APIs and recent price-trend APIs. The implemented adapter uses `dailyPriceByCategoryList`, `p_product_cls_code=02` and no region parameter (`전체지역` default), then applies an exact Crop Pack item-name match and prefers its registered grade. The result preserves the provider kind, grade, unit and base date rather than calling it a farm sale forecast. [KAMIS Open API 안내](https://www.kamis.or.kr/customer/reference/openapi_list.do?action=detail&boardno=1)
 - 농사로 describes OpenAPI registration as phone identity verification, application approval, then issued key. The implemented `dbyhsCccrrncInfoList` endpoint returns title, author, registration date, view count and attachment metadata for nationwide occurrence bulletins. The implemented `cropTechInfo` adapter resolves an internal Crop Pack `cropCode` to an explicitly registered Korean provider name and accepts only an exact Nongsaro category match before it returns technical-reference title/link metadata. It does not establish a cultivar or growth-stage match. [농사로 OpenAPI 안내](https://www.nongsaro.go.kr/portal/ps/psz/psza/contentMain.ps?menuId=PS00191)
-- KMA API Hub publishes the current-observation and short-forecast grid endpoints used by the Weather adapter. The short forecast is produced at 02, 05, 08, 11, 14, 17, 20 and 23 KST; current observations are updated more frequently. The adapter records the KMA-provided base/publication time and keeps a bounded fallback. [기상청 동네예보 격자자료](https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286)
+- KMA API Hub publishes the current-observation and short-forecast grid endpoints used by the Weather adapter: section 4.1 `getUltraSrtNcst` and section 4.3 `getVilageFcst`. The short forecast is produced at 02, 05, 08, 11, 14, 17, 20 and 23 KST; current observations use an hourly base time, so the adapter allows a publication delay before requesting them. The adapter records the KMA-provided base/publication time and keeps a bounded fallback. Its published 동네예보 지점 좌표(위경도) spreadsheet is also reduced to city/county/district representative points and bundled into the client for an offline, no-consent location search; the selected point remains a regional forecast reference, not a Farm coordinate. [기상청 동네예보 격자자료](https://apihub.kma.go.kr/apiList.do?seqApi=10&seqApiSub=286)
 
 ## 3. Required Before Any Production Call
 
 | Item | Weather | Disease/Crop | Market |
 |---|---|---|---|
 | Account/key | KMA API Hub `authKey` | `dbyhsCccrrncInfoList` and `cropTechInfo` use the server-only Nongsaro key; provider access is isolated by unavailable state | `KAMIS_CERT_KEY` and `KAMIS_CERT_ID` |
-| Exact endpoint | Implemented current/short forecast; warning regional mapping pending | `dbyhsCccrrncInfoList` nationwide bulletin and `cropTechInfo` exact-crop title/link reference implemented | Implemented `dailyPriceByCategoryList`, wholesale `02`, entire-region default |
+| Exact endpoint | Implemented and live-verified: section 4.1 `getUltraSrtNcst`, section 4.3 `getVilageFcst`; warning regional mapping pending | `dbyhsCccrrncInfoList` nationwide bulletin and `cropTechInfo` exact-crop title/link reference implemented | Implemented `dailyPriceByCategoryList`, wholesale `02`, entire-region default |
 | Mapping | Farm area → KMA grid / forecast point | nationwide bulletin has no crop mapping; Crop Pack `crop_code` → registered Korean crop name and verified `cropTechInfo` category codes; cultivar/growth stage remains pending | Crop Pack `crop_code` → KAMIS category/item/preferred grade → exact provider item name |
 | Legal/operational review | attribution, rate limit, update schedule | attribution, reuse conditions, update schedule | attribution, rate limit, price meaning and update schedule |
 | Environment | server-only key | server-only key | server-only key |
@@ -40,7 +40,7 @@ This register records the official candidates selected for the Pilot. Before imp
 
 ## 5. Open Verification Items
 
-- [x] KMA current/short forecast endpoint, categories and issue-time schedule
+- [x] KMA current/short forecast endpoint, categories, issue-time schedule and live provider authorization
 - [x] Pilot Farm label-to-grid mapping and privacy wording
 - [ ] KMA special-alert area-to-Farm grid mapping
 - [x] Nongsaro Crop Pack-mapped exact-crop title/link reference endpoint (`cropTechInfo`); cultivar/growth-stage mapping remains open

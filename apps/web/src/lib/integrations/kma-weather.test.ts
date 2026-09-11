@@ -44,7 +44,15 @@ describe("KMA weather adapter", () => {
       highTemperatureC: 31,
     });
     expect(String(fetchMock.mock.calls[0][0])).toContain("getUltraSrtNcst");
+    expect(String(fetchMock.mock.calls[0][0])).toContain("base_time=0900");
     expect(String(fetchMock.mock.calls[1][0])).toContain("getVilageFcst");
+  });
+
+  it("reports access denial without reading or exposing a provider response body", async () => {
+    vi.stubEnv("KMA_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("access denied", { status: 403 })));
+
+    await expect(fetchKmaWeather({ gridX: 60, gridY: 127, locationLabel: "서울 예보 위치" })).rejects.toThrow("KMA_API_ACCESS_DENIED");
   });
 
   it("fails safely when KMA reports an error payload", async () => {
